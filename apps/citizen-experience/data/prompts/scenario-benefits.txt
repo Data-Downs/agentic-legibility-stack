@@ -1,0 +1,57 @@
+SCENARIO CONTEXT - Personal Independence Payment (PIP) Application
+
+The user is exploring or applying for Personal Independence Payment (PIP), a benefit for people with long-term health conditions or disabilities that affect their daily living and/or mobility.
+
+SCENARIO BACKGROUND:
+Personal Independence Payment (PIP) helps with extra living costs if you have a long-term physical or mental health condition or disability and have difficulty doing certain everyday tasks or getting around because of your condition.
+
+ELIGIBILITY CRITERIA:
+- Must be aged 16 or over (and under State Pension age)
+- Have a long-term health condition or disability (expected to last at least 12 months)
+- Have difficulty with daily living activities or mobility
+- Usually need to have lived in the UK for at least 2 of the last 3 years
+- Must be in the UK when you claim
+
+PIP HAS TWO COMPONENTS:
+1. Daily living component - for help with everyday tasks like:
+   - Preparing food, eating, drinking
+   - Managing medications
+   - Washing, bathing, using the toilet
+   - Dressing and undressing
+   - Communicating
+   - Managing money
+
+2. Mobility component - for help with moving around:
+   - Planning and following a journey
+   - Moving around
+
+Each component has two rates:
+- Standard rate: £73.70 per week
+- Enhanced rate: £108.55 per week (daily living) or £114.20 per week (mobility)
+
+You can get one or both components, at either rate, depending on how your condition affects you.
+
+APPLICATION PROCESS:
+1. Initial contact - Register your interest by phone or online
+2. PIP2 form - You'll be sent a "How your disability affects you" form to complete
+3. Provide evidence - Medical records, letters from healthcare professionals, etc.
+4. Assessment - You'll usually be invited to a face-to-face or telephone assessment
+5. Decision - Department for Work and Pensions makes a decision based on the form and assessment
+
+KEY INFORMATION NEEDED:
+- National Insurance number
+- Bank or building society account details
+- Doctor or health worker's name, address and telephone number
+- Dates and addresses for any time spent abroad, in a care home or hospital
+- Details about your condition and how it affects your daily life
+- Any supporting evidence (though you don't need to wait for medical evidence to apply)
+
+IMPORTANT NOTES:
+- PIP is not means-tested (your income and savings don't affect eligibility)
+- You can be working and still claim PIP
+- Getting PIP can help you get other benefits and support (e.g., Blue Badge, Motability)
+- The assessment looks at how your condition affects you, not the condition itself
+- Decision time: Usually 2-3 months from application to decision
+
+YOUR ROLE IN THIS SCENARIO:
+Help the user understand if they might be eligible, guide them through the application process, and explain what information and evidence they'll need.

@@ -1,0 +1,157 @@
+{
+  "personaId": "rajesh",
+  "personaName": "Rajesh Patel",
+  "description": "Self-employed IT consultant, tech-savvy professional with complex finances",
+  "primaryContact": {
+    "firstName": "Rajesh",
+    "middleName": "Kumar",
+    "lastName": "Patel",
+    "dateOfBirth": "1982-11-04",
+    "nationalInsuranceNumber": "FG345678H",
+    "email": "rajesh@rkpconsulting.co.uk",
+    "phone": "07856123456"
+  },
+  "spouse": {
+    "firstName": "Priya",
+    "lastName": "Patel",
+    "dateOfBirth": "1984-05-16",
+    "nationalInsuranceNumber": "JK901234L",
+    "email": "priya.patel@school.edu",
+    "phone": "07823987654",
+    "occupation": "Secondary School Teacher"
+  },
+  "children": [
+    {
+      "firstName": "Anya",
+      "lastName": "Patel",
+      "dateOfBirth": "2017-09-12",
+      "childBenefitNumber": "CHB1234567A"
+    },
+    {
+      "firstName": "Dev",
+      "lastName": "Patel",
+      "dateOfBirth": "2020-03-28",
+      "childBenefitNumber": "CHB7654321B"
+    }
+  ],
+  "address": {
+    "line1": "The Old Rectory",
+    "line2": "15 Church Lane",
+    "city": "Cambridge",
+    "postcode": "CB4 9LZ",
+    "residingSince": "2018-03-15",
+    "housingStatus": "Owned outright (paid off mortgage 2024)"
+  },
+  "employment": {
+    "status": "Self-employed",
+    "businessName": "RKP Consulting Ltd",
+    "companyNumber": "10234567",
+    "vatNumber": "GB123456789",
+    "businessType": "IT Consulting & Software Development",
+    "businessStartDate": "2015-06-01",
+    "annualRevenue": 145000,
+    "annualExpenses": 35000,
+    "netIncome": 85000,
+    "taxCode": "K950",
+    "accountant": "Cambridge Business Services",
+    "utrNumber": "1234567890"
+  },
+  "spouseEmployment": {
+    "status": "Employed",
+    "employer": "Cambridgeshire Secondary School",
+    "jobTitle": "Head of Mathematics",
+    "annualIncome": 47500,
+    "taxCode": "1257L"
+  },
+  "financials": {
+    "householdIncome": 132500,
+    "businessAccount": {
+      "bank": "HSBC Business",
+      "sortCode": "40-47-09",
+      "accountNumber": "11223344",
+      "balance": 42000
+    },
+    "personalAccount": {
+      "bank": "HSBC",
+      "sortCode": "40-47-09",
+      "accountNumber": "55667788",
+      "balance": 15000
+    },
+    "savingsAccount": {
+      "bank": "Marcus by Goldman Sachs",
+      "accountNumber": "SAVE98765432",
+      "balance": 78000
+    },
+    "investments": {
+      "ISA": 35000,
+      "stocks": 52000,
+      "pension": 185000
+    }
+  },
+  "vehicles": [
+    {
+      "make": "Tesla",
+      "model": "Model 3",
+      "year": 2023,
+      "color": "White",
+      "registrationNumber": "EV23 RKP",
+      "owner": "Rajesh Patel",
+      "motExpiry": "2026-11-20",
+      "taxExpiry": "2026-10-15",
+      "insuranceExpiry": "2026-09-08",
+      "businessUse": "Yes - 60% business mileage"
+    },
+    {
+      "make": "Volkswagen",
+      "model": "Golf",
+      "year": 2020,
+      "color": "Grey",
+      "registrationNumber": "CV20 ABC",
+      "owner": "Priya Patel",
+      "motExpiry": "2026-07-11",
+      "taxExpiry": "2026-06-01",
+      "insuranceExpiry": "2026-09-08"
+    }
+  ],
+  "businessAssets": {
+    "homeOffice": {
+      "location": "15% of home used as office",
+      "equipment": ["MacBook Pro", "Dell Monitor x2", "Standing desk", "Server equipment"],
+      "claimableExpenses": true
+    }
+  },
+  "benefits": {
+    "currentlyReceiving": [
+      {
+        "type": "Child Benefit",
+        "amount": 102.40,
+        "frequency": "4-weekly",
+        "startDate": "2017-10-01"
+      }
+    ],
+    "previousClaims": []
+  },
+  "healthInfo": {
+    "gpSurgery": "Cambridge City Medical Practice",
+    "conditions": ["None"],
+    "medications": [],
+    "privateHealthInsurance": "Bupa - Family plan"
+  },
+  "communicationStyle": {
+    "tone": "Direct, efficient, expects intelligent automation",
+    "techSavvy": "Expert - builds software for a living, very comfortable with digital services",
+    "primaryConcerns": [
+      "Don't waste my time with unnecessary questions",
+      "Automate everything possible",
+      "Give me the optimal solution, not just what the rules say",
+      "Time is money - I bill £500/day"
+    ],
+    "typicalPhrases": [
+      "Can't you just pull that from my records?",
+      "Just auto-fill it, I'm sure you have access",
+      "What's the fastest way to do this?",
+      "I need this done today",
+      "Why are you asking me things you already know?"
+    ]
+  }
+}

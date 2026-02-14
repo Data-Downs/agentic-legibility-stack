@@ -1,0 +1,55 @@
+{
+  "id": "dwp.check-state-pension",
+  "version": "1.0.0",
+  "name": "Check State Pension Forecast",
+  "description": "Check your State Pension forecast — see how much you could get and when",
+  "department": "DWP",
+  "jurisdiction": "England, Wales, Scotland",
+
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "national_insurance_number": { "type": "string" },
+      "date_of_birth": { "type": "string", "format": "date" }
+    },
+    "required": ["national_insurance_number"]
+  },
+
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "forecast_amount_weekly": { "type": "number" },
+      "state_pension_age": { "type": "number" },
+      "state_pension_date": { "type": "string", "format": "date" },
+      "qualifying_years": { "type": "number" },
+      "years_to_contribute": { "type": "number" }
+    }
+  },
+
+  "constraints": {
+    "sla": "Immediate (read-only lookup)",
+    "availability": "24/7 online"
+  },
+
+  "eligibility_ruleset_id": "dwp.state-pension.eligibility",
+  "consent_requirements": ["identity-verification"],
+  "evidence_requirements": ["identity-verified"],
+
+  "redress": {
+    "complaint_url": "https://www.gov.uk/government/organisations/department-for-work-pensions/about/complaints-procedure",
+    "appeal_process": "Contact the Pension Service",
+    "ombudsman": "Parliamentary and Health Service Ombudsman"
+  },
+
+  "audit_requirements": {
+    "retention_period": "1 year",
+    "data_controller": "DWP",
+    "lawful_basis": "Public task"
+  },
+
+  "handoff": {
+    "escalation_phone": "0800 731 0469",
+    "opening_hours": "Mon-Fri 8am-6pm",
+    "department_queue": "pension-enquiries"
+  }
+}

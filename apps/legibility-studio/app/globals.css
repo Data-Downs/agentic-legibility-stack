@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --govuk-blue: #1d70b8;
+  --govuk-dark-blue: #003078;
+  --govuk-black: #0b0c0c;
+  --govuk-white: #ffffff;
+  --govuk-red: #d4351c;
+  --govuk-yellow: #ffdd00;
+  --govuk-green: #00703c;
+  --govuk-light-grey: #f3f2f1;
+  --govuk-mid-grey: #b1b4b6;
+  --govuk-dark-grey: #505a5f;
+}
+
+body {
+  font-family: "GDS Transport", "nta", Arial, sans-serif;
+  color: var(--govuk-black);
+  background-color: var(--govuk-white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--govuk-blue);
+  text-decoration: underline;
+}
+
+a:hover {
+  color: var(--govuk-dark-blue);
+}
+
+a:visited {
+  color: #4c2c92;
+}
+
+a:focus {
+  outline: 3px solid var(--govuk-yellow);
+  outline-offset: 0;
+  background-color: var(--govuk-yellow);
+  color: var(--govuk-black);
+  text-decoration: none;
+}

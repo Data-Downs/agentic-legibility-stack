@@ -1,0 +1,48 @@
+{
+  "id": "dvla.renew-licence.eligibility",
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "age-minimum",
+      "description": "Applicant must be at least 16 years old",
+      "condition": { "field": "age", "operator": ">=", "value": 16 },
+      "reason_if_failed": "You must be at least 16 years old to hold a driving licence",
+      "evidence_source": "identity-verified"
+    },
+    {
+      "id": "has-licence",
+      "description": "Applicant must have an existing driving licence",
+      "condition": { "field": "driving_licence_number", "operator": "exists" },
+      "reason_if_failed": "You need an existing driving licence to renew. Apply for a new licence instead.",
+      "alternative_service": "dvla.apply-provisional-licence"
+    },
+    {
+      "id": "uk-resident",
+      "description": "Applicant must be a UK resident",
+      "condition": { "field": "jurisdiction", "operator": "in", "value": ["England", "Wales", "Scotland"] },
+      "reason_if_failed": "This service is for UK residents (England, Wales, Scotland) only"
+    },
+    {
+      "id": "not-revoked",
+      "description": "Licence must not be currently revoked",
+      "condition": { "field": "licence_status", "operator": "!=", "value": "revoked" },
+      "reason_if_failed": "Your licence has been revoked. Contact DVLA for reinstatement.",
+      "triggers_handoff": true
+    }
+  ],
+  "explanation_template": "Driving licence renewal eligibility: {outcome}",
+  "edge_cases": [
+    {
+      "id": "medical-condition",
+      "description": "Applicant has a medical condition that may affect driving",
+      "detection": "medical_conditions",
+      "action": "Route to medical assessment. DVLA form C1 required."
+    },
+    {
+      "id": "over-70",
+      "description": "Applicant is over 70 (different renewal cycle)",
+      "detection": "over_70",
+      "action": "Over-70 renewal is free but requires medical self-declaration."
+    }
+  ]
+}

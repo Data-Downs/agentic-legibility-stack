@@ -1,0 +1,110 @@
+[
+  {
+    "id": "sarah-chen",
+    "name": "Sarah Chen",
+    "date_of_birth": "1989-03-15",
+    "age": 36,
+    "national_insurance_number": "QQ123456C",
+    "address": {
+      "line_1": "42 Riverside Drive",
+      "city": "Cambridge",
+      "postcode": "CB2 1TN"
+    },
+    "jurisdiction": "England",
+    "credentials": [
+      {
+        "type": "driving-licence",
+        "issuer": "DVLA",
+        "number": "CHEN9903155SC9IJ",
+        "issued": "2019-06-01",
+        "expires": "2029-06-01",
+        "status": "valid"
+      }
+    ],
+    "employment_status": "employed",
+    "employer": "University of Cambridge",
+    "income": 38000,
+    "savings": 12000,
+    "bank_account": true,
+    "persona_mapping": "emma-liam"
+  },
+  {
+    "id": "mohammed-al-rashid",
+    "name": "Mohammed Al-Rashid",
+    "date_of_birth": "1975-11-22",
+    "age": 50,
+    "national_insurance_number": "AB654321D",
+    "address": {
+      "line_1": "15 Park Road",
+      "city": "Birmingham",
+      "postcode": "B1 2JR"
+    },
+    "jurisdiction": "England",
+    "credentials": [
+      {
+        "type": "driving-licence",
+        "issuer": "DVLA",
+        "number": "ALRAS751122MA9FG",
+        "issued": "2015-02-14",
+        "expires": "2025-02-14",
+        "status": "expired"
+      }
+    ],
+    "employment_status": "self-employed",
+    "self_employed": true,
+    "income": 24000,
+    "savings": 5000,
+    "bank_account": true,
+    "persona_mapping": "rajesh"
+  },
+  {
+    "id": "margaret-thompson",
+    "name": "Margaret Thompson",
+    "date_of_birth": "1954-07-08",
+    "age": 71,
+    "national_insurance_number": "CD789012E",
+    "address": {
+      "line_1": "8 Church Lane",
+      "city": "York",
+      "postcode": "YO1 7HH"
+    },
+    "jurisdiction": "England",
+    "credentials": [
+      {
+        "type": "driving-licence",
+        "issuer": "DVLA",
+        "number": "THOMP540708MT2AB",
+        "issued": "2021-07-08",
+        "expires": "2024-07-08",
+        "status": "expired"
+      }
+    ],
+    "employment_status": "retired",
+    "over_70": true,
+    "income": 9800,
+    "savings": 45000,
+    "bank_account": true,
+    "pension_qualifying_years": 35,
+    "persona_mapping": "margaret"
+  },
+  {
+    "id": "david-evans",
+    "name": "David Evans",
+    "date_of_birth": "1992-01-30",
+    "age": 34,
+    "national_insurance_number": "EF345678G",
+    "address": {
+      "line_1": "Flat 3, 28 High Street",
+      "city": "Bristol",
+      "postcode": "BS1 4AQ"
+    },
+    "jurisdiction": "England",
+    "credentials": [],
+    "employment_status": "unemployed",
+    "income": 0,
+    "savings": 800,
+    "bank_account": true,
+    "no_fixed_address": false,
+    "persona_mapping": "emma-liam"
+  }
+]

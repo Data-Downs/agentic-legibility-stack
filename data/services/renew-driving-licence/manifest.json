@@ -1,0 +1,56 @@
+{
+  "id": "dvla.renew-driving-licence",
+  "version": "1.0.0",
+  "name": "Renew Driving Licence",
+  "description": "Renew a full UK driving licence (photocard)",
+  "department": "DVLA",
+  "jurisdiction": "England, Wales, Scotland",
+
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "driving_licence_number": { "type": "string" },
+      "national_insurance_number": { "type": "string" },
+      "addresses_last_3_years": { "type": "array" },
+      "photo": { "type": "string", "format": "uri" }
+    },
+    "required": ["driving_licence_number"]
+  },
+
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "application_reference": { "type": "string" },
+      "expected_delivery_date": { "type": "string", "format": "date" },
+      "fee_charged": { "type": "number" }
+    }
+  },
+
+  "constraints": {
+    "sla": "10 working days",
+    "fee": { "amount": 14, "currency": "GBP" },
+    "availability": "24/7 online"
+  },
+
+  "eligibility_ruleset_id": "dvla.renew-licence.eligibility",
+  "consent_requirements": ["identity-verification", "photo-sharing", "address-confirmation"],
+  "evidence_requirements": ["driving-licence-credential", "identity-verified"],
+
+  "redress": {
+    "complaint_url": "https://www.gov.uk/complain-about-dvla",
+    "appeal_process": "Contact DVLA directly",
+    "ombudsman": "Parliamentary and Health Service Ombudsman"
+  },
+
+  "audit_requirements": {
+    "retention_period": "7 years",
+    "data_controller": "DVLA",
+    "lawful_basis": "Public task"
+  },
+
+  "handoff": {
+    "escalation_phone": "0300 790 6801",
+    "opening_hours": "Mon-Fri 8am-7pm, Sat 8am-2pm",
+    "department_queue": "licence-renewals"
+  }
+}

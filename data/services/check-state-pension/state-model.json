@@ -1,0 +1,21 @@
+{
+  "id": "dwp.state-pension.states",
+  "version": "1.0.0",
+  "states": [
+    { "id": "not-started", "type": "initial" },
+    { "id": "identity-verified" },
+    { "id": "eligibility-checked" },
+    { "id": "consent-given" },
+    { "id": "forecast-retrieved", "receipt": true },
+    { "id": "completed", "type": "terminal", "receipt": true },
+    { "id": "handed-off", "type": "terminal", "receipt": true }
+  ],
+  "transitions": [
+    { "from": "not-started", "to": "identity-verified", "trigger": "verify-identity" },
+    { "from": "identity-verified", "to": "eligibility-checked", "trigger": "check-eligibility" },
+    { "from": "eligibility-checked", "to": "consent-given", "trigger": "grant-consent" },
+    { "from": "eligibility-checked", "to": "handed-off", "trigger": "handoff", "condition": "edge-case" },
+    { "from": "consent-given", "to": "forecast-retrieved", "trigger": "retrieve-forecast" },
+    { "from": "forecast-retrieved", "to": "completed", "trigger": "complete" }
+  ]
+}

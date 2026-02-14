@@ -1,0 +1,19 @@
+{
+  "name": "@als/adapters",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@als/schemas": "*",
+    "@anthropic-ai/sdk": "^0.74.0",
+    "@modelcontextprotocol/sdk": "^1.26.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

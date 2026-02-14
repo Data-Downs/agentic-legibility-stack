@@ -1,0 +1,34 @@
+{
+  "id": "dwp.universal-credit.states",
+  "version": "1.0.0",
+  "states": [
+    { "id": "not-started", "type": "initial" },
+    { "id": "identity-verified" },
+    { "id": "eligibility-checked" },
+    { "id": "consent-given" },
+    { "id": "personal-details-collected" },
+    { "id": "housing-details-collected" },
+    { "id": "income-details-collected" },
+    { "id": "bank-details-verified" },
+    { "id": "claim-submitted", "receipt": true },
+    { "id": "awaiting-interview" },
+    { "id": "claim-active", "type": "terminal", "receipt": true },
+    { "id": "rejected", "type": "terminal", "receipt": true },
+    { "id": "handed-off", "type": "terminal", "receipt": true }
+  ],
+  "transitions": [
+    { "from": "not-started", "to": "identity-verified", "trigger": "verify-identity" },
+    { "from": "identity-verified", "to": "eligibility-checked", "trigger": "check-eligibility" },
+    { "from": "eligibility-checked", "to": "consent-given", "trigger": "grant-consent", "condition": "eligible" },
+    { "from": "eligibility-checked", "to": "rejected", "trigger": "reject", "condition": "not-eligible" },
+    { "from": "eligibility-checked", "to": "handed-off", "trigger": "handoff", "condition": "edge-case" },
+    { "from": "consent-given", "to": "personal-details-collected", "trigger": "collect-personal-details" },
+    { "from": "personal-details-collected", "to": "housing-details-collected", "trigger": "collect-housing-details" },
+    { "from": "housing-details-collected", "to": "income-details-collected", "trigger": "collect-income-details" },
+    { "from": "income-details-collected", "to": "bank-details-verified", "trigger": "verify-bank-details" },
+    { "from": "bank-details-verified", "to": "claim-submitted", "trigger": "submit-claim" },
+    { "from": "claim-submitted", "to": "awaiting-interview", "trigger": "schedule-interview" },
+    { "from": "awaiting-interview", "to": "claim-active", "trigger": "activate-claim" },
+    { "from": "awaiting-interview", "to": "rejected", "trigger": "reject-after-interview" }
+  ]
+}

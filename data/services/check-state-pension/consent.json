@@ -1,0 +1,24 @@
+{
+  "id": "dwp.state-pension.consent",
+  "version": "1.0.0",
+  "grants": [
+    {
+      "id": "identity-verification",
+      "description": "Verify your identity to access your pension record",
+      "data_shared": ["full_name", "date_of_birth", "national_insurance_number"],
+      "source": "one-login",
+      "purpose": "DWP must verify your identity before showing your pension forecast",
+      "duration": "session",
+      "required": true
+    }
+  ],
+  "revocation": {
+    "mechanism": "Session-based — consent expires when you close the session",
+    "effect": "No ongoing data sharing. Forecast data is not stored."
+  },
+  "delegation": {
+    "agent_identity": "GOV.UK AI Agent",
+    "scopes": ["read-personal-data", "read-pension-forecast"],
+    "limitations": "Agent can only read your forecast. It cannot make changes to your pension record or National Insurance contributions."
+  }
+}

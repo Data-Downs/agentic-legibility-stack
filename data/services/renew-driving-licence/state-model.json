@@ -1,0 +1,29 @@
+{
+  "id": "dvla.renew-licence.states",
+  "version": "1.0.0",
+  "states": [
+    { "id": "not-started", "type": "initial" },
+    { "id": "identity-verified" },
+    { "id": "eligibility-checked" },
+    { "id": "consent-given" },
+    { "id": "details-confirmed" },
+    { "id": "photo-submitted" },
+    { "id": "payment-made", "receipt": true },
+    { "id": "application-submitted", "receipt": true },
+    { "id": "completed", "type": "terminal", "receipt": true },
+    { "id": "rejected", "type": "terminal", "receipt": true },
+    { "id": "handed-off", "type": "terminal", "receipt": true }
+  ],
+  "transitions": [
+    { "from": "not-started", "to": "identity-verified", "trigger": "verify-identity" },
+    { "from": "identity-verified", "to": "eligibility-checked", "trigger": "check-eligibility" },
+    { "from": "eligibility-checked", "to": "consent-given", "trigger": "grant-consent", "condition": "eligible" },
+    { "from": "eligibility-checked", "to": "rejected", "trigger": "reject", "condition": "not-eligible" },
+    { "from": "eligibility-checked", "to": "handed-off", "trigger": "handoff", "condition": "edge-case" },
+    { "from": "consent-given", "to": "details-confirmed", "trigger": "confirm-details" },
+    { "from": "details-confirmed", "to": "photo-submitted", "trigger": "submit-photo" },
+    { "from": "photo-submitted", "to": "payment-made", "trigger": "make-payment" },
+    { "from": "payment-made", "to": "application-submitted", "trigger": "submit-application" },
+    { "from": "application-submitted", "to": "completed", "trigger": "complete" }
+  ]
+}

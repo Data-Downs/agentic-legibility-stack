@@ -1,0 +1,205 @@
+{
+  "personaId": "margaret",
+  "personaName": "Margaret Thompson",
+  "description": "Cautious retiree, widowed, managing health conditions, limited tech experience",
+  "primaryContact": {
+    "firstName": "Margaret",
+    "middleName": "Rose",
+    "lastName": "Thompson",
+    "dateOfBirth": "1951-06-18",
+    "nationalInsuranceNumber": "MN567890P",
+    "email": "margaret.thompson@btinternet.com",
+    "phone": "01423789012",
+    "mobile": "07654321098"
+  },
+  "deceased": {
+    "spouse": {
+      "firstName": "Robert",
+      "middleName": "John",
+      "lastName": "Thompson",
+      "dateOfBirth": "1949-02-24",
+      "dateOfDeath": "2019-11-15",
+      "relationship": "Husband"
+    }
+  },
+  "address": {
+    "line1": "Rose Cottage",
+    "line2": "12 Meadow Lane",
+    "city": "Harrogate",
+    "county": "North Yorkshire",
+    "postcode": "HG2 8DB",
+    "residingSince": "1985-07-01",
+    "housingStatus": "Owned outright (mortgage paid off 2008)"
+  },
+  "employment": {
+    "status": "Retired",
+    "previousOccupation": "Primary School Teaching Assistant",
+    "retirementDate": "2016-08-31",
+    "yearsWorked": 38
+  },
+  "financials": {
+    "annualIncome": 18500,
+    "statePension": {
+      "weeklyAmount": 185.15,
+      "annualAmount": 9628,
+      "startDate": "2017-06-18"
+    },
+    "privatePension": {
+      "provider": "Teachers' Pension Scheme",
+      "monthlyAmount": 739,
+      "annualAmount": 8872,
+      "startDate": "2016-09-01"
+    },
+    "savingsAccount": {
+      "bank": "Nationwide Building Society",
+      "sortCode": "07-00-99",
+      "accountNumber": "98765432",
+      "balance": 14200
+    },
+    "currentAccount": {
+      "bank": "Nationwide Building Society",
+      "sortCode": "07-00-99",
+      "accountNumber": "12348765",
+      "balance": 1850
+    },
+    "councilTaxBand": "C",
+    "councilTaxAnnual": 1876
+  },
+  "vehicles": [
+    {
+      "make": "Honda",
+      "model": "Jazz",
+      "year": 2015,
+      "color": "Silver",
+      "registrationNumber": "MJ15 RTH",
+      "owner": "Margaret Thompson",
+      "motExpiry": "2026-03-22",
+      "taxExpiry": "2026-03-01",
+      "insuranceExpiry": "2026-04-18",
+      "annualMileage": 3500,
+      "notes": "Drives only locally - shops, GP, church"
+    }
+  ],
+  "benefits": {
+    "currentlyReceiving": [
+      {
+        "type": "State Pension",
+        "amount": 185.15,
+        "frequency": "Weekly",
+        "startDate": "2017-06-18"
+      },
+      {
+        "type": "Council Tax Reduction",
+        "amount": 25,
+        "frequency": "Percentage discount",
+        "startDate": "2019-12-01",
+        "reason": "Single occupancy discount"
+      }
+    ],
+    "previousClaims": [
+      {
+        "type": "Bereavement Support Payment",
+        "startDate": "2019-11-20",
+        "endDate": "2021-11-20",
+        "reason": "Widowed"
+      }
+    ],
+    "potentiallyEligibleFor": [
+      "Attendance Allowance (due to arthritis affecting daily living)",
+      "Pension Credit (income close to threshold)"
+    ]
+  },
+  "healthInfo": {
+    "gpSurgery": "Harrogate Medical Centre",
+    "nhsNumber": "456 789 1234",
+    "conditions": [
+      {
+        "name": "Osteoarthritis",
+        "diagnosed": "2015-03-10",
+        "affectedAreas": ["Hands", "Knees", "Hips"],
+        "severity": "Moderate",
+        "impactOnDailyLife": "Difficulty with buttons, stairs, walking long distances"
+      },
+      {
+        "name": "Type 2 Diabetes",
+        "diagnosed": "2018-09-05",
+        "management": "Diet and medication",
+        "control": "Generally well-controlled"
+      },
+      {
+        "name": "High Blood Pressure",
+        "diagnosed": "2012-01-15",
+        "management": "Medication",
+        "control": "Stable"
+      }
+    ],
+    "medications": [
+      {
+        "name": "Metformin",
+        "dosage": "500mg twice daily",
+        "purpose": "Type 2 Diabetes"
+      },
+      {
+        "name": "Amlodipine",
+        "dosage": "5mg once daily",
+        "purpose": "High Blood Pressure"
+      },
+      {
+        "name": "Paracetamol",
+        "dosage": "As needed",
+        "purpose": "Arthritis pain"
+      },
+      {
+        "name": "Ibuprofen gel",
+        "dosage": "Applied to joints as needed",
+        "purpose": "Arthritis pain"
+      }
+    ],
+    "mobilityAids": [
+      "Walking stick (used occasionally for longer walks)"
+    ],
+    "hospitalAppointments": [
+      {
+        "type": "Rheumatology review",
+        "frequency": "Annual",
+        "lastAppointment": "2025-11-20"
+      },
+      {
+        "type": "Diabetes clinic",
+        "frequency": "6-monthly",
+        "lastAppointment": "2025-12-08"
+      }
+    ]
+  },
+  "family": {
+    "children": [],
+    "notes": "No children. Husband Robert deceased. Lives alone.",
+    "supportNetwork": [
+      "Neighbour Mrs. Davies checks in regularly",
+      "Church community provides social support",
+      "Niece lives in Leeds (1 hour away), visits monthly"
+    ]
+  },
+  "communicationStyle": {
+    "tone": "Polite, formal, careful with words, somewhat anxious",
+    "techSavvy": "Limited - has smartphone but only uses for calls, texts, and very basic internet. Prefers paper forms.",
+    "primaryConcerns": [
+      "Not being taken advantage of or scammed",
+      "Understanding exactly what she's agreeing to",
+      "Not losing any benefits she's entitled to",
+      "Making sure everything is done properly and legally",
+      "Privacy and security of personal information"
+    ],
+    "typicalPhrases": [
+      "I'm not very good with computers, I'm afraid",
+      "Could you explain that again, please?",
+      "How do I know this is official?",
+      "I'd like to think about this before deciding",
+      "Will this be kept confidential?",
+      "I don't want to do anything wrong",
+      "What exactly do you need that information for?"
+    ],
+    "needsReassurance": true,
+    "prefersStepByStep": true
+  }
+}

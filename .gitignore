@@ -1,0 +1,51 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# testing
+coverage/
+
+# next.js
+.next/
+out/
+
+# turbo
+.turbo/
+
+# build
+dist/
+
+# env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# os
+.DS_Store
+Thumbs.db
+
+# ide
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# database
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+
+# misc
+*.tsbuildinfo
+
+# claude
+.claude/

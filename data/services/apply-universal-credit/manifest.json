@@ -1,0 +1,59 @@
+{
+  "id": "dwp.apply-universal-credit",
+  "version": "1.0.0",
+  "name": "Apply for Universal Credit",
+  "description": "Apply for Universal Credit — income-related benefit for working-age people",
+  "department": "DWP",
+  "jurisdiction": "England, Wales, Scotland",
+
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "national_insurance_number": { "type": "string" },
+      "date_of_birth": { "type": "string", "format": "date" },
+      "housing_status": { "type": "string" },
+      "employment_status": { "type": "string" },
+      "household_income": { "type": "number" },
+      "household_members": { "type": "array" },
+      "bank_details": { "type": "object" }
+    },
+    "required": ["national_insurance_number", "date_of_birth"]
+  },
+
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "claim_reference": { "type": "string" },
+      "journal_url": { "type": "string" },
+      "first_payment_date": { "type": "string", "format": "date" },
+      "estimated_amount": { "type": "number" }
+    }
+  },
+
+  "constraints": {
+    "sla": "5 weeks to first payment",
+    "availability": "24/7 online"
+  },
+
+  "eligibility_ruleset_id": "dwp.universal-credit.eligibility",
+  "consent_requirements": ["identity-verification", "income-sharing", "housing-status"],
+  "evidence_requirements": ["identity-verified", "bank-account-verified"],
+
+  "redress": {
+    "complaint_url": "https://www.gov.uk/government/organisations/department-for-work-pensions/about/complaints-procedure",
+    "appeal_process": "Mandatory reconsideration, then appeal to tribunal",
+    "ombudsman": "Parliamentary and Health Service Ombudsman"
+  },
+
+  "audit_requirements": {
+    "retention_period": "6 years after claim ends",
+    "data_controller": "DWP",
+    "lawful_basis": "Legal obligation"
+  },
+
+  "handoff": {
+    "escalation_phone": "0800 328 5644",
+    "opening_hours": "Mon-Fri 8am-6pm",
+    "department_queue": "new-claims"
+  }
+}

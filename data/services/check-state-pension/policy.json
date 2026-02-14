@@ -1,0 +1,33 @@
+{
+  "id": "dwp.state-pension.eligibility",
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "has-ni-number",
+      "description": "Citizen must have a National Insurance number",
+      "condition": { "field": "national_insurance_number", "operator": "exists" },
+      "reason_if_failed": "You need a National Insurance number to check your State Pension forecast"
+    },
+    {
+      "id": "uk-ni-record",
+      "description": "Citizen must have UK National Insurance contributions",
+      "condition": { "field": "jurisdiction", "operator": "in", "value": ["England", "Wales", "Scotland"] },
+      "reason_if_failed": "State Pension forecasts are based on UK National Insurance contributions"
+    }
+  ],
+  "explanation_template": "State Pension forecast eligibility: {outcome}",
+  "edge_cases": [
+    {
+      "id": "lived-abroad",
+      "description": "Citizen has lived or worked abroad",
+      "detection": "overseas_work_history",
+      "action": "May have contributions from other countries. Check reciprocal agreements."
+    },
+    {
+      "id": "contracted-out",
+      "description": "Citizen was contracted out of additional State Pension",
+      "detection": "contracted_out",
+      "action": "Contracted-out deductions may apply. Show adjusted forecast."
+    }
+  ]
+}

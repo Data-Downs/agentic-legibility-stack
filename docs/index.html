@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agentic Legibility Stack</title>
+  <meta name="description" content="A reference architecture for accountable AI agents in UK government services">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      color: #0b0c0c;
+      line-height: 1.6;
+      background: #fff;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: #1d70b8; text-decoration: none; }
+    a:hover { text-decoration: underline; color: #003078; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+    img { max-width: 100%; }
+
+    /* ── Layout ── */
+    .container { max-width: 960px; margin: 0 auto; padding: 0 1.5rem; }
+    .section { padding: 4rem 0; }
+    .section-alt { background: #f3f2f1; }
+    .section-dark { background: #0b0c0c; color: #fff; }
+    .section-dark a { color: #b1b4b6; }
+    .section-dark a:hover { color: #fff; }
+
+    h1, h2, h3 { line-height: 1.2; }
+    h2 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
+    h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .section-intro { font-size: 1.1rem; color: #505a5f; max-width: 700px; margin-bottom: 2rem; }
+
+    /* ── Nav ── */
+    .nav {
+      background: #fff;
+      border-bottom: 1px solid #b1b4b6;
+      padding: 0.75rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .nav-brand {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #0b0c0c;
+      white-space: nowrap;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.25rem;
+      list-style: none;
+      flex-wrap: wrap;
+    }
+    .nav-links a {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #505a5f;
+    }
+    .nav-links a:hover { color: #1d70b8; text-decoration: none; }
+
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+    }
+
+    /* ── Hero ── */
+    .hero { padding: 5rem 0 4rem; }
+    .hero-label {
+      display: inline-block;
+      background: #f3f2f1;
+      color: #505a5f;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 {
+      font-size: 2.75rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .hero-subtitle {
+      font-size: 1.35rem;
+      color: #505a5f;
+      font-weight: 400;
+      max-width: 640px;
+      margin-bottom: 1.5rem;
+    }
+    .hero-desc {
+      font-size: 1.05rem;
+      color: #505a5f;
+      max-width: 640px;
+      margin-bottom: 2rem;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .btn {
+      display: inline-block;
+      padding: 0.65rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 2px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .btn-primary {
+      background: #1d70b8;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #003078; color: #fff; text-decoration: none; }
+    .btn-secondary {
+      background: #f3f2f1;
+      color: #0b0c0c;
+      border: 1px solid #b1b4b6;
+    }
+    .btn-secondary:hover { background: #e0dfde; text-decoration: none; }
+    .tech-badges {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-block;
+      background: #f3f2f1;
+      color: #505a5f;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.2rem 0.6rem;
+      border-radius: 2px;
+      border: 1px solid #e0dfde;
+    }
+
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 2rem; }
+      .hero-subtitle { font-size: 1.15rem; }
+    }
+
+    /* ── Cards ── */
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+
+    @media (max-width: 800px) {
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #b1b4b6;
+      border-radius: 2px;
+      padding: 1.5rem;
+    }
+    .card-accent { border-left: 4px solid; }
+    .card-blue { border-left-color: #1d70b8; }
+    .card-green { border-left-color: #00703c; }
+    .card-orange { border-left-color: #f47738; }
+    .card-purple { border-left-color: #912b88; }
+
+    .card h3 { margin-bottom: 0.5rem; }
+    .card p { color: #505a5f; font-size: 0.95rem; }
+    .card-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #505a5f;
+      margin-bottom: 0.75rem;
+    }
+
+    .card-alt {
+      background: #f3f2f1;
+      border: 1px solid #e0dfde;
+    }
+
+    /* ── Code blocks ── */
+    .code-block {
+      background: #f8f8f8;
+      border: 1px solid #e0dfde;
+      border-radius: 2px;
+      padding: 1rem;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      overflow-x: auto;
+      margin-top: 0.75rem;
+    }
+    .code-block code {
+      color: #0b0c0c;
+    }
+    .kw { color: #1d70b8; }
+    .str { color: #00703c; }
+    .num { color: #912b88; }
+
+    /* ── Callout ── */
+    .callout {
+      background: #f3f2f1;
+      border-left: 4px solid #b1b4b6;
+      padding: 1rem 1.25rem;
+      margin-top: 1.5rem;
+      font-size: 0.95rem;
+      color: #505a5f;
+    }
+
+    /* ── Table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .data-table th, .data-table td {
+      text-align: left;
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid #e0dfde;
+    }
+    .data-table th {
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #505a5f;
+      background: #f8f8f8;
+    }
+    .data-table code {
+      font-size: 0.85rem;
+      background: #f3f2f1;
+      padding: 0.1rem 0.35rem;
+      border-radius: 2px;
+    }
+
+    @media (max-width: 640px) {
+      .data-table { font-size: 0.8rem; }
+      .data-table th, .data-table td { padding: 0.5rem; }
+    }
+
+    /* ── Architecture Diagram ── */
+    .diagram {
+      max-width: 660px;
+      margin: 2rem auto;
+      font-size: 0.85rem;
+    }
+    .diagram-row {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
+    .diagram-box {
+      background: #fff;
+      border: 1px solid #b1b4b6;
+      border-left: 4px solid;
+      padding: 0.6rem 1rem;
+      border-radius: 2px;
+      text-align: center;
+      min-width: 130px;
+    }
+    .diagram-box strong { display: block; font-size: 0.85rem; }
+    .diagram-box span { display: block; font-size: 0.7rem; color: #505a5f; }
+    .diagram-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.35rem 0;
+      color: #505a5f;
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+    .diagram-arrow::before { content: '|'; }
+    .diagram-arrow::after { content: '\u25BC'; font-size: 0.6rem; margin-top: -2px; }
+    .diagram-label {
+      font-size: 0.7rem;
+      color: #505a5f;
+      font-style: italic;
+      text-align: center;
+      margin: 0.25rem 0;
+    }
+    .diagram-fan {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      position: relative;
+      padding-top: 1.25rem;
+    }
+    .diagram-fan::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 2px;
+      height: 0.5rem;
+      background: #b1b4b6;
+      transform: translateX(-50%);
+    }
+    .diagram-fan::after {
+      content: '';
+      position: absolute;
+      top: 0.5rem;
+      left: calc(50% - 160px);
+      width: 320px;
+      height: 2px;
+      background: #b1b4b6;
+    }
+    .diagram-fan .diagram-box {
+      min-width: 100px;
+      font-size: 0.75rem;
+      padding: 0.5rem 0.6rem;
+      position: relative;
+    }
+    .diagram-fan .diagram-box::before {
+      content: '';
+      position: absolute;
+      top: -0.75rem;
+      left: 50%;
+      width: 2px;
+      height: 0.75rem;
+      background: #b1b4b6;
+      transform: translateX(-50%);
+    }
+    .diagram-evidence {
+      border: 2px dashed #f47738;
+      background: #fff7f0;
+      padding: 0.75rem 1.5rem;
+      border-radius: 2px;
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+    .diagram-evidence strong { color: #f47738; }
+
+    @media (max-width: 640px) {
+      .diagram-fan { flex-direction: column; align-items: center; padding-top: 0.5rem; }
+      .diagram-fan::after { display: none; }
+      .diagram-fan .diagram-box::before { display: none; }
+      .diagram-fan .diagram-box { min-width: 160px; }
+    }
+
+    /* ── Agent cards ── */
+    .agent-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+    @media (max-width: 640px) { .agent-grid { grid-template-columns: 1fr; } }
+
+    .agent-card {
+      border: 1px solid #b1b4b6;
+      border-top: 4px solid;
+      border-radius: 2px;
+      padding: 1.5rem;
+      background: #fff;
+    }
+    .agent-card h3 { margin-bottom: 0.75rem; }
+    .agent-card ul {
+      list-style: none;
+      padding: 0;
+    }
+    .agent-card li {
+      padding: 0.3rem 0;
+      padding-left: 1.25rem;
+      position: relative;
+      font-size: 0.9rem;
+      color: #505a5f;
+    }
+    .agent-card li::before {
+      content: '\2713';
+      position: absolute;
+      left: 0;
+      font-weight: 700;
+    }
+
+    /* ── Persona/Service cards ── */
+    .service-dept {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #505a5f;
+      margin-bottom: 0.5rem;
+    }
+    .persona-desc {
+      font-size: 0.85rem;
+      color: #505a5f;
+      margin-top: 0.5rem;
+    }
+
+    /* ── Getting started ── */
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step;
+      padding: 0.75rem 0 0.75rem 2.5rem;
+      position: relative;
+      border-left: 2px solid #e0dfde;
+      margin-left: 0.75rem;
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: -0.85rem;
+      top: 0.7rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      background: #1d70b8;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .steps li:last-child { border-left-color: transparent; }
+    .steps code {
+      background: #f3f2f1;
+      padding: 0.15rem 0.4rem;
+      border-radius: 2px;
+      font-size: 0.85rem;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      background: #0b0c0c;
+      color: #b1b4b6;
+      padding: 2.5rem 0;
+      font-size: 0.85rem;
+    }
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .footer strong { color: #fff; font-size: 1rem; }
+    .footer p { margin-top: 0.35rem; }
+    .footer a { color: #b1b4b6; }
+    .footer a:hover { color: #fff; }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav class="nav">
+  <div class="container">
+    <span class="nav-brand">Agentic Legibility Stack</span>
+    <ul class="nav-links">
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#artefacts">Artefacts</a></li>
+      <li><a href="#evidence">Evidence</a></li>
+      <li><a href="#agents">Agents</a></li>
+      <li><a href="#packages">Packages</a></li>
+      <li><a href="#get-started">Get Started</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="container">
+    <span class="hero-label">Reference Architecture</span>
+    <h1>Agentic Legibility Stack</h1>
+    <p class="hero-subtitle">
+      A reference architecture for accountable AI agents in UK government services.
+    </p>
+    <p class="hero-desc">
+      A Turborepo monorepo with 2 Next.js apps and 7 shared packages, demonstrating how
+      AI agents could interact with government services while maintaining transparency,
+      accountability, and citizen control. This is a prototype &mdash; not a live government tool.
+    </p>
+    <div class="hero-actions">
+      <a href="https://github.com/datadowns/agentic-legibility-stack" class="btn btn-primary">View on GitHub</a>
+      <a href="#get-started" class="btn btn-secondary">Get Started</a>
+    </div>
+    <div class="tech-badges">
+      <span class="badge">TypeScript</span>
+      <span class="badge">Next.js 15</span>
+      <span class="badge">Turborepo</span>
+      <span class="badge">SQLite</span>
+      <span class="badge">Claude API</span>
+      <span class="badge">MCP</span>
+      <span class="badge">React 19</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── The Problem ── -->
+<section class="section section-alt" id="problem">
+  <div class="container">
+    <h2>The Problem</h2>
+    <p class="section-intro">
+      When AI agents start acting on behalf of citizens with government services, who is accountable?
+      If an agent applies for benefits incorrectly, submits the wrong data, or misunderstands
+      eligibility rules &mdash; what happened, who authorized it, and how does the citizen get redress?
+    </p>
+    <p style="color: #505a5f; max-width: 700px; margin-bottom: 2rem;">
+      Current web-form-based services have implicit accountability: the citizen fills in the
+      form themselves. Agentic services need explicit accountability infrastructure: formal service
+      definitions, consent records, evidence trails, and human escalation paths.
+    </p>
+    <div class="grid-3">
+      <div class="card card-accent card-purple">
+        <h3>Who authorized this?</h3>
+        <p>Consent models track what data was shared, with whom, and for what purpose. Every data share is recorded.</p>
+      </div>
+      <div class="card card-accent card-orange">
+        <h3>What actually happened?</h3>
+        <p>The Evidence Plane records every agent action in an append-only trace store. Nothing is silently edited or deleted.</p>
+      </div>
+      <div class="card card-accent card-green">
+        <h3>What if something goes wrong?</h3>
+        <p>Handoff to humans with full context. Redress pathways and complaint routes are part of every service definition.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Architecture ── -->
+<section class="section" id="architecture">
+  <div class="container">
+    <h2>Architecture</h2>
+    <p class="section-intro">
+      The stack enforces two invariants: all service calls go through a single
+      <strong>CapabilityInvoker</strong>, and all LLM calls go through the
+      <strong>AnthropicAdapter</strong>. These choke points are where policy, consent,
+      and tracing are enforced.
+    </p>
+
+    <div class="diagram">
+      <!-- Citizen -->
+      <div class="diagram-row">
+        <div class="diagram-box" style="border-left-color: #912b88;">
+          <strong>Citizen</strong>
+          <span>Picks persona &amp; agent</span>
+        </div>
+      </div>
+      <div class="diagram-arrow"></div>
+
+      <!-- Agent -->
+      <div class="diagram-row" style="gap: 2rem;">
+        <div class="diagram-box" style="border-left-color: #1d70b8;">
+          <strong>DOT Agent</strong>
+          <span>Cautious</span>
+        </div>
+        <div style="align-self: center; color: #505a5f; font-size: 0.8rem; font-weight: 500;">or</div>
+        <div class="diagram-box" style="border-left-color: #1d70b8;">
+          <strong>MAX Agent</strong>
+          <span>Proactive</span>
+        </div>
+      </div>
+      <div class="diagram-arrow"></div>
+      <div class="diagram-label">Single LLM choke point</div>
+
+      <!-- AnthropicAdapter -->
+      <div class="diagram-row">
+        <div class="diagram-box" style="border-left-color: #1d70b8; background: #f0f6fc;">
+          <strong>AnthropicAdapter</strong>
+          <span>Claude claude-sonnet-4-5 + thinking</span>
+        </div>
+      </div>
+      <div class="diagram-arrow"></div>
+      <div class="diagram-label">Single service choke point</div>
+
+      <!-- CapabilityInvoker -->
+      <div class="diagram-row">
+        <div class="diagram-box" style="border-left-color: #00703c; background: #f0faf4;">
+          <strong>CapabilityInvoker</strong>
+          <span>Policy &bull; Consent &bull; Trace &bull; Receipt</span>
+        </div>
+      </div>
+
+      <!-- Fan out to services -->
+      <div class="diagram-fan">
+        <div class="diagram-box" style="border-left-color: #00703c;">
+          <strong>Renew Driving Licence</strong>
+          <span>DVLA</span>
+        </div>
+        <div class="diagram-box" style="border-left-color: #00703c;">
+          <strong>Apply Universal Credit</strong>
+          <span>DWP</span>
+        </div>
+        <div class="diagram-box" style="border-left-color: #00703c;">
+          <strong>Check State Pension</strong>
+          <span>DWP</span>
+        </div>
+      </div>
+
+      <!-- Evidence Plane -->
+      <div class="diagram-evidence">
+        <strong>Evidence Plane</strong>
+        <span style="display: block; font-size: 0.8rem; color: #505a5f;">
+          Append-only SQLite &mdash; records every LLM call, policy evaluation, consent grant, service invocation, receipt, and handoff
+        </span>
+      </div>
+    </div>
+
+    <p style="color: #505a5f; max-width: 700px; margin: 0 auto; text-align: center; font-size: 0.9rem;">
+      A citizen talks to an agent (DOT or MAX). The agent calls Claude via the AnthropicAdapter.
+      When it needs a government service, the call goes through the CapabilityInvoker, which evaluates
+      policy rules, checks consent, and produces a receipt. The Evidence Plane sits underneath
+      everything, recording all activity.
+    </p>
+  </div>
+</section>
+
+<!-- ── 4-Artefact Pattern ── -->
+<section class="section section-alt" id="artefacts">
+  <div class="container">
+    <h2>The 4-Artefact Pattern</h2>
+    <p class="section-intro">
+      Every government service is formally defined by four machine-readable JSON files.
+      Together they answer: what does this service do, who is eligible, how does it progress,
+      and what data is shared.
+    </p>
+
+    <div class="grid-2">
+      <!-- Manifest -->
+      <div class="card card-accent card-blue">
+        <div class="card-tag">Capability Definition</div>
+        <h3>manifest.json &mdash; WHAT</h3>
+        <p>Defines what the service does, its inputs and outputs, SLAs, fees, redress pathways, and audit requirements.</p>
+        <pre class="code-block"><code>{
+  <span class="kw">"id"</span>: <span class="str">"dvla.renew-driving-licence"</span>,
+  <span class="kw">"name"</span>: <span class="str">"Renew Driving Licence"</span>,
+  <span class="kw">"department"</span>: <span class="str">"DVLA"</span>,
+  <span class="kw">"constraints"</span>: {
+    <span class="kw">"fee"</span>: <span class="str">"14 GBP"</span>,
+    <span class="kw">"sla"</span>: <span class="str">"10 working days"</span>
+  }
+}</code></pre>
+      </div>
+
+      <!-- Policy -->
+      <div class="card card-accent card-green">
+        <div class="card-tag">Eligibility Rules</div>
+        <h3>policy.json &mdash; WHO</h3>
+        <p>Structured rules that determine eligibility, with conditions, failure messages, and alternative services.</p>
+        <pre class="code-block"><code>{
+  <span class="kw">"rules"</span>: [{
+    <span class="kw">"id"</span>: <span class="str">"age-check"</span>,
+    <span class="kw">"condition"</span>: {
+      <span class="kw">"field"</span>: <span class="str">"age"</span>,
+      <span class="kw">"operator"</span>: <span class="str">">="</span>,
+      <span class="kw">"value"</span>: <span class="num">18</span>
+    },
+    <span class="kw">"reason_if_failed"</span>: <span class="str">"Must be 18+"</span>
+  }]
+}</code></pre>
+      </div>
+
+      <!-- State Model -->
+      <div class="card card-accent card-orange">
+        <div class="card-tag">State Transitions</div>
+        <h3>state-model.json &mdash; HOW</h3>
+        <p>Defines valid states and transitions. Terminal states (completed, rejected, handed-off) require receipts.</p>
+        <pre class="code-block"><code>{
+  <span class="kw">"states"</span>: [
+    <span class="str">"not-started"</span>,
+    <span class="str">"identity-verified"</span>,
+    <span class="str">"application-submitted"</span>,
+    <span class="str">"completed"</span>
+  ],
+  <span class="kw">"transitions"</span>: [
+    { <span class="kw">"from"</span>: <span class="str">"not-started"</span>,
+      <span class="kw">"to"</span>: <span class="str">"identity-verified"</span> }
+  ]
+}</code></pre>
+      </div>
+
+      <!-- Consent -->
+      <div class="card card-accent card-purple">
+        <div class="card-tag">Data Sharing</div>
+        <h3>consent.json &mdash; WHY</h3>
+        <p>Declares exactly what data is shared, from where, with whom, and for what purpose. Consent is per-session and revocable.</p>
+        <pre class="code-block"><code>{
+  <span class="kw">"grants"</span>: [{
+    <span class="kw">"id"</span>: <span class="str">"identity-verification"</span>,
+    <span class="kw">"data_shared"</span>: [
+      <span class="str">"full_name"</span>,
+      <span class="str">"date_of_birth"</span>,
+      <span class="str">"ni_number"</span>
+    ],
+    <span class="kw">"purpose"</span>: <span class="str">"Confirm identity"</span>
+  }]
+}</code></pre>
+      </div>
+    </div>
+
+    <div class="callout">
+      These artefacts live in <code>data/services/{service-name}/</code>. They are the contract
+      between the government service and any AI agent that wants to interact with it.
+    </div>
+  </div>
+</section>
+
+<!-- ── Evidence Plane ── -->
+<section class="section" id="evidence">
+  <div class="container">
+    <h2>Evidence Plane</h2>
+    <p class="section-intro">
+      An append-only SQLite trace store that records every action the system takes.
+      Nothing is silently edited or deleted. It enables full replay and audit of any agent session.
+    </p>
+
+    <table class="data-table" style="margin-bottom: 2rem;">
+      <thead>
+        <tr>
+          <th>Event Type</th>
+          <th>What It Records</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>llm.request</code> / <code>llm.response</code></td><td>What was sent to and received from Claude</td></tr>
+        <tr><td><code>policy.evaluated</code></td><td>Eligibility check results (rules passed, failed, edge cases)</td></tr>
+        <tr><td><code>consent.granted</code></td><td>What data was shared, with whom, and why</td></tr>
+        <tr><td><code>capability.invoked</code> / <code>capability.result</code></td><td>Service invocation with timing and outcome</td></tr>
+        <tr><td><code>receipt.issued</code></td><td>Citizen-facing proof of what the agent did</td></tr>
+        <tr><td><code>state.transition</code></td><td>Movement through the service state model</td></tr>
+        <tr><td><code>handoff.initiated</code></td><td>When and why escalation to a human was triggered</td></tr>
+      </tbody>
+    </table>
+
+    <div class="grid-2">
+      <div class="card card-accent card-blue">
+        <h3>Citizen Experience</h3>
+        <p>Citizens see their own receipts, consent history, and a timeline of what the agent did on their behalf.</p>
+      </div>
+      <div class="card card-accent card-green">
+        <h3>Legibility Studio</h3>
+        <p>Administrators see the full trace explorer, replay engine, service definitions, and gap analysis.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Agent Personalities ── -->
+<section class="section section-alt" id="agents">
+  <div class="container">
+    <h2>Two Agent Personalities</h2>
+    <p class="section-intro">
+      The same architecture supports different interaction styles. DOT and MAX demonstrate
+      the fundamental trade-off between transparency and efficiency.
+    </p>
+
+    <div class="agent-grid">
+      <div class="agent-card" style="border-top-color: #1d70b8;">
+        <h3>DOT &mdash; The Cautious Agent</h3>
+        <ul>
+          <li>Asks permission before using personal data</li>
+          <li>Explains reasoning step by step</li>
+          <li>Requests explicit consent for each data share</li>
+          <li>Best for understanding the accountability architecture</li>
+        </ul>
+      </div>
+      <div class="agent-card" style="border-top-color: #00703c;">
+        <h3>MAX &mdash; The Proactive Agent</h3>
+        <ul>
+          <li>Auto-fills data without asking</li>
+          <li>Gets things done quickly and efficiently</li>
+          <li>Still records everything in the Evidence Plane</li>
+          <li>Best for seeing the efficiency vs. transparency trade-off</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      Both agents run on identical infrastructure. The difference is purely in their system
+      prompt personality. The Evidence Plane captures the same events for both &mdash;
+      the question is whether the citizen sees consent requests before or after the fact.
+    </div>
+  </div>
+</section>
+
+<!-- ── Demo Services & Personas ── -->
+<section class="section" id="demos">
+  <div class="container">
+    <h2>Demo Services &amp; Personas</h2>
+    <p class="section-intro">
+      Three government services and three citizen personas, each designed to exercise
+      different parts of the architecture.
+    </p>
+
+    <h3 style="margin-bottom: 1rem;">Services</h3>
+    <div class="grid-3" style="margin-bottom: 2.5rem;">
+      <div class="card card-accent card-blue">
+        <div class="service-dept">DVLA</div>
+        <h3>Renew Driving Licence</h3>
+        <p>Fee: &pound;14. SLA: 10 working days. Tests payment flow, photo submission, and Wallet credential sharing.</p>
+      </div>
+      <div class="card card-accent card-green">
+        <div class="service-dept">DWP</div>
+        <h3>Apply Universal Credit</h3>
+        <p>Complex eligibility with household income assessment, savings thresholds, and edge cases. Tests the policy engine thoroughly.</p>
+      </div>
+      <div class="card card-accent card-orange">
+        <div class="service-dept">DWP</div>
+        <h3>Check State Pension</h3>
+        <p>Read-only forecast lookup. No payment, no application. Tests information retrieval and credential sharing.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom: 1rem;">Personas</h3>
+    <div class="grid-3">
+      <div class="card card-accent card-purple">
+        <h3>Emma &amp; Liam</h3>
+        <p class="persona-desc">Young expecting couple, first baby. Good for benefits, family services, and driving scenarios.</p>
+      </div>
+      <div class="card card-accent card-blue">
+        <h3>Rajesh</h3>
+        <p class="persona-desc">Self-employed IT consultant, two children. Tests tax, child benefit, and self-employment edge cases.</p>
+      </div>
+      <div class="card card-accent card-green">
+        <h3>Margaret</h3>
+        <p class="persona-desc">Retired, 71, managing health conditions. Tests pension, over-pension-age eligibility, and driving renewal for over-70s.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Package Architecture ── -->
+<section class="section section-alt" id="packages">
+  <div class="container">
+    <h2>Package Architecture</h2>
+    <p class="section-intro">
+      The monorepo is organized as 2 Next.js applications and 7 shared packages.
+      Each package has a single responsibility.
+    </p>
+
+    <table class="data-table" style="margin-bottom: 2rem;">
+      <thead>
+        <tr><th>Package</th><th>Responsibility</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>@als/schemas</code></td><td>Shared TypeScript types and interfaces for all data structures</td></tr>
+        <tr><td><code>@als/runtime</code></td><td>CapabilityInvoker, ServiceRegistry, HandoffManager &mdash; the orchestration layer</td></tr>
+        <tr><td><code>@als/evidence</code></td><td>SQLite trace store, trace emitter, receipt generator &mdash; the Evidence Plane</td></tr>
+        <tr><td><code>@als/legibility</code></td><td>PolicyEvaluator, StateMachine, ConsentManager &mdash; artefact interpretation</td></tr>
+        <tr><td><code>@als/identity</code></td><td>GOV.UK One Login and Wallet simulators</td></tr>
+        <tr><td><code>@als/personal-data</code></td><td>Two-tier data model: verified credentials + incidental data</td></tr>
+        <tr><td><code>@als/adapters</code></td><td>AnthropicAdapter, GOV.UK Content adapter, MCP adapter &mdash; external connectors</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-bottom: 0.75rem;">Applications</h3>
+    <table class="data-table">
+      <thead>
+        <tr><th>App</th><th>Port</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>citizen-experience</code></td><td>3100</td><td>Citizen-facing chat with persona picker and agent selection</td></tr>
+        <tr><td><code>legibility-studio</code></td><td>3101</td><td>Admin dashboard: service definitions, evidence explorer, gap analysis</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      The Legibility Studio fetches evidence data via HTTP from the citizen-experience API &mdash;
+      it does not directly import the evidence package. This avoids native SQLite module bundling issues.
+    </div>
+  </div>
+</section>
+
+<!-- ── Getting Started ── -->
+<section class="section" id="get-started">
+  <div class="container">
+    <h2>Getting Started</h2>
+    <p class="section-intro">
+      Prerequisites: Node.js 18+ and an
+      <a href="https://console.anthropic.com" target="_blank" rel="noopener">Anthropic API key</a>.
+    </p>
+
+    <ol class="steps">
+      <li>Clone the repository<br>
+        <code>git clone https://github.com/datadowns/agentic-legibility-stack.git</code>
+      </li>
+      <li>Install dependencies<br>
+        <code>npm install</code>
+      </li>
+      <li>Set your API key &mdash; create <code>apps/citizen-experience/.env.local</code><br>
+        <code>ANTHROPIC_API_KEY=sk-ant-...your-key...</code>
+      </li>
+      <li>Seed demo trace data (optional)<br>
+        <code>npm run seed</code>
+      </li>
+      <li>Start both apps<br>
+        <code>npm run dev</code>
+      </li>
+      <li>Open the apps<br>
+        <a href="http://localhost:3100">localhost:3100</a> (Citizen Experience) &bull;
+        <a href="http://localhost:3101">localhost:3101</a> (Legibility Studio)
+      </li>
+    </ol>
+
+    <p style="margin-top: 1.5rem; color: #505a5f;">
+      See the full
+      <a href="https://github.com/datadowns/agentic-legibility-stack/blob/main/GETTING-STARTED.md">Getting Started Guide</a>
+      for a detailed walkthrough of personas, agent personalities, and features to try.
+    </p>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <strong>Agentic Legibility Stack</strong>
+        <p>A reference implementation &mdash; not a live government service.</p>
+        <p style="margin-top: 0.5rem;">Built with Next.js, TypeScript, and Claude.</p>
+      </div>
+      <div>
+        <a href="https://github.com/datadowns/agentic-legibility-stack">GitHub Repository</a>
+        <p><a href="#get-started">Getting Started</a></p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

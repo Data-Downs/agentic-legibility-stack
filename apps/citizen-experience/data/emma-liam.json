@@ -1,0 +1,119 @@
+{
+  "personaId": "emma-liam",
+  "personaName": "Emma & Liam Parker",
+  "description": "Young expecting couple, first baby on the way",
+  "primaryContact": {
+    "firstName": "Emma",
+    "middleName": "Charlotte",
+    "lastName": "Parker",
+    "dateOfBirth": "1997-03-15",
+    "nationalInsuranceNumber": "AB123456C",
+    "email": "emma.parker@email.com",
+    "phone": "07712345678"
+  },
+  "partner": {
+    "firstName": "Liam",
+    "middleName": "James",
+    "lastName": "Parker",
+    "dateOfBirth": "1996-08-22",
+    "nationalInsuranceNumber": "CD789012E",
+    "email": "liam.parker@email.com",
+    "phone": "07798765432"
+  },
+  "address": {
+    "line1": "Flat 3B, Riverside Apartments",
+    "line2": "42 Thames View",
+    "city": "London",
+    "postcode": "SE1 7PQ",
+    "residingSince": "2022-09-01",
+    "housingStatus": "Mortgaged"
+  },
+  "employment": {
+    "emma": {
+      "status": "Employed",
+      "employer": "NHS Guy's and St Thomas' Hospital Trust",
+      "jobTitle": "Staff Nurse - Maternity Ward",
+      "startDate": "2019-06-01",
+      "annualIncome": 32500,
+      "taxCode": "1257L",
+      "payrollNumber": "NHS4567890",
+      "maternityLeaveStart": "2026-07-15"
+    },
+    "liam": {
+      "status": "Employed",
+      "employer": "Southwark Primary School",
+      "jobTitle": "Primary School Teacher - Year 3",
+      "startDate": "2020-09-01",
+      "annualIncome": 25500,
+      "taxCode": "1257L",
+      "payrollNumber": "EDU9876543"
+    }
+  },
+  "financials": {
+    "combinedAnnualIncome": 58000,
+    "monthlyMortgage": 1450,
+    "savingsAccount": {
+      "bank": "Lloyds Bank",
+      "sortCode": "30-94-55",
+      "accountNumber": "12345678",
+      "balance": 8500
+    },
+    "jointAccount": {
+      "bank": "Lloyds Bank",
+      "sortCode": "30-94-55",
+      "accountNumber": "87654321",
+      "balance": 2300
+    }
+  },
+  "vehicles": [
+    {
+      "make": "Ford",
+      "model": "Fiesta",
+      "year": 2019,
+      "color": "Blue",
+      "registrationNumber": "BG19 XYZ",
+      "owner": "Joint",
+      "motExpiry": "2026-04-15",
+      "taxExpiry": "2026-03-01",
+      "insuranceExpiry": "2026-05-22"
+    }
+  ],
+  "pregnancy": {
+    "dueDate": "2026-08-12",
+    "hospital": "Guy's and St Thomas' Hospital",
+    "midwife": "Sarah Johnson",
+    "firstBaby": true,
+    "expectedArrival": "First child"
+  },
+  "benefits": {
+    "currentlyReceiving": [],
+    "previousClaims": []
+  },
+  "healthInfo": {
+    "emma": {
+      "gpSurgery": "Southwark Medical Centre",
+      "conditions": ["Pregnancy - healthy, no complications"],
+      "medications": ["Prenatal vitamins"]
+    },
+    "liam": {
+      "gpSurgery": "Southwark Medical Centre",
+      "conditions": ["None"],
+      "medications": []
+    }
+  },
+  "communicationStyle": {
+    "tone": "Casual, friendly, slightly anxious",
+    "techSavvy": "Basic - uses smartphone apps but not confident with complex forms",
+    "primaryConcerns": [
+      "Making sure they get all the financial support they're entitled to",
+      "Not messing up any important paperwork",
+      "Understanding what they need to do before baby arrives"
+    ],
+    "typicalPhrases": [
+      "We just want to make sure we're doing everything right",
+      "This is all new to us",
+      "Will this affect our other benefits?",
+      "Do we need to do this now or can it wait?"
+    ]
+  }
+}
