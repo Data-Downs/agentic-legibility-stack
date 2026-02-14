@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
-import { getArtefactStore, analyzeGaps } from "@/lib/artefacts";
+import { NextRequest, NextResponse } from "next/server";
+import { getArtefactStore, analyzeGaps, invalidateArtefactStore, getServicesDirectory } from "@/lib/artefacts";
+import { generateServiceId } from "@/lib/slugify";
 
 /**
  * GET /api/services
@@ -33,5 +34,60 @@ export async function GET() {
   } catch (error) {
     console.error("Error loading services:", error);
     return NextResponse.json({ error: "Failed to load services" }, { status: 500 });
+  }
+}
+
+/**
+ * POST /api/services
+ * Creates a new service. Body must include manifest with name, department, description.
+ * Optionally includes policy, stateModel, consent.
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    const name = body.manifest?.name;
+    const department = body.manifest?.department;
+    const description = body.manifest?.description;
+
+    if (!name || !department || !description) {
+      return NextResponse.json(
+        { error: "manifest.name, manifest.department, and manifest.description are required" },
+        { status: 400 }
+      );
+    }
+
+    const serviceId = generateServiceId(department, name);
+
+    // Check for collisions
+    const store = await getArtefactStore();
+    if (store.get(serviceId)) {
+      return NextResponse.json(
+        { error: `Service "${serviceId}" already exists` },
+        { status: 409 }
+      );
+    }
+
+    // Build the manifest with generated ID
+    const manifest = {
+      ...body.manifest,
+      id: serviceId,
+      version: body.manifest.version || "1.0.0",
+    };
+
+    const artefacts = {
+      manifest,
+      policy: body.policy || undefined,
+      stateModel: body.stateModel || undefined,
+      consent: body.consent || undefined,
+    };
+
+    await store.saveService(getServicesDirectory(), serviceId, artefacts);
+    invalidateArtefactStore();
+
+    return NextResponse.json({ serviceId }, { status: 201 });
+  } catch (error) {
+    console.error("Error creating service:", error);
+    return NextResponse.json({ error: "Failed to create service" }, { status: 500 });
   }
 }

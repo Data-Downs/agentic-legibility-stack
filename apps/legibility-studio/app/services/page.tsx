@@ -34,7 +34,15 @@ export default function ServicesPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-2">Services</h1>
+      <div className="flex justify-between items-center mb-2">
+        <h1 className="text-3xl font-bold">Services</h1>
+        <a
+          href="/services/new"
+          className="bg-green-700 text-white px-4 py-2 rounded font-bold text-sm hover:bg-green-800 no-underline"
+        >
+          + Create new service
+        </a>
+      </div>
       <p className="text-govuk-dark-grey mb-6">
         {services.length} service(s) registered in the Agentic Legibility Stack.
       </p>

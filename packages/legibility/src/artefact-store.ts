@@ -91,4 +91,70 @@ export class ArtefactStore {
     console.log(`[ArtefactStore] Loaded ${loaded} service artefact sets from ${dirPath}`);
     return loaded;
   }
+
+  /** Extract directory name from a service ID (e.g. "dvla.renew-driving-licence" → "renew-driving-licence") */
+  static slugFromId(serviceId: string): string {
+    const parts = serviceId.split(".");
+    return parts.length > 1 ? parts.slice(1).join(".") : parts[0];
+  }
+
+  /** Save a service's artefacts to disk and update in-memory map */
+  async saveService(dirPath: string, serviceId: string, artefacts: ServiceArtefacts): Promise<void> {
+    const fs = await import("fs/promises");
+    const path = await import("path");
+
+    const slug = ArtefactStore.slugFromId(serviceId);
+    const serviceDir = path.join(dirPath, slug);
+
+    await fs.mkdir(serviceDir, { recursive: true });
+
+    // Always write manifest
+    await fs.writeFile(
+      path.join(serviceDir, "manifest.json"),
+      JSON.stringify(artefacts.manifest, null, 2),
+      "utf-8"
+    );
+
+    // Write optional artefacts if present
+    if (artefacts.policy) {
+      await fs.writeFile(
+        path.join(serviceDir, "policy.json"),
+        JSON.stringify(artefacts.policy, null, 2),
+        "utf-8"
+      );
+    }
+
+    if (artefacts.stateModel) {
+      await fs.writeFile(
+        path.join(serviceDir, "state-model.json"),
+        JSON.stringify(artefacts.stateModel, null, 2),
+        "utf-8"
+      );
+    }
+
+    if (artefacts.consent) {
+      await fs.writeFile(
+        path.join(serviceDir, "consent.json"),
+        JSON.stringify(artefacts.consent, null, 2),
+        "utf-8"
+      );
+    }
+
+    // Update in-memory map
+    this.artefacts.set(serviceId, artefacts);
+    console.log(`[ArtefactStore] Saved service ${serviceId} to ${serviceDir}`);
+  }
+
+  /** Delete a service from disk and in-memory map */
+  async deleteService(dirPath: string, serviceId: string): Promise<void> {
+    const fs = await import("fs/promises");
+    const path = await import("path");
+
+    const slug = ArtefactStore.slugFromId(serviceId);
+    const serviceDir = path.join(dirPath, slug);
+
+    await fs.rm(serviceDir, { recursive: true, force: true });
+    this.artefacts.delete(serviceId);
+    console.log(`[ArtefactStore] Deleted service ${serviceId} from ${serviceDir}`);
+  }
 }

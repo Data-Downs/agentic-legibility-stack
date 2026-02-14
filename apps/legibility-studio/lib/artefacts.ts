@@ -11,14 +11,24 @@ import path from "path";
 let store: ArtefactStore | null = null;
 let loadPromise: Promise<ArtefactStore> | null = null;
 
+/** Returns the resolved path to the data/services/ directory */
+export function getServicesDirectory(): string {
+  return path.join(process.cwd(), "..", "..", "data", "services");
+}
+
+/** Resets the cached store so the next read triggers a fresh load from disk */
+export function invalidateArtefactStore(): void {
+  store = null;
+  loadPromise = null;
+}
+
 export async function getArtefactStore(): Promise<ArtefactStore> {
   if (store) return store;
   if (loadPromise) return loadPromise;
 
   loadPromise = (async () => {
     const s = new ArtefactStore();
-    const servicesDir = path.join(process.cwd(), "..", "..", "data", "services");
-    await s.loadFromDirectory(servicesDir);
+    await s.loadFromDirectory(getServicesDirectory());
     store = s;
     return s;
   })();

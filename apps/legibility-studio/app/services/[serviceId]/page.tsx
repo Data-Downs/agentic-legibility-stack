@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 interface GapItem {
   field: string;
@@ -295,9 +296,11 @@ export default function ServiceDetailPage({
   params: Promise<{ serviceId: string }>;
 }) {
   const { serviceId } = use(params);
+  const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [service, setService] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetch(`/api/services/${encodeURIComponent(serviceId)}`)
@@ -308,6 +311,26 @@ export default function ServiceDetailPage({
       })
       .catch(() => setLoading(false));
   }, [serviceId]);
+
+  const handleDelete = useCallback(async () => {
+    if (!window.confirm(`Are you sure you want to delete "${service?.manifest?.name}"? This will permanently remove all artefact files.`)) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/services/${encodeURIComponent(serviceId)}`, { method: "DELETE" });
+      if (response.ok) {
+        router.push("/services");
+      } else {
+        const err = await response.json();
+        alert(err.error || "Failed to delete service");
+        setDeleting(false);
+      }
+    } catch {
+      alert("Failed to delete service");
+      setDeleting(false);
+    }
+  }, [serviceId, service, router]);
 
   if (loading) {
     return <div className="text-center py-12 text-govuk-dark-grey">Loading service...</div>;
@@ -339,6 +362,21 @@ export default function ServiceDetailPage({
           <h1 className="text-3xl font-bold">{service.manifest.name}</h1>
           <p className="text-govuk-dark-grey mt-1">{service.manifest.department}</p>
           <p className="mt-2">{service.manifest.description}</p>
+          <div className="flex gap-2 mt-3">
+            <a
+              href={`/services/${encodeURIComponent(serviceId)}/edit`}
+              className="bg-govuk-blue text-white px-4 py-1.5 rounded text-sm font-bold hover:opacity-90 no-underline"
+            >
+              Edit service
+            </a>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-red-600 text-white px-4 py-1.5 rounded text-sm font-bold hover:bg-red-700 disabled:opacity-50"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </button>
+          </div>
         </div>
         <div className="text-right">
           <div className="text-3xl font-bold">{completeness}%</div>
