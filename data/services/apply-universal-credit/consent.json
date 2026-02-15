@@ -5,7 +5,11 @@
     {
       "id": "identity-verification",
       "description": "Verify your identity using GOV.UK One Login",
-      "data_shared": ["full_name", "date_of_birth", "national_insurance_number"],
+      "data_shared": [
+        "full_name",
+        "date_of_birth",
+        "national_insurance_number"
+      ],
       "source": "one-login",
       "purpose": "DWP must verify your identity before processing your claim",
       "duration": "session",
@@ -14,7 +18,12 @@
     {
       "id": "income-sharing",
       "description": "Share your income and employment information with DWP",
-      "data_shared": ["employment_status", "employer_name", "income_amount", "income_frequency"],
+      "data_shared": [
+        "employment_status",
+        "employer_name",
+        "income_amount",
+        "income_frequency"
+      ],
       "source": "hmrc-rti",
       "purpose": "DWP uses your income data to calculate your Universal Credit entitlement",
       "duration": "until-revoked",
@@ -23,7 +32,12 @@
     {
       "id": "housing-status",
       "description": "Share your housing details for housing cost calculations",
-      "data_shared": ["tenure_type", "rent_amount", "landlord_name", "property_address"],
+      "data_shared": [
+        "tenure_type",
+        "rent_amount",
+        "landlord_name",
+        "property_address"
+      ],
       "source": "citizen-provided",
       "purpose": "To calculate any housing element of your Universal Credit",
       "duration": "until-revoked",
@@ -32,7 +46,11 @@
     {
       "id": "bank-account-verification",
       "description": "Verify your bank account for receiving payments",
-      "data_shared": ["sort_code", "account_number", "account_holder_name"],
+      "data_shared": [
+        "sort_code",
+        "account_number",
+        "account_holder_name"
+      ],
       "source": "citizen-provided",
       "purpose": "UC payments will be made to this account",
       "duration": "until-revoked",
@@ -45,7 +63,11 @@
   },
   "delegation": {
     "agent_identity": "GOV.UK AI Agent",
-    "scopes": ["read-personal-data", "submit-to-dwp", "check-eligibility"],
+    "scopes": [
+      "read-personal-data",
+      "submit-to-dwp",
+      "check-eligibility"
+    ],
     "limitations": "Agent cannot verify bank details on your behalf. Agent cannot commit to interview times. Agent will hand off for any safeguarding concerns."
   }
 }

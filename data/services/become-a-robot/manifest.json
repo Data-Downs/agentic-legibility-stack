@@ -1,0 +1,54 @@
+{
+  "name": "Become A Robot",
+  "department": "Department of Interspecies Fun",
+  "description": "Let's you apply to be a robot",
+  "version": "1.0.0",
+  "jurisdiction": "England",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "Name": {
+        "type": "string"
+      },
+      "Robot type": {
+        "type": "string"
+      },
+      "Age": {
+        "type": "number"
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "Robot Label": {
+        "type": "string"
+      }
+    }
+  },
+  "constraints": {
+    "sla": "1 working day",
+    "fee": {
+      "amount": 1000,
+      "currency": "GBP"
+    },
+    "availability": "online"
+  },
+  "redress": {
+    "complaint_url": "www.idontlikerobots.com",
+    "appeal_process": "email us",
+    "ombudsman": "Robotic Rights Comittee"
+  },
+  "audit_requirements": {
+    "retention_period": "1000000 years",
+    "data_controller": "Yoda",
+    "lawful_basis": "Interstellar Law"
+  },
+  "handoff": {
+    "escalation_phone": "0800 888 000",
+    "opening_hours": "Mon - Fri 9.00 - 9.01",
+    "department_queue": "Very Long"
+  },
+  "id": "department-of-interspecies-fun.become-a-robot",
+  "promoted": true
+}

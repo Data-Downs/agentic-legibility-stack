@@ -231,7 +231,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!state.persona || !state.personaData || state.isLoading) return;
 
     const service = state.currentService || "driving";
-    const scenario = SERVICE_TO_SCENARIO[service] || "driving";
+    const scenario = SERVICE_TO_SCENARIO[service] || service;
     const isNewConversation = state.conversationHistory.length === 0;
 
     // Add user message to history

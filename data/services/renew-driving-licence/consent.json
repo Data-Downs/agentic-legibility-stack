@@ -5,7 +5,11 @@
     {
       "id": "identity-verification",
       "description": "Verify your identity using your GOV.UK One Login credentials",
-      "data_shared": ["full_name", "date_of_birth", "national_insurance_number"],
+      "data_shared": [
+        "full_name",
+        "date_of_birth",
+        "national_insurance_number"
+      ],
       "source": "one-login",
       "purpose": "To confirm you are who you say you are before processing the renewal",
       "duration": "session",
@@ -14,7 +18,9 @@
     {
       "id": "photo-sharing",
       "description": "Share your passport photo with DVLA for the new licence",
-      "data_shared": ["passport_photo"],
+      "data_shared": [
+        "passport_photo"
+      ],
       "source": "hmpo-passport-office",
       "purpose": "DVLA will use your most recent passport photo for the new licence card",
       "duration": "session",
@@ -23,7 +29,12 @@
     {
       "id": "address-confirmation",
       "description": "Confirm your current address for the licence and DVLA records",
-      "data_shared": ["address_line_1", "address_line_2", "city", "postcode"],
+      "data_shared": [
+        "address_line_1",
+        "address_line_2",
+        "city",
+        "postcode"
+      ],
       "source": "citizen-provided",
       "purpose": "The new licence will be posted to this address and it will appear on the licence",
       "duration": "session",
@@ -36,7 +47,10 @@
   },
   "delegation": {
     "agent_identity": "GOV.UK AI Agent",
-    "scopes": ["read-personal-data", "submit-to-dvla"],
+    "scopes": [
+      "read-personal-data",
+      "submit-to-dvla"
+    ],
     "limitations": "Agent cannot make payment on your behalf. Agent cannot change your address without your explicit confirmation."
   }
 }

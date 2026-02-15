@@ -1,0 +1,23 @@
+{
+  "id": "",
+  "version": "1.0.0",
+  "states": [
+    {
+      "id": "Applying",
+      "type": "initial",
+      "receipt": true
+    },
+    {
+      "id": "Accepted",
+      "type": "terminal",
+      "receipt": true
+    }
+  ],
+  "transitions": [
+    {
+      "from": "Applying",
+      "to": "Accepted",
+      "trigger": ""
+    }
+  ]
+}

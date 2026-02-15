@@ -7,7 +7,8 @@
 
 import type { PolicyRuleset, PolicyRule, PolicyEdgeCase, PolicyResult } from "@als/schemas";
 
-function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+function getNestedValue(obj: Record<string, unknown>, path: string | undefined): unknown {
+  if (!path) return undefined;
   return path.split(".").reduce((current: unknown, key: string) => {
     if (current === null || current === undefined) return undefined;
     return (current as Record<string, unknown>)[key];

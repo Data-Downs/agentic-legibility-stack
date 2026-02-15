@@ -5,33 +5,56 @@
     {
       "id": "age-range",
       "description": "Applicant must be 18 or over and under State Pension age",
-      "condition": { "field": "age", "operator": ">=", "value": 18 },
+      "condition": {
+        "field": "age",
+        "operator": ">=",
+        "value": 18
+      },
       "reason_if_failed": "You must be at least 18 to claim Universal Credit",
       "evidence_source": "identity-verified"
     },
     {
       "id": "under-pension-age",
       "description": "Applicant must be under State Pension age",
-      "condition": { "field": "age", "operator": "<=", "value": 66 },
+      "condition": {
+        "field": "age",
+        "operator": "<=",
+        "value": 66
+      },
       "reason_if_failed": "You are at or over State Pension age. You may be eligible for Pension Credit instead.",
       "alternative_service": "dwp.pension-credit"
     },
     {
       "id": "uk-resident",
       "description": "Applicant must be living in the UK",
-      "condition": { "field": "jurisdiction", "operator": "in", "value": ["England", "Wales", "Scotland"] },
+      "condition": {
+        "field": "jurisdiction",
+        "operator": "in",
+        "value": [
+          "England",
+          "Wales",
+          "Scotland"
+        ]
+      },
       "reason_if_failed": "You must live in England, Scotland, or Wales to claim Universal Credit"
     },
     {
       "id": "low-savings",
       "description": "Applicant's savings must be under £16,000",
-      "condition": { "field": "savings", "operator": "<=", "value": 16000 },
+      "condition": {
+        "field": "savings",
+        "operator": "<=",
+        "value": 16000
+      },
       "reason_if_failed": "Your savings exceed £16,000. You are not eligible for Universal Credit."
     },
     {
       "id": "has-bank-account",
       "description": "Applicant must have a bank account for payments",
-      "condition": { "field": "bank_account", "operator": "exists" },
+      "condition": {
+        "field": "bank_account",
+        "operator": "exists"
+      },
       "reason_if_failed": "You need a bank, building society, or credit union account to receive UC payments"
     }
   ],

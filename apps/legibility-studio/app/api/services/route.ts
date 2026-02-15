@@ -25,6 +25,7 @@ export async function GET() {
         hasPolicy: !!artefacts.policy,
         hasStateModel: !!artefacts.stateModel,
         hasConsent: !!artefacts.consent,
+        promoted: !!artefacts.manifest.promoted,
         completeness: Math.round((present / total) * 100),
         gapCount: total - present,
       };
