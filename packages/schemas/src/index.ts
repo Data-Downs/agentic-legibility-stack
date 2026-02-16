@@ -44,6 +44,9 @@ export interface CapabilityManifest {
     opening_hours?: string;
     department_queue?: string;
   };
+
+  /** Whether this service is promoted on the citizen Dashboard */
+  promoted?: boolean;
 }
 
 // ── Policy Ruleset ──
@@ -73,7 +76,7 @@ export interface PolicyRule {
 export interface PolicyEdgeCase {
   id: string;
   description: string;
-  detection: string;
+  detection?: string;
   action: string;
 }
 

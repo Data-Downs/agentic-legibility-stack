@@ -1,0 +1,31 @@
+{
+  "id": "",
+  "version": "1.0.0",
+  "grants": [
+    {
+      "id": "grant-1",
+      "description": "Verify your identity using GOV.UK One Login",
+      "data_shared": [
+        "Name"
+      ],
+      "source": "Details",
+      "purpose": "Check you exist",
+      "duration": "session",
+      "required": true
+    }
+  ],
+  "revocation": {
+    "mechanism": "Contact the Department of Robotics or revoke through your GOV.UK account",
+    "effect": "Your robot transformation application will be cancelled and any scanned biometrics deleted"
+  },
+  "delegation": {
+    "agent_identity": "GOV.UK AI Agent",
+    "scopes": [
+      "read-personal-data",
+      "submit-to-robotics-dept",
+      "check-eligibility",
+      "make payment"
+    ],
+    "limitations": "Agent cannot authorise the final neural upload. Agent cannot choose your robot chassis model without explicit confirmation"
+  }
+}

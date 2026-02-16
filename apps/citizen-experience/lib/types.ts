@@ -148,7 +148,7 @@ export interface StoredTask {
 }
 
 export type AgentType = "dot" | "max";
-export type ServiceType = "driving" | "benefits" | "family";
+export type ServiceType = "driving" | "benefits" | "family" | (string & {});
 export type ScenarioType = "driving" | "benefits" | "parenting";
 export type ViewType =
   | "persona-picker"
@@ -186,6 +186,11 @@ export const SERVICE_TO_SCENARIO: Record<string, ScenarioType> = {
   benefits: "benefits",
   family: "parenting",
 };
+
+/** Get a display title for a service — checks known titles first, falls back to manifest name */
+export function getServiceTitle(serviceKey: string, manifestName?: string): string {
+  return SERVICE_TITLES[serviceKey] || manifestName || serviceKey;
+}
 
 // Simulated "today" for demo — makes upcoming dates interesting
 export const DEMO_TODAY = new Date("2026-02-15");

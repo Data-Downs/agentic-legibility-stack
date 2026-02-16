@@ -5,27 +5,46 @@
     {
       "id": "age-minimum",
       "description": "Applicant must be at least 16 years old",
-      "condition": { "field": "age", "operator": ">=", "value": 16 },
+      "condition": {
+        "field": "age",
+        "operator": ">=",
+        "value": 16
+      },
       "reason_if_failed": "You must be at least 16 years old to hold a driving licence",
       "evidence_source": "identity-verified"
     },
     {
       "id": "has-licence",
       "description": "Applicant must have an existing driving licence",
-      "condition": { "field": "driving_licence_number", "operator": "exists" },
+      "condition": {
+        "field": "driving_licence_number",
+        "operator": "exists"
+      },
       "reason_if_failed": "You need an existing driving licence to renew. Apply for a new licence instead.",
       "alternative_service": "dvla.apply-provisional-licence"
     },
     {
       "id": "uk-resident",
       "description": "Applicant must be a UK resident",
-      "condition": { "field": "jurisdiction", "operator": "in", "value": ["England", "Wales", "Scotland"] },
+      "condition": {
+        "field": "jurisdiction",
+        "operator": "in",
+        "value": [
+          "England",
+          "Wales",
+          "Scotland"
+        ]
+      },
       "reason_if_failed": "This service is for UK residents (England, Wales, Scotland) only"
     },
     {
       "id": "not-revoked",
       "description": "Licence must not be currently revoked",
-      "condition": { "field": "licence_status", "operator": "!=", "value": "revoked" },
+      "condition": {
+        "field": "licence_status",
+        "operator": "!=",
+        "value": "revoked"
+      },
       "reason_if_failed": "Your licence has been revoked. Contact DVLA for reinstatement.",
       "triggers_handoff": true
     }

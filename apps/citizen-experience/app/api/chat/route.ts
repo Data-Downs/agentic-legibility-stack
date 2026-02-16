@@ -27,12 +27,17 @@ const invoker = new CapabilityInvoker();
 const policyEvaluator = new PolicyEvaluator();
 const handoffManager = new HandoffManager();
 
-// ── Scenario → service mapping ──
+// ── Scenario → service mapping (known services; new services fall through) ──
 const SCENARIO_TO_SERVICE: Record<string, string> = {
   driving: "dvla.renew-driving-licence",
   benefits: "dwp.apply-universal-credit",
   parenting: "dwp.check-state-pension",
 };
+
+/** Resolve a scenario name to a serviceId — checks known map first, falls through to scenario itself */
+function resolveServiceId(scenario: string): string {
+  return SCENARIO_TO_SERVICE[scenario] || scenario;
+}
 
 // ── MCP connection ──
 let mcpConnected = false;
@@ -59,42 +64,28 @@ async function loadPersonaData(personaId: string) {
   return JSON.parse(raw);
 }
 
-/** Load a policy ruleset for a service */
+/** Extract the directory slug from a serviceId (e.g. "dvla.renew-driving-licence" → "renew-driving-licence") */
+function serviceDirSlug(serviceId: string): string {
+  const parts = serviceId.split(".");
+  return parts.length > 1 ? parts.slice(1).join(".") : parts[0];
+}
+
+/** Load a policy ruleset for any service — works for both known and Studio-created services */
 async function loadPolicyRuleset(serviceId: string): Promise<PolicyRuleset | null> {
-  try {
-    const serviceDir = serviceId.split(".").pop() || serviceId;
-    const dirMap: Record<string, string> = {
-      "renew-driving-licence": "renew-driving-licence",
-      "apply-universal-credit": "apply-universal-credit",
-      "check-state-pension": "check-state-pension",
-    };
-    const dir = dirMap[serviceDir];
-    if (!dir) return null;
-    const raw = await fs.readFile(
-      path.join(process.cwd(), "..", "..", "data", "services", dir, "policy.json"),
-      "utf-8"
-    );
-    return JSON.parse(raw);
-  } catch {
-    // Try alternate path (monorepo root)
+  const slug = serviceDirSlug(serviceId);
+  // Try monorepo-relative path first, then cwd-relative
+  for (const base of [
+    path.join(process.cwd(), "..", "..", "data", "services"),
+    path.join(process.cwd(), "data", "services"),
+  ]) {
     try {
-      const serviceDir = serviceId.split(".").pop() || serviceId;
-      const dirMap: Record<string, string> = {
-        "renew-driving-licence": "renew-driving-licence",
-        "apply-universal-credit": "apply-universal-credit",
-        "check-state-pension": "check-state-pension",
-      };
-      const dir = dirMap[serviceDir];
-      if (!dir) return null;
-      const raw = await fs.readFile(
-        path.join(process.cwd(), "data", "services", dir, "policy.json"),
-        "utf-8"
-      );
+      const raw = await fs.readFile(path.join(base, slug, "policy.json"), "utf-8");
       return JSON.parse(raw);
     } catch {
-      return null;
+      continue;
     }
   }
+  return null;
 }
 
 /** Build a policy context object for evaluation from persona data + test users */
@@ -122,7 +113,20 @@ function buildPolicyContext(personaData: Record<string, unknown>): Record<string
     savings = (financials.savingsAccount as Record<string, unknown>)?.balance as number || 0;
   }
 
+  // Derive health/mobility fields for services like Blue Badge
+  const healthInfo = personaData.healthInfo as Record<string, unknown> | undefined;
+  const conditions = (healthInfo?.conditions || []) as Array<Record<string, unknown>>;
+  const hasMobilityCondition = conditions.some(
+    (c) => {
+      const name = ((c.name as string) || "").toLowerCase();
+      const affects = ((c.affectsMobility as string) || (c.affects_mobility as string) || "").toLowerCase();
+      return affects === "yes" || affects === "true" || name.includes("mobility") || name.includes("arthritis") || name.includes("wheelchair");
+    }
+  );
+
+  // Spread full persona data so any service's policy rules can reference any field
   return {
+    // Explicit computed fields
     age,
     jurisdiction: "England",
     national_insurance_number: contact?.nationalInsuranceNumber,
@@ -133,7 +137,73 @@ function buildPolicyContext(personaData: Record<string, unknown>): Record<string
     over_70: age >= 70,
     no_fixed_address: false,
     licence_status: "valid",
+    has_mobility_condition: hasMobilityCondition,
+    has_health_conditions: conditions.length > 0,
+    // Spread full persona data for custom service rules
+    ...personaData,
   };
+}
+
+/** Load a manifest for a service */
+async function loadManifest(serviceId: string): Promise<Record<string, unknown> | null> {
+  const slug = serviceDirSlug(serviceId);
+  for (const base of [
+    path.join(process.cwd(), "..", "..", "data", "services"),
+    path.join(process.cwd(), "data", "services"),
+  ]) {
+    try {
+      const raw = await fs.readFile(path.join(base, slug, "manifest.json"), "utf-8");
+      return JSON.parse(raw);
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+/** Generate a scenario prompt from a manifest — used as fallback when no scenario-{name}.txt exists */
+function generateScenarioPrompt(manifest: Record<string, unknown>): string {
+  const lines: string[] = [];
+  lines.push(`SERVICE: ${manifest.name}`);
+  lines.push(`DEPARTMENT: ${manifest.department}`);
+  lines.push(`DESCRIPTION: ${manifest.description}`);
+
+  const constraints = manifest.constraints as Record<string, unknown> | undefined;
+  if (constraints) {
+    if (constraints.sla) lines.push(`SLA: ${constraints.sla}`);
+    if (constraints.fee) {
+      const fee = constraints.fee as Record<string, unknown>;
+      lines.push(`FEE: ${fee.amount} ${fee.currency}`);
+    }
+    if (constraints.availability) lines.push(`AVAILABILITY: ${constraints.availability}`);
+  }
+
+  const redress = manifest.redress as Record<string, unknown> | undefined;
+  if (redress) {
+    if (redress.complaint_url) lines.push(`COMPLAINTS: ${redress.complaint_url}`);
+    if (redress.appeal_process) lines.push(`APPEALS: ${redress.appeal_process}`);
+    if (redress.ombudsman) lines.push(`OMBUDSMAN: ${redress.ombudsman}`);
+  }
+
+  const handoff = manifest.handoff as Record<string, unknown> | undefined;
+  if (handoff) {
+    if (handoff.escalation_phone) lines.push(`PHONE: ${handoff.escalation_phone}`);
+    if (handoff.opening_hours) lines.push(`HOURS: ${handoff.opening_hours}`);
+  }
+
+  const inputSchema = manifest.input_schema as Record<string, unknown> | undefined;
+  if (inputSchema?.properties) {
+    const props = Object.keys(inputSchema.properties as Record<string, unknown>);
+    lines.push(`INPUTS REQUIRED: ${props.join(", ")}`);
+  }
+
+  lines.push("");
+  lines.push("You are helping a citizen with this government service.");
+  lines.push("Use the service details above to answer their questions accurately.");
+  lines.push("If the service has eligibility criteria or policy rules, apply them to the citizen's situation.");
+  lines.push("If you don't have enough information to determine eligibility, ask the citizen for the missing details.");
+
+  return lines.join("\n");
 }
 
 async function getLocalFloodData(city: string): Promise<string> {
@@ -249,14 +319,25 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   const personaData = await loadPersonaData(persona);
   const agentPrompt = await loadFile(`data/prompts/${agent}-system.txt`);
   const personaPrompt = await loadFile(`data/prompts/persona-${persona}.txt`);
-  const scenarioPrompt = await loadFile(`data/prompts/scenario-${scenario}.txt`);
+  // Load scenario prompt — try file first, fall back to generating from manifest
+  let scenarioPrompt: string;
+  try {
+    scenarioPrompt = await loadFile(`data/prompts/scenario-${scenario}.txt`);
+  } catch {
+    // No scenario file — generate prompt from manifest for dynamic/new services
+    const serviceId = resolveServiceId(scenario);
+    const manifest = await loadManifest(serviceId);
+    scenarioPrompt = manifest
+      ? generateScenarioPrompt(manifest)
+      : `You are helping a citizen with a government service related to: ${scenario}. Answer their questions helpfully.`;
+  }
 
   const userPostcode = personaData.address?.postcode || "";
   const mcpTools = mcpClient.getToolsForClaude();
   const hasTools = mcpTools.length > 0;
 
   // ── Policy Evaluation ──
-  const serviceId = SCENARIO_TO_SERVICE[scenario];
+  const serviceId = resolveServiceId(scenario);
   let policyResultInfo: ChatOutput["policyResult"] | undefined;
   let policyContext = "";
 
@@ -551,7 +632,7 @@ export async function POST(request: NextRequest) {
     emitter.emitBatch(result.traceEvents);
 
     // Emit policy evaluation trace event
-    const serviceId = SCENARIO_TO_SERVICE[scenario];
+    const serviceId = resolveServiceId(scenario);
     if (output.policyResult && serviceId) {
       emitter.emit("policy.evaluated", chatSpan, {
         serviceId,

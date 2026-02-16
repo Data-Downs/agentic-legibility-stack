@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useAppStore, getConversations } from "@/lib/store";
-import { SERVICE_TITLES, DEMO_TODAY } from "@/lib/types";
+import { SERVICE_TITLES, DEMO_TODAY, getServiceTitle } from "@/lib/types";
 import type { ServiceType, PersonaData } from "@/lib/types";
 
 const serviceIcons: Record<string, React.ReactNode> = {
@@ -137,11 +138,40 @@ function getServiceDetail(service: string, data: PersonaData): string {
   return "";
 }
 
+// IDs of the original 3 built-in services
+const KNOWN_SERVICE_IDS = new Set([
+  "dvla.renew-driving-licence",
+  "dwp.apply-universal-credit",
+  "dwp.check-state-pension",
+]);
+
+interface DynamicService {
+  id: string;
+  name: string;
+  description: string;
+  department: string;
+  promoted?: boolean;
+}
+
 export function Dashboard() {
   const personaData = useAppStore((s) => s.personaData);
   const persona = useAppStore((s) => s.persona);
   const navigateTo = useAppStore((s) => s.navigateTo);
   const startNewConversation = useAppStore((s) => s.startNewConversation);
+  const [newServices, setNewServices] = useState<DynamicService[]>([]);
+
+  useEffect(() => {
+    fetch("/api/services")
+      .then((r) => r.json())
+      .then((resp) => {
+        const list: DynamicService[] = resp.services || resp;
+        const dynamic = list.filter((s) => !KNOWN_SERVICE_IDS.has(s.id) && s.promoted);
+        setNewServices(dynamic);
+      })
+      .catch(() => {
+        // Silently fail — new services section just won't appear
+      });
+  }, []);
 
   if (!personaData) return null;
 
@@ -257,6 +287,39 @@ export function Dashboard() {
           </button>
         ))}
       </div>
+
+      {/* New Government Services — dynamically discovered */}
+      {newServices.length > 0 && (
+        <div className="mb-6">
+          <h3 className="font-bold text-sm text-govuk-dark-grey uppercase tracking-wide mb-3">New services</h3>
+          <div className="flex flex-col gap-3">
+            {newServices.map((svc) => (
+              <button
+                key={svc.id}
+                onClick={() => {
+                  startNewConversation(svc.id as ServiceType);
+                  navigateTo("chat", svc.id as ServiceType);
+                }}
+                className="w-full text-left bg-white border border-govuk-mid-grey rounded-xl overflow-hidden hover:border-govuk-blue hover:shadow-sm transition-all"
+              >
+                <div className="border-l-4 border-[#00703c] p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-[#00703c] text-white px-1.5 py-0.5 rounded">
+                      New
+                    </span>
+                    <span className="text-xs text-govuk-dark-grey">{svc.department}</span>
+                  </div>
+                  <strong className="block text-govuk-black mb-1">{getServiceTitle(svc.id, svc.name)}</strong>
+                  <p className="text-sm text-govuk-dark-grey mb-2 line-clamp-2">{svc.description}</p>
+                  <span className="text-sm font-medium text-[#00703c]">
+                    Find out if you&apos;re eligible &rarr;
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent conversations */}
       {recentConversations.length > 0 && (

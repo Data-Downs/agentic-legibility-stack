@@ -9,6 +9,12 @@ import path from "path";
 let registry: ServiceRegistry | null = null;
 let loadPromise: Promise<ServiceRegistry> | null = null;
 
+/** Reset the singleton so new services get picked up without restart */
+export function invalidateRegistry(): void {
+  registry = null;
+  loadPromise = null;
+}
+
 export async function getRegistry(): Promise<ServiceRegistry> {
   if (registry) return registry;
 
