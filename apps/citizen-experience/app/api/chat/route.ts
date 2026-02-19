@@ -5,8 +5,8 @@ import * as mcpClient from "@/lib/mcp-client";
 import { CapabilityInvoker, HandoffManager } from "@als/runtime";
 import { AnthropicAdapter } from "@als/adapters";
 import type { AnthropicChatInput, AnthropicChatOutput } from "@als/adapters";
-import type { InvocationContext, PolicyRuleset } from "@als/schemas";
-import { PolicyEvaluator } from "@als/legibility";
+import type { InvocationContext, PolicyRuleset, StateModelDefinition } from "@als/schemas";
+import { PolicyEvaluator, StateMachine } from "@als/legibility";
 import { getTraceEmitter, getReceiptGenerator } from "@/lib/evidence";
 import { getRegistry } from "@/lib/registry";
 
@@ -206,6 +206,121 @@ function generateScenarioPrompt(manifest: Record<string, unknown>): string {
   return lines.join("\n");
 }
 
+/** Load a state model for a service */
+async function loadStateModel(serviceId: string): Promise<StateModelDefinition | null> {
+  const slug = serviceDirSlug(serviceId);
+  for (const base of [
+    path.join(process.cwd(), "..", "..", "data", "services"),
+    path.join(process.cwd(), "data", "services"),
+  ]) {
+    try {
+      const raw = await fs.readFile(path.join(base, slug, "state-model.json"), "utf-8");
+      return JSON.parse(raw);
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+/** Load consent model for a service */
+async function loadConsentModel(serviceId: string): Promise<Record<string, unknown> | null> {
+  const slug = serviceDirSlug(serviceId);
+  for (const base of [
+    path.join(process.cwd(), "..", "..", "data", "services"),
+    path.join(process.cwd(), "data", "services"),
+  ]) {
+    try {
+      const raw = await fs.readFile(path.join(base, slug, "consent.json"), "utf-8");
+      return JSON.parse(raw);
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+/** Per-state instructions for the UC journey */
+const UC_STATE_INSTRUCTIONS: Record<string, string> = {
+  "not-started": `The citizen has just started. Explain what Universal Credit is, ask if they'd like you to check their eligibility. When ready, emit [STATE_TRANSITION: verify-identity] to begin the process.`,
+  "identity-verified": `Identity has been verified using their NI number and DOB. Now check their eligibility against the policy rules. Emit [STATE_TRANSITION: check-eligibility] after explaining the eligibility check.`,
+  "eligibility-checked": `Eligibility has been checked. Present the results clearly. If eligible, ask for their consent to share data with DWP. Emit [STATE_TRANSITION: grant-consent] when they agree. If not eligible, emit [STATE_TRANSITION: reject].`,
+  "consent-given": `Consent has been granted. Now collect personal details. You already have their name, DOB, NI number, and address from persona data — confirm these with the citizen rather than asking again. Emit [STATE_TRANSITION: collect-personal-details] after confirming.`,
+  "personal-details-collected": `Personal details confirmed. Now ask about their housing situation — do they rent or own? How much is their rent? Who is their landlord? Emit [STATE_TRANSITION: collect-housing-details] after collecting.`,
+  "housing-details-collected": `Housing details collected. Now ask about their income and employment. You have some data already — confirm it and ask about any changes (e.g. upcoming maternity leave). Emit [STATE_TRANSITION: collect-income-details] after collecting.`,
+  "income-details-collected": `Income details collected. Now you MUST ask for bank details — sort code and account number. This data is NOT in the persona data, so you MUST ask the citizen to provide it. Say something like "To receive UC payments, I'll need your bank details. Could you provide your sort code and account number?" Emit [STATE_TRANSITION: verify-bank-details] after they provide them.`,
+  "bank-details-verified": `Bank details verified. Summarize everything collected and submit the claim. Emit [STATE_TRANSITION: submit-claim] to finalize.`,
+  "claim-submitted": `The claim has been submitted. Provide a claim reference (generate a realistic one like UC-2026-XXXX). Explain: 5-week wait for first payment, they'll need to attend an interview at their local Jobcentre Plus, they should set up their UC journal. Emit [STATE_TRANSITION: schedule-interview].`,
+  "awaiting-interview": `An interview has been scheduled. Explain what to expect at the Jobcentre Plus interview, what documents to bring. The journey pauses here until the interview. If the citizen seems ready, emit [STATE_TRANSITION: activate-claim].`,
+  "claim-active": `The UC claim is now active! Congratulate them. Explain estimated payment amounts and dates, the UC journal, and reporting requirements. This is the end of the journey.`,
+  "rejected": `The application was rejected. Explain why clearly and sympathetically. Mention the mandatory reconsideration and appeal process. Provide the DWP helpline number (0800 328 5644).`,
+  "handed-off": `This case has been referred to a human advisor. Explain why and provide the DWP helpline (0800 328 5644, Mon-Fri 8am-6pm).`,
+};
+
+/** Build state-aware context for the system prompt */
+function buildStateContext(
+  stateModel: StateModelDefinition,
+  consentModel: Record<string, unknown> | null,
+  currentState: string,
+  personaData: Record<string, unknown>,
+): string {
+  const sm = new StateMachine(stateModel);
+  sm.setState(currentState);
+
+  const allowed = sm.allowedTransitions();
+  const stateInstruction = UC_STATE_INSTRUCTIONS[currentState] || "";
+
+  let ctx = `\n\n---\n\nSTATE MODEL JOURNEY:\n`;
+  ctx += `You are guiding the citizen through a structured state-model journey for Apply for Universal Credit.\n`;
+  ctx += `Current state: ${currentState}\n`;
+  ctx += `Is terminal: ${sm.isTerminal() ? "YES — journey complete" : "NO — journey in progress"}\n`;
+
+  if (allowed.length > 0) {
+    ctx += `Available transitions: ${allowed.map(t => `${t.trigger} → ${t.to}`).join(", ")}\n`;
+  }
+
+  if (stateInstruction) {
+    ctx += `\nINSTRUCTIONS FOR THIS STATE:\n${stateInstruction}\n`;
+  }
+
+  // Data availability analysis
+  const contact = personaData.primaryContact as Record<string, unknown> | undefined;
+  const financials = personaData.financials as Record<string, unknown> | undefined;
+  const employment = personaData.employment as Record<string, unknown> | undefined;
+  const address = personaData.address as Record<string, unknown> | undefined;
+
+  ctx += `\nDATA AVAILABILITY:\n`;
+  ctx += `- Name: ${contact?.firstName ? "AVAILABLE" : "NEED TO ASK"}\n`;
+  ctx += `- DOB: ${contact?.dateOfBirth ? "AVAILABLE" : "NEED TO ASK"}\n`;
+  ctx += `- NI Number: ${contact?.nationalInsuranceNumber ? "AVAILABLE" : "NEED TO ASK"}\n`;
+  ctx += `- Address: ${address?.postcode ? "AVAILABLE" : "NEED TO ASK"}\n`;
+  ctx += `- Employment: ${employment ? "AVAILABLE" : "NEED TO ASK"}\n`;
+  ctx += `- Income: ${financials ? "PARTIALLY AVAILABLE" : "NEED TO ASK"}\n`;
+  ctx += `- Housing tenure: ${address?.housingStatus ? "AVAILABLE" : "NEED TO ASK"}\n`;
+  ctx += `- Bank details: NOT AVAILABLE — MUST ASK CITIZEN\n`;
+
+  // Consent grants needed
+  if (consentModel) {
+    const grants = (consentModel.grants || []) as Array<Record<string, unknown>>;
+    if (grants.length > 0) {
+      ctx += `\nCONSENT REQUIREMENTS:\n`;
+      for (const grant of grants) {
+        ctx += `- ${grant.id}: ${grant.description} (data: ${(grant.data_shared as string[]).join(", ")})\n`;
+      }
+    }
+  }
+
+  ctx += `\nSTATE TRANSITION MARKERS:\n`;
+  ctx += `When you determine a state transition should happen, include this marker on its own line:\n`;
+  ctx += `[STATE_TRANSITION: trigger-name]\n`;
+  ctx += `For example: [STATE_TRANSITION: verify-identity]\n`;
+  ctx += `You can include multiple transitions in one response if several steps are completed.\n`;
+  ctx += `Place transitions AFTER your conversational text but BEFORE any [TASK:] markers.\n`;
+  ctx += `The transition markers will be stripped from the displayed response.\n`;
+
+  return ctx;
+}
+
 async function getLocalFloodData(city: string): Promise<string> {
   try {
     const raw = await mcpClient.callTool("ea_current_floods", {
@@ -275,6 +390,8 @@ interface ChatInput {
   scenario: string;
   messages: Array<{ role: string; content: unknown }>;
   generateTitle?: boolean;
+  ucState?: string;
+  ucStateHistory?: string[];
 }
 
 interface ChatOutput {
@@ -304,10 +421,24 @@ interface ChatOutput {
     urgency?: string;
     routing?: Record<string, unknown>;
   };
+  ucState?: {
+    currentState: string;
+    previousState?: string;
+    trigger?: string;
+    allowedTransitions: string[];
+    stateHistory: string[];
+  };
+  consentRequests?: Array<{
+    id: string;
+    description: string;
+    data_shared: string[];
+    source: string;
+    purpose: string;
+  }>;
 }
 
 async function chatHandler(input: unknown): Promise<ChatOutput> {
-  const { persona, agent, scenario, messages, generateTitle } = input as ChatInput;
+  const { persona, agent, scenario, messages, generateTitle, ucState: clientUcState, ucStateHistory: clientStateHistory } = input as ChatInput;
 
   await ensureMcpConnection();
 
@@ -375,6 +506,26 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   // Add policy context
   if (policyContext) {
     systemPrompt += policyContext;
+  }
+
+  // ── State Model Journey ──
+  let stateMachine: StateMachine | null = null;
+  let consentModel: Record<string, unknown> | null = null;
+  const currentUcState = clientUcState || "not-started";
+
+  if (serviceId) {
+    const stateModelDef = await loadStateModel(serviceId);
+    consentModel = await loadConsentModel(serviceId);
+
+    if (stateModelDef) {
+      stateMachine = new StateMachine(stateModelDef);
+      stateMachine.setState(currentUcState);
+
+      const stateContext = buildStateContext(stateModelDef, consentModel, currentUcState, personaData);
+      systemPrompt += stateContext;
+
+      console.log(`   State: ${currentUcState}, Allowed: ${stateMachine.allowedTransitions().map(t => t.trigger).join(", ")}`);
+    }
   }
 
   if (hasTools) {
@@ -509,6 +660,67 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   }
   responseText = responseText.replace(taskRegex, "").trim();
 
+  // ── State Transition Parsing ──
+  const stateTransitions: Array<{ fromState: string; toState: string; trigger: string }> = [];
+  let ucStateInfo: ChatOutput["ucState"] | undefined;
+
+  if (stateMachine) {
+    const transitionRegex = /\[STATE_TRANSITION:\s*([^\]]+)\]\n?/gi;
+    let transMatch;
+    while ((transMatch = transitionRegex.exec(responseText)) !== null) {
+      const trigger = transMatch[1].trim();
+      const result = stateMachine.transition(trigger);
+      if (result.success) {
+        stateTransitions.push({
+          fromState: result.fromState,
+          toState: result.toState,
+          trigger: result.trigger,
+        });
+        console.log(`   State transition: ${result.fromState} → ${result.toState} (${trigger})`);
+      } else {
+        console.warn(`   State transition FAILED: ${result.error}`);
+      }
+    }
+    responseText = responseText.replace(transitionRegex, "").trim();
+
+    const updatedHistory = [...(clientStateHistory || [])];
+    if (!updatedHistory.includes(currentUcState)) {
+      updatedHistory.push(currentUcState);
+    }
+    if (stateTransitions.length > 0) {
+      for (const t of stateTransitions) {
+        if (!updatedHistory.includes(t.toState)) {
+          updatedHistory.push(t.toState);
+        }
+      }
+    }
+
+    ucStateInfo = {
+      currentState: stateMachine.getState(),
+      previousState: stateTransitions.length > 0 ? stateTransitions[0].fromState : undefined,
+      trigger: stateTransitions.length > 0 ? stateTransitions[stateTransitions.length - 1].trigger : undefined,
+      allowedTransitions: stateMachine.allowedTransitions().map(t => t.trigger!).filter(Boolean),
+      stateHistory: updatedHistory,
+    };
+  }
+
+  // ── Consent Requests ──
+  let consentRequests: ChatOutput["consentRequests"] | undefined;
+  if (consentModel && stateMachine) {
+    const currentStateId = stateMachine.getState();
+    // Surface consent requests when entering consent-related states
+    if (currentStateId === "eligibility-checked" || currentStateId === "consent-given") {
+      const grants = (consentModel.grants || []) as Array<Record<string, unknown>>;
+      consentRequests = grants.map(g => ({
+        id: g.id as string,
+        description: g.description as string,
+        data_shared: g.data_shared as string[],
+        source: g.source as string,
+        purpose: g.purpose as string,
+      }));
+    }
+  }
+
   // ── Handoff Detection ──
   const lastUserMessage = messages.filter((m) => m.role === "user").pop();
   const lastUserText = typeof lastUserMessage?.content === "string" ? lastUserMessage.content : "";
@@ -563,6 +775,8 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     tasks,
     policyResult: policyResultInfo,
     handoff: handoffInfo,
+    ucState: ucStateInfo,
+    consentRequests,
   };
 }
 
@@ -574,7 +788,7 @@ invoker.registerHandler("agent.chat", chatHandler);
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { persona, agent, scenario, messages, generateTitle } = body;
+    const { persona, agent, scenario, messages, generateTitle, ucState, ucStateHistory } = body;
 
     if (!persona || !agent || !scenario || !messages) {
       return NextResponse.json(
@@ -611,7 +825,7 @@ export async function POST(request: NextRequest) {
     // Route through CapabilityInvoker — the ONLY way to call services
     const result = await invoker.invoke(
       "agent.chat",
-      { persona, agent, scenario, messages, generateTitle },
+      { persona, agent, scenario, messages, generateTitle, ucState, ucStateHistory },
       context
     );
 
@@ -653,6 +867,16 @@ export async function POST(request: NextRequest) {
         agent,
         dataCategories: ["personal-details", "financial-data"],
         purpose: `Access to data for ${serviceId}`,
+      });
+    }
+
+    // Emit state transition trace events
+    if (output.ucState?.previousState && output.ucState?.trigger) {
+      emitter.emit("state.transition", chatSpan, {
+        serviceId,
+        fromState: output.ucState.previousState,
+        toState: output.ucState.currentState,
+        trigger: output.ucState.trigger,
       });
     }
 
