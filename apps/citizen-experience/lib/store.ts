@@ -8,6 +8,8 @@ import type {
   StoredTask,
   ChatMessage,
   ChatApiResponse,
+  UCStateInfo,
+  ConsentGrant,
 } from "./types";
 import { SERVICE_TO_SCENARIO } from "./types";
 
@@ -40,6 +42,22 @@ interface AppStore {
     routing?: Record<string, unknown>;
   } | null;
 
+  // UC State Journey
+  ucState: string | null;
+  ucStateHistory: string[];
+  lastUcStateInfo: UCStateInfo | null;
+  pendingConsent: ConsentGrant[];
+  consentDecisions: Record<string, "granted" | "denied">;
+  consentSubmitted: boolean;
+  lastResponseTasks: Array<{
+    id: string;
+    description: string;
+    detail: string;
+    type: "agent" | "user";
+    dueDate: string | null;
+    dataNeeded: string[];
+  }>;
+
   // Actions
   setPersona: (id: string) => Promise<void>;
   setAgent: (agent: AgentType) => void;
@@ -50,6 +68,9 @@ interface AppStore {
   loadConversation: (conversationId: string) => void;
   setReasoning: (reasoning: string) => void;
   clearReasoningBadge: () => void;
+  setConsentDecision: (grantId: string, decision: "granted" | "denied") => void;
+  clearConsentDecision: (grantId: string) => void;
+  submitConsent: () => Promise<void>;
 }
 
 // localStorage-backed conversation store
@@ -123,6 +144,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
   hasNewReasoning: false,
   isLoading: false,
   activeHandoff: null,
+  ucState: null,
+  ucStateHistory: [],
+  lastUcStateInfo: null,
+  pendingConsent: [],
+  consentDecisions: {},
+  consentSubmitted: false,
+  lastResponseTasks: [],
 
   setPersona: async (id: string) => {
     set({
@@ -206,6 +234,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
       activeConversation: null,
       currentReasoning: "",
       hasNewReasoning: false,
+      ucState: null,
+      ucStateHistory: [],
+      lastUcStateInfo: null,
+      pendingConsent: [],
+      consentDecisions: {},
+      consentSubmitted: false,
+      lastResponseTasks: [],
     });
     if (service !== undefined) {
       set({ currentService: service });
@@ -251,6 +286,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
           scenario,
           messages: updatedHistory,
           generateTitle: isNewConversation,
+          ucState: state.ucState,
+          ucStateHistory: state.ucStateHistory,
         }),
       });
 
@@ -323,6 +360,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
         hasNewReasoning: true,
         isLoading: false,
         activeHandoff: data.handoff?.triggered ? data.handoff : null,
+        ucState: data.ucState?.currentState ?? state.ucState,
+        ucStateHistory: data.ucState?.stateHistory ?? state.ucStateHistory,
+        lastUcStateInfo: data.ucState ?? state.lastUcStateInfo,
+        pendingConsent: data.consentRequests ?? [],
+        lastResponseTasks: data.tasks ?? [],
+        // Reset consent tracking when state changes (new consent batch may appear)
+        consentDecisions: (data.ucState?.currentState !== state.ucState)
+          ? {}
+          : state.consentDecisions,
+        consentSubmitted: (data.ucState?.currentState !== state.ucState)
+          ? false
+          : state.consentSubmitted,
       });
     } catch (error) {
       console.error("Chat error:", error);
@@ -336,6 +385,44 @@ export const useAppStore = create<AppStore>((set, get) => ({
         isLoading: false,
       });
     }
+  },
+
+  setConsentDecision: (grantId: string, decision: "granted" | "denied") => {
+    set((s) => ({
+      consentDecisions: { ...s.consentDecisions, [grantId]: decision },
+    }));
+  },
+
+  clearConsentDecision: (grantId: string) => {
+    set((s) => {
+      const updated = { ...s.consentDecisions };
+      delete updated[grantId];
+      return { consentDecisions: updated };
+    });
+  },
+
+  submitConsent: async () => {
+    const state = get();
+    const { pendingConsent, consentDecisions } = state;
+
+    // Build a consolidated summary message
+    const lines = ["I have reviewed all consent requests:"];
+
+    for (const grant of pendingConsent) {
+      const decision = consentDecisions[grant.id];
+      if (decision === "granted") {
+        const dataStr = grant.data_shared.map((d) => d.replace(/_/g, " ")).join(", ");
+        lines.push(`- Granted: ${grant.description} (sharing: ${dataStr})`);
+      } else if (decision === "denied") {
+        lines.push(`- Declined: ${grant.description}`);
+      }
+    }
+
+    lines.push("");
+    lines.push("Please proceed with my application.");
+
+    set({ consentSubmitted: true });
+    await state.sendMessage(lines.join("\n"));
   },
 
   setReasoning: (reasoning: string) => {

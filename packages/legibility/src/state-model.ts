@@ -70,6 +70,14 @@ export class StateMachine {
     return state?.receipt === true;
   }
 
+  /** Set the current state directly (used to restore state from client) */
+  setState(stateId: string): void {
+    const exists = this.definition.states.find((s) => s.id === stateId);
+    if (exists) {
+      this.currentState = stateId;
+    }
+  }
+
   /** Reset to initial state */
   reset(): void {
     const initial = this.definition.states.find((s) => s.type === "initial");

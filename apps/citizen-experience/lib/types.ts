@@ -91,12 +91,32 @@ export interface AgentTask {
   dataNeeded: string[];
 }
 
+export interface UCStateInfo {
+  currentState: string;
+  previousState?: string;
+  trigger?: string;
+  allowedTransitions: string[];
+  stateHistory: string[];
+}
+
+export interface ConsentGrant {
+  id: string;
+  description: string;
+  data_shared: string[];
+  source: string;
+  purpose: string;
+  duration?: string;
+  required?: boolean;
+}
+
 export interface ChatApiRequest {
   persona: string;
   agent: string;
   scenario: string;
   messages: ChatMessage[];
   generateTitle?: boolean;
+  ucState?: string;
+  ucStateHistory?: string[];
 }
 
 export interface ChatApiResponse {
@@ -120,6 +140,8 @@ export interface ChatApiResponse {
     urgency?: string;
     routing?: Record<string, unknown>;
   };
+  ucState?: UCStateInfo;
+  consentRequests?: ConsentGrant[];
 }
 
 export interface Conversation {

@@ -3,6 +3,10 @@
 import { useRef, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import HandoffNotice from "./handoff/HandoffNotice";
+import { TaskCard } from "./TaskCard";
+import { ConsentCard } from "./ConsentCard";
+import { ConsentSummaryCard } from "./ConsentSummaryCard";
+import { StateProgressTracker } from "./StateProgressTracker";
 
 function TypingIndicator() {
   return (
@@ -24,14 +28,48 @@ export function ChatView() {
   const conversationHistory = useAppStore((s) => s.conversationHistory);
   const isLoading = useAppStore((s) => s.isLoading);
   const activeHandoff = useAppStore((s) => s.activeHandoff);
+  const ucState = useAppStore((s) => s.ucState);
+  const ucStateHistory = useAppStore((s) => s.ucStateHistory);
+  const pendingConsent = useAppStore((s) => s.pendingConsent);
+  const consentDecisions = useAppStore((s) => s.consentDecisions);
+  const consentSubmitted = useAppStore((s) => s.consentSubmitted);
+  const lastResponseTasks = useAppStore((s) => s.lastResponseTasks);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Derived consent state
+  const allConsentsActioned = pendingConsent.length > 0 &&
+    pendingConsent.every((g) => consentDecisions[g.id] !== undefined);
+  const hasRequiredDenials = pendingConsent
+    .filter((g) => g.required)
+    .some((g) => consentDecisions[g.id] === "denied");
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversationHistory, isLoading, activeHandoff]);
+  }, [conversationHistory, isLoading, activeHandoff, ucState]);
+
+  // Scroll when summary card appears
+  useEffect(() => {
+    if (allConsentsActioned && !consentSubmitted) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [allConsentsActioned, consentSubmitted]);
+
+  // Find the index of the last assistant message
+  const lastAssistantIdx = conversationHistory.reduce(
+    (acc, msg, idx) => (msg.role === "assistant" ? idx : acc),
+    -1,
+  );
 
   return (
     <div className="flex flex-col h-full">
+      {/* State Progress Tracker — shown when in a UC journey */}
+      {ucState && (
+        <StateProgressTracker
+          currentState={ucState}
+          stateHistory={ucStateHistory}
+        />
+      )}
+
       <div
         className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
         role="log"
@@ -60,20 +98,74 @@ export function ChatView() {
           if (typeof msg.content !== "string") return null;
 
           const isUser = msg.role === "user";
+          const isLastAssistant = idx === lastAssistantIdx;
+
           return (
-            <div
-              key={idx}
-              className={`flex ${isUser ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
-                  isUser
-                    ? "bg-govuk-blue text-white rounded-br-sm"
-                    : "bg-govuk-light-grey text-govuk-black rounded-bl-sm"
-                }`}
-              >
-                {msg.content}
+            <div key={idx}>
+              {/* Message bubble */}
+              <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+                    isUser
+                      ? "bg-govuk-blue text-white rounded-br-sm"
+                      : "bg-govuk-light-grey text-govuk-black rounded-bl-sm"
+                  }`}
+                >
+                  {msg.content}
+                </div>
               </div>
+
+              {/* Task cards — shown after the last assistant message, gated by !isLoading */}
+              {isLastAssistant && !isLoading && (
+                <div className="max-w-[85%] mt-1">
+                  {lastResponseTasks.length > 0 && lastResponseTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onAccept={() => {
+                        const msg = task.type === "user"
+                          ? `I've done it — ${task.description.toLowerCase()}`
+                          : `Yes, please go ahead — ${task.description.toLowerCase()}`;
+                        useAppStore.getState().sendMessage(msg);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Consent cards — SEPARATE block, NOT gated by !isLoading so they stay visible during submission */}
+              {isLastAssistant && pendingConsent.length > 0 && !consentSubmitted && (
+                <div className="max-w-[85%] mt-1">
+                  {pendingConsent.map((grant) => (
+                    <ConsentCard
+                      key={grant.id}
+                      grant={grant}
+                      decision={consentDecisions[grant.id]}
+                      onDecision={(id, decision) => {
+                        useAppStore.getState().setConsentDecision(id, decision);
+                      }}
+                      onReset={(id) => {
+                        useAppStore.getState().clearConsentDecision(id);
+                      }}
+                      disabled={isLoading}
+                    />
+                  ))}
+
+                  {/* Summary card appears when all decisions are made */}
+                  {allConsentsActioned && (
+                    <ConsentSummaryCard
+                      grants={pendingConsent}
+                      decisions={consentDecisions}
+                      onSubmit={() => useAppStore.getState().submitConsent()}
+                      onChangeDecision={(id) => {
+                        useAppStore.getState().clearConsentDecision(id);
+                      }}
+                      hasRequiredDenials={hasRequiredDenials}
+                      isSubmitting={isLoading}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
