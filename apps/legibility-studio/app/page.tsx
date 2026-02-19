@@ -16,7 +16,7 @@ export default function StudioHomePage() {
         <div className="border border-govuk-mid-grey p-6">
           <h2 className="text-xl font-bold mb-2">Services</h2>
           <p className="text-govuk-dark-grey mb-4">
-            Browse and edit capability manifests, policy rules, state models, and consent models.
+            Browse services, view operational ledgers, and manage capability manifests.
           </p>
           <a
             href="/services"

@@ -4,12 +4,13 @@
  * and shared across all API routes.
  */
 
-import { TraceStore, TraceEmitter, ReceiptGenerator } from "@als/evidence";
+import { TraceStore, TraceEmitter, ReceiptGenerator, CaseStore } from "@als/evidence";
 import path from "path";
 
 let store: TraceStore | null = null;
 let emitter: TraceEmitter | null = null;
 let receiptGen: ReceiptGenerator | null = null;
+let caseStore: CaseStore | null = null;
 
 function initStore(): TraceStore {
   if (!store) {
@@ -36,4 +37,11 @@ export function getReceiptGenerator(): ReceiptGenerator {
     receiptGen = new ReceiptGenerator(initStore());
   }
   return receiptGen;
+}
+
+export function getCaseStore(): CaseStore {
+  if (!caseStore) {
+    caseStore = new CaseStore(initStore().getDatabase());
+  }
+  return caseStore;
 }

@@ -809,11 +809,12 @@ export async function POST(request: NextRequest) {
 
     // Emit LLM request trace event
     const emitter = getTraceEmitter();
+    const resolvedServiceId = resolveServiceId(scenario);
     const chatSpan = emitter.startSpan({
       traceId,
       sessionId,
       userId: persona,
-      capabilityId: "agent.chat",
+      capabilityId: resolvedServiceId || "agent.chat",
     });
     emitter.emit("llm.request", chatSpan, {
       persona,
@@ -883,6 +884,7 @@ export async function POST(request: NextRequest) {
     // Emit handoff trace events
     if (output.handoff?.triggered) {
       emitter.emit("handoff.initiated", chatSpan, {
+        serviceId,
         reason: output.handoff.reason,
         description: output.handoff.description,
         urgency: output.handoff.urgency,

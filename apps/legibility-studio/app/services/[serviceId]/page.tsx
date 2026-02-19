@@ -364,6 +364,12 @@ export default function ServiceDetailPage({
           <p className="mt-2">{service.manifest.description}</p>
           <div className="flex gap-2 mt-3">
             <a
+              href={`/services/${encodeURIComponent(serviceId)}/ledger`}
+              className="bg-govuk-green text-white px-4 py-1.5 rounded text-sm font-bold hover:opacity-90 no-underline"
+            >
+              View ledger
+            </a>
+            <a
               href={`/services/${encodeURIComponent(serviceId)}/edit`}
               className="bg-govuk-blue text-white px-4 py-1.5 rounded text-sm font-bold hover:opacity-90 no-underline"
             >
