@@ -12,7 +12,7 @@ export default function StudioHomePage() {
         manifests, policy rulesets, state models, and consent models that make
         government services legible to AI agents.
       </p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="border border-govuk-mid-grey p-6">
           <h2 className="text-xl font-bold mb-2">Services</h2>
           <p className="text-govuk-dark-grey mb-4">
@@ -23,6 +23,18 @@ export default function StudioHomePage() {
             className="inline-block bg-govuk-green text-govuk-white font-bold px-4 py-2 no-underline hover:bg-[#005a30]"
           >
             View services
+          </a>
+        </div>
+        <div className="border border-govuk-mid-grey p-6">
+          <h2 className="text-xl font-bold mb-2">Ledger</h2>
+          <p className="text-govuk-dark-grey mb-4">
+            Track cases, view dashboards, and monitor how citizens progress through services.
+          </p>
+          <a
+            href="/services"
+            className="inline-block bg-govuk-green text-govuk-white font-bold px-4 py-2 no-underline hover:bg-[#005a30]"
+          >
+            View ledger
           </a>
         </div>
         <div className="border border-govuk-mid-grey p-6">

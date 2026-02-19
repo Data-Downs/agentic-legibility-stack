@@ -279,6 +279,79 @@ export type HandoffReason =
   | "technical-failure"
   | "policy-edge-case";
 
+// ── Ledger / Service Ledger ──
+
+export type CaseStatus =
+  | "in-progress"
+  | "completed"
+  | "rejected"
+  | "handed-off"
+  | "abandoned";
+
+export interface LedgerCase {
+  caseId: string;
+  userId: string;
+  serviceId: string;
+  currentState: string;
+  status: CaseStatus;
+  startedAt: string;
+  lastActivityAt: string;
+  statesCompleted: string[];
+  progressPercent: number;
+  identityVerified: boolean;
+  eligibilityChecked: boolean;
+  eligibilityResult: boolean | null;
+  consentGranted: boolean;
+  handedOff: boolean;
+  handoffReason: string | null;
+  agentActions: number;
+  humanActions: number;
+  reviewStatus: "pending" | "in-review" | "resolved" | null;
+  reviewRequestedAt: string | null;
+  reviewReason: string | null;
+  eventCount: number;
+}
+
+export interface CaseTimelineEntry {
+  caseId: string;
+  traceEventId: string;
+  traceId?: string;
+  eventType: string;
+  actor: "agent" | "citizen" | "system";
+  summary: string;
+  createdAt: string;
+  tracePayload?: Record<string, unknown>;
+}
+
+export interface LedgerDashboard {
+  serviceId: string;
+  totalCases: number;
+  activeCases: number;
+  completedCases: number;
+  rejectedCases: number;
+  handedOffCases: number;
+  completionRate: number;
+  handoffRate: number;
+  avgProgress: number;
+  agentActionTotal: number;
+  humanActionTotal: number;
+  bottlenecks: StateBottleneck[];
+  recentCases: LedgerCase[];
+}
+
+export interface StateBottleneck {
+  stateId: string;
+  caseCount: number;
+  avgTimeInState?: number;
+}
+
+export interface HumanReviewRequest {
+  caseId: string;
+  reason: string;
+  priority: "routine" | "priority" | "urgent";
+  requestedBy: string;
+}
+
 // ── Utility types ──
 
 export interface JsonSchema {

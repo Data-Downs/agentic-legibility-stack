@@ -185,6 +185,11 @@ export class TraceStore {
     return row.count;
   }
 
+  /** Get the underlying database instance (for sharing with CaseStore) */
+  getDatabase(): Database.Database {
+    return this.db;
+  }
+
   /** Close the database connection */
   close(): void {
     this.db.close();

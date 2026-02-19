@@ -883,6 +883,7 @@ export async function POST(request: NextRequest) {
     // Emit handoff trace events
     if (output.handoff?.triggered) {
       emitter.emit("handoff.initiated", chatSpan, {
+        serviceId,
         reason: output.handoff.reason,
         description: output.handoff.description,
         urgency: output.handoff.urgency,
