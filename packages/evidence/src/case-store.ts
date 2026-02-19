@@ -346,6 +346,54 @@ export class CaseStore {
     };
   }
 
+  /** Get aggregated dashboard data across ALL services */
+  getDashboardAll(): LedgerDashboard {
+    const stats = this.db.prepare(`
+      SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'in-progress' THEN 1 ELSE 0 END) as active,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+        SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
+        SUM(CASE WHEN status = 'handed-off' THEN 1 ELSE 0 END) as handed_off,
+        AVG(progress_percent) as avg_progress,
+        SUM(agent_actions) as agent_total,
+        SUM(human_actions) as human_total
+      FROM cases
+    `).get() as Record<string, number>;
+
+    const total = stats.total || 0;
+    const completed = stats.completed || 0;
+    const handedOff = stats.handed_off || 0;
+
+    const bottleneckRows = this.db.prepare(`
+      SELECT current_state as stateId, COUNT(*) as caseCount
+      FROM cases
+      WHERE status = 'in-progress'
+      GROUP BY current_state
+      ORDER BY caseCount DESC
+    `).all() as Array<{ stateId: string; caseCount: number }>;
+
+    const recentRows = this.db.prepare(
+      "SELECT * FROM cases ORDER BY last_activity_at DESC LIMIT 5"
+    ).all() as Array<Record<string, unknown>>;
+
+    return {
+      serviceId: "_all",
+      totalCases: total,
+      activeCases: stats.active || 0,
+      completedCases: completed,
+      rejectedCases: stats.rejected || 0,
+      handedOffCases: handedOff,
+      completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+      handoffRate: total > 0 ? Math.round((handedOff / total) * 100) : 0,
+      avgProgress: Math.round(stats.avg_progress || 0),
+      agentActionTotal: stats.agent_total || 0,
+      humanActionTotal: stats.human_total || 0,
+      bottlenecks: bottleneckRows,
+      recentCases: recentRows.map(r => this.rowToCase(r)),
+    };
+  }
+
   /** Get states where cases are getting stuck */
   getBottlenecks(serviceId: string): StateBottleneck[] {
     const rows = this.db.prepare(`

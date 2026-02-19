@@ -809,11 +809,12 @@ export async function POST(request: NextRequest) {
 
     // Emit LLM request trace event
     const emitter = getTraceEmitter();
+    const resolvedServiceId = resolveServiceId(scenario);
     const chatSpan = emitter.startSpan({
       traceId,
       sessionId,
       userId: persona,
-      capabilityId: "agent.chat",
+      capabilityId: resolvedServiceId || "agent.chat",
     });
     emitter.emit("llm.request", chatSpan, {
       persona,
