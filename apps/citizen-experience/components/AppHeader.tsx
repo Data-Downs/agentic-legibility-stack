@@ -13,6 +13,7 @@ const personas = [
   { id: "emma-liam", desc: "Young couple, expecting first baby" },
   { id: "rajesh", desc: "Self-employed IT consultant" },
   { id: "margaret", desc: "Retired, 74, limited tech" },
+  { id: "priya", desc: "Recently redundant, applying for UC" },
 ];
 
 export function AppHeader() {

@@ -121,6 +121,13 @@ export class TraceStore {
     );
   }
 
+  /** Delete traces for a specific user+service combination */
+  deleteTracesByUser(userId: string, serviceId: string): void {
+    this.db.prepare(
+      "DELETE FROM trace_events WHERE json_extract(metadata, '$.userId') = ? AND (json_extract(metadata, '$.capabilityId') = ? OR json_extract(payload, '$.serviceId') = ?)"
+    ).run(userId, serviceId, serviceId);
+  }
+
   /** Query events by trace ID */
   queryByTraceId(traceId: string): TraceEvent[] {
     const rows = this.db

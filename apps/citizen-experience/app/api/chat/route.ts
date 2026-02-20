@@ -242,14 +242,14 @@ async function loadConsentModel(serviceId: string): Promise<Record<string, unkno
 
 /** Per-state instructions for the UC journey */
 const UC_STATE_INSTRUCTIONS: Record<string, string> = {
-  "not-started": `The citizen has just started. Explain what Universal Credit is, ask if they'd like you to check their eligibility. When ready, emit [STATE_TRANSITION: verify-identity] to begin the process.`,
-  "identity-verified": `Identity has been verified using their NI number and DOB. Now check their eligibility against the policy rules. Emit [STATE_TRANSITION: check-eligibility] after explaining the eligibility check.`,
-  "eligibility-checked": `Eligibility has been checked. Present the results clearly. If eligible, ask for their consent to share data with DWP. Emit [STATE_TRANSITION: grant-consent] when they agree. If not eligible, emit [STATE_TRANSITION: reject].`,
-  "consent-given": `Consent has been granted. Now collect personal details. You already have their name, DOB, NI number, and address from persona data — confirm these with the citizen rather than asking again. Emit [STATE_TRANSITION: collect-personal-details] after confirming.`,
-  "personal-details-collected": `Personal details confirmed. Now ask about their housing situation — do they rent or own? How much is their rent? Who is their landlord? Emit [STATE_TRANSITION: collect-housing-details] after collecting.`,
-  "housing-details-collected": `Housing details collected. Now ask about their income and employment. You have some data already — confirm it and ask about any changes (e.g. upcoming maternity leave). Emit [STATE_TRANSITION: collect-income-details] after collecting.`,
-  "income-details-collected": `Income details collected. Now you MUST ask for bank details — sort code and account number. This data is NOT in the persona data, so you MUST ask the citizen to provide it. Say something like "To receive UC payments, I'll need your bank details. Could you provide your sort code and account number?" Emit [STATE_TRANSITION: verify-bank-details] after they provide them.`,
-  "bank-details-verified": `Bank details verified. Summarize everything collected and submit the claim. Emit [STATE_TRANSITION: submit-claim] to finalize.`,
+  "not-started": `The citizen has just started. They are already authenticated via GOV.UK One Login — identity verification is complete. Welcome them warmly, explain briefly what Universal Credit is, and tell them you'll check their eligibility now. Emit [STATE_TRANSITION: check-eligibility] and present the eligibility results.`,
+  "identity-verified": `Identity has been verified. Acknowledge this, then tell them you'll now check their eligibility. Emit [STATE_TRANSITION: check-eligibility] and present the results.`,
+  "eligibility-checked": `Eligibility has been checked. Present the results clearly. If eligible, explain that you need their consent to share data with DWP. Do NOT transition yet — wait for the user to grant consent via the consent cards.`,
+  "consent-given": `Consent has been granted. Now confirm the personal details you already have from their records (name, DOB, NI number, address). List what you have and ask "Does all of this look correct?" Do NOT transition — wait for the user to confirm.`,
+  "personal-details-collected": `Personal details confirmed. Now ask about their housing situation — do they rent or own? How much is their rent? Who is their landlord? Do NOT transition — wait for the user to provide their housing details.`,
+  "housing-details-collected": `Housing details collected. Now confirm the employment and income data you have — show what's on file and ask if it's correct or if anything has changed. Do NOT transition — wait for the user to confirm.`,
+  "income-details-collected": `Income details collected. Now ask for bank details — sort code and account number for UC payments. This data is NOT in the persona data, so you MUST ask the citizen to provide it. Do NOT transition — wait for the user to provide their bank details.`,
+  "bank-details-verified": `Bank details verified. Summarize EVERYTHING collected across all steps and ask the citizen to confirm before submitting. Do NOT transition — wait for the user to say "yes, submit it".`,
   "claim-submitted": `The claim has been submitted. Provide a claim reference (generate a realistic one like UC-2026-XXXX). Explain: 5-week wait for first payment, they'll need to attend an interview at their local Jobcentre Plus, they should set up their UC journal. Emit [STATE_TRANSITION: schedule-interview].`,
   "awaiting-interview": `An interview has been scheduled. Explain what to expect at the Jobcentre Plus interview, what documents to bring. The journey pauses here until the interview. If the citizen seems ready, emit [STATE_TRANSITION: activate-claim].`,
   "claim-active": `The UC claim is now active! Congratulate them. Explain estimated payment amounts and dates, the UC journal, and reporting requirements. This is the end of the journey.`,
@@ -314,7 +314,8 @@ function buildStateContext(
   ctx += `When you determine a state transition should happen, include this marker on its own line:\n`;
   ctx += `[STATE_TRANSITION: trigger-name]\n`;
   ctx += `For example: [STATE_TRANSITION: verify-identity]\n`;
-  ctx += `You can include multiple transitions in one response if several steps are completed.\n`;
+  ctx += `IMPORTANT: Only emit ONE state transition per response. Do NOT skip ahead or combine steps.\n`;
+  ctx += `IMPORTANT: For states that collect data (housing, bank details, income), do NOT emit a transition until the user has actually provided the information in a message. Ask for the data and STOP — wait for their reply.\n`;
   ctx += `Place transitions AFTER your conversational text but BEFORE any [TASK:] markers.\n`;
   ctx += `The transition markers will be stripped from the displayed response.\n`;
 
@@ -520,6 +521,9 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     if (stateModelDef) {
       stateMachine = new StateMachine(stateModelDef);
       stateMachine.setState(currentUcState);
+
+      // Register total states so the case store can calculate progress %
+      getTraceEmitter().setTotalStates(serviceId, stateModelDef.states.length);
 
       const stateContext = buildStateContext(stateModelDef, consentModel, currentUcState, personaData);
       systemPrompt += stateContext;

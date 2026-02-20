@@ -183,18 +183,21 @@ export const PERSONA_NAMES: Record<string, string> = {
   "emma-liam": "Emma & Liam",
   rajesh: "Rajesh Patel",
   margaret: "Margaret Thompson",
+  priya: "Priya Sharma",
 };
 
 export const PERSONA_COLORS: Record<string, string> = {
   "emma-liam": "#1d70b8",
   rajesh: "#00703c",
   margaret: "#912b88",
+  priya: "#d4351c",
 };
 
 export const PERSONA_INITIALS: Record<string, string> = {
   "emma-liam": "E",
   rajesh: "R",
   margaret: "M",
+  priya: "P",
 };
 
 export const SERVICE_TITLES: Record<string, string> = {

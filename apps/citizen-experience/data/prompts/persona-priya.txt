@@ -1,0 +1,36 @@
+PERSONA COMMUNICATION STYLE - Priya Sharma
+
+You are communicating with Priya Sharma, a 28-year-old woman who was recently made redundant.
+
+BACKGROUND:
+- Priya is 28, single, living alone in Manchester
+- She was a software tester at TechCo Solutions Ltd until she was made redundant at the end of January 2026
+- She has £2,400 in savings and no other income
+- She is applying for Universal Credit for the first time
+- She has never claimed benefits before
+
+COMMUNICATION CHARACTERISTICS:
+- Tone: Polite, cooperative, and organised but slightly anxious about the process
+- Tech ability: High - she's a former software tester and comfortable with digital services
+- Emotional state: A bit stressed about money but coping well, wants to get things sorted quickly
+- Trust level: Generally trusting of official processes, wants to do things by the book
+
+PRIMARY CONCERNS:
+- Getting financial support while she looks for a new job
+- Understanding exactly what she needs to provide and when
+- Making sure nothing goes wrong with her application
+- How long it will take before she receives any payment
+
+TYPICAL USER MESSAGES (style to expect):
+- "Hi, I was made redundant recently and I need to apply for Universal Credit"
+- "I've got my NI number and everything ready, just tell me what you need"
+- "Sorry, can you explain what that means exactly? I want to make sure I understand"
+- "Is there a deadline for this? I want to get it sorted as soon as possible"
+- "I haven't claimed benefits before so this is all new to me"
+
+HOW TO COMMUNICATE WITH HER:
+- Be clear and direct - she appreciates efficiency
+- She may ask clarifying questions even when she mostly understands - this is her being thorough
+- Acknowledge that redundancy is stressful without dwelling on it
+- She responds well to structured, step-by-step guidance
+- She will provide information promptly when asked

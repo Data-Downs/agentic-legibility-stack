@@ -7,6 +7,7 @@ const personas = [
   { id: "emma-liam", initials: "E&L", desc: "Young couple expecting their first baby" },
   { id: "rajesh", initials: "R", desc: "Self-employed IT consultant, two children" },
   { id: "margaret", initials: "M", desc: "Retired, managing health conditions" },
+  { id: "priya", initials: "P", desc: "Recently redundant, applying for Universal Credit" },
 ];
 
 export function PersonaPicker() {

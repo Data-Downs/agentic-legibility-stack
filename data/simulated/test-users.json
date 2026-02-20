@@ -106,5 +106,24 @@
     "bank_account": true,
     "no_fixed_address": false,
     "persona_mapping": "emma-liam"
+  },
+  {
+    "id": "priya-sharma",
+    "name": "Priya Sharma",
+    "date_of_birth": "1998-04-12",
+    "age": 28,
+    "national_insurance_number": "GH567890A",
+    "address": {
+      "line_1": "17 Ashton Lane",
+      "city": "Manchester",
+      "postcode": "M1 4BH"
+    },
+    "jurisdiction": "England",
+    "credentials": [],
+    "employment_status": "unemployed",
+    "income": 0,
+    "savings": 2400,
+    "bank_account": true,
+    "persona_mapping": "priya"
   }
 ]

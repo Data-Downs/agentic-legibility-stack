@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import CaseTimelineView from "./CaseTimelineView";
 import StateProgressFlow from "./StateProgressFlow";
 import ReviewDialog from "./ReviewDialog";
@@ -68,12 +69,14 @@ export default function CaseDetail({
   serviceId: string;
   userId: string;
 }) {
+  const router = useRouter();
   const [caseData, setCaseData] = useState<LedgerCase | null>(null);
   const [timeline, setTimeline] = useState<CaseTimelineEntry[]>([]);
   const [stateModel, setStateModel] = useState<StateModel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showReview, setShowReview] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const fetchData = () => {
     setLoading(true);
@@ -95,6 +98,29 @@ export default function CaseDetail({
         setError("Failed to connect to citizen-experience API");
         setLoading(false);
       });
+  };
+
+  const handleReset = async () => {
+    if (!confirm("Are you sure you want to reset this case? This will delete the case and all associated traces. This cannot be undone.")) {
+      return;
+    }
+    setResetting(true);
+    try {
+      const res = await fetch(
+        `http://localhost:3100/api/ledger/services/${encodeURIComponent(serviceId)}/cases/${encodeURIComponent(userId)}/reset`,
+        { method: "DELETE" },
+      );
+      const data = await res.json();
+      if (data.success) {
+        router.push(`/services/${encodeURIComponent(serviceId)}/ledger`);
+      } else {
+        alert("Failed to reset case: " + (data.error || "Unknown error"));
+      }
+    } catch {
+      alert("Failed to connect to citizen-experience API");
+    } finally {
+      setResetting(false);
+    }
   };
 
   useEffect(() => {
@@ -142,12 +168,21 @@ export default function CaseDetail({
             })}
           </p>
         </div>
-        <button
-          onClick={() => setShowReview(true)}
-          className="bg-govuk-green text-white font-bold px-4 py-2 text-sm rounded-lg hover:opacity-90"
-        >
-          Submit for review
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleReset}
+            disabled={resetting}
+            className="bg-red-600 text-white font-bold px-4 py-2 text-sm rounded-lg hover:bg-red-700 disabled:opacity-50"
+          >
+            {resetting ? "Resetting..." : "Reset Case"}
+          </button>
+          <button
+            onClick={() => setShowReview(true)}
+            className="bg-govuk-green text-white font-bold px-4 py-2 text-sm rounded-lg hover:opacity-90"
+          >
+            Submit for review
+          </button>
+        </div>
       </div>
 
       {/* Progress */}

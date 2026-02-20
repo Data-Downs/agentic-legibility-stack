@@ -407,6 +407,12 @@ export class CaseStore {
     return rows;
   }
 
+  /** Delete a specific case and its events */
+  deleteCase(caseId: string): void {
+    this.db.prepare("DELETE FROM case_events WHERE case_id = ?").run(caseId);
+    this.db.prepare("DELETE FROM cases WHERE case_id = ?").run(caseId);
+  }
+
   /** Submit a case for human review */
   submitReview(caseId: string, reason: string, _priority: string): void {
     this.db.prepare(`

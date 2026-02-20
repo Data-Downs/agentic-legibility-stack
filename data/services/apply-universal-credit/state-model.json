@@ -57,6 +57,11 @@
       "trigger": "verify-identity"
     },
     {
+      "from": "not-started",
+      "to": "eligibility-checked",
+      "trigger": "check-eligibility"
+    },
+    {
       "from": "identity-verified",
       "to": "eligibility-checked",
       "trigger": "check-eligibility"
