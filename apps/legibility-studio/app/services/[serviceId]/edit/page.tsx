@@ -3,6 +3,8 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import ServiceForm, { apiDataToFormData, formDataToApiPayload, type ServiceFormData } from "@/components/forms/ServiceForm";
+import Breadcrumbs from "@/components/layout/Breadcrumbs";
+import PageHeader from "@/components/ui/PageHeader";
 
 export default function EditServicePage({
   params,
@@ -58,14 +60,14 @@ export default function EditServicePage({
   }
 
   if (loading) {
-    return <div className="text-center py-12 text-govuk-dark-grey">Loading service...</div>;
+    return <div className="text-center py-12 text-gray-500">Loading service...</div>;
   }
 
   if (!initialData) {
     return (
       <div className="text-center py-12">
         <h1 className="text-2xl font-bold text-red-600">Service not found</h1>
-        <a href="/services" className="text-govuk-blue mt-4 inline-block">
+        <a href="/services" className="text-studio-accent mt-4 inline-block hover:underline">
           Back to services
         </a>
       </div>
@@ -74,17 +76,21 @@ export default function EditServicePage({
 
   return (
     <div>
-      <a href={`/services/${encodeURIComponent(serviceId)}`} className="text-govuk-blue text-sm mb-4 inline-block">
-        &larr; Back to service
-      </a>
-
-      <h1 className="text-3xl font-bold mb-2">Edit service</h1>
-      <p className="text-govuk-dark-grey mb-6">
-        <span className="font-mono text-sm">{serviceId}</span>
-      </p>
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/" },
+          { label: "Services", href: "/services" },
+          { label: serviceId, href: `/services/${encodeURIComponent(serviceId)}` },
+          { label: "Edit" },
+        ]}
+      />
+      <PageHeader
+        title="Edit service"
+        subtitle={serviceId}
+      />
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded p-4 mb-6 text-sm text-red-800">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-sm text-red-800">
           {error}
         </div>
       )}

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import KPICard from "@/components/ui/KPICard";
+import PageHeader from "@/components/ui/PageHeader";
+import Breadcrumbs from "@/components/layout/Breadcrumbs";
 
 interface Service {
   id: string;
@@ -36,24 +39,6 @@ const BUILT_IN_SERVICE_IDS = new Set([
   "dwp.check-state-pension",
 ]);
 
-function KPICard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
-  return (
-    <div className="border border-govuk-mid-grey rounded p-4">
-      <div className="text-2xl font-bold">{value}</div>
-      <div className="text-xs text-govuk-dark-grey font-bold mt-1">{label}</div>
-      {sub && <div className="text-xs text-govuk-dark-grey mt-0.5">{sub}</div>}
-    </div>
-  );
-}
-
 function AllServicesDashboard({ dashboard }: { dashboard: DashboardData }) {
   const agentPct =
     dashboard.agentActionTotal + dashboard.humanActionTotal > 0
@@ -65,10 +50,10 @@ function AllServicesDashboard({ dashboard }: { dashboard: DashboardData }) {
       : 0;
 
   return (
-    <div className="border border-govuk-mid-grey rounded p-6 mb-8 space-y-6">
+    <div className="border border-studio-border rounded-xl bg-white p-6 mb-8 space-y-6">
       <div>
         <h2 className="text-lg font-bold mb-1">All Services Dashboard</h2>
-        <p className="text-sm text-govuk-dark-grey">
+        <p className="text-sm text-gray-500">
           Aggregated operational metrics across all services.
         </p>
       </div>
@@ -92,7 +77,7 @@ function AllServicesDashboard({ dashboard }: { dashboard: DashboardData }) {
       {/* Status bar */}
       <div>
         <h3 className="text-sm font-bold mb-2">Status Breakdown</h3>
-        <div className="flex h-4 rounded overflow-hidden">
+        <div className="flex h-4 rounded-full overflow-hidden">
           {dashboard.completedCases > 0 && (
             <div
               className="bg-green-500"
@@ -122,7 +107,7 @@ function AllServicesDashboard({ dashboard }: { dashboard: DashboardData }) {
             />
           )}
         </div>
-        <div className="flex gap-4 mt-2 text-xs text-govuk-dark-grey">
+        <div className="flex gap-4 mt-2 text-xs text-gray-500">
           <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full inline-block" /> Completed</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-500 rounded-full inline-block" /> Active</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 bg-yellow-500 rounded-full inline-block" /> Handed off</span>
@@ -132,36 +117,36 @@ function AllServicesDashboard({ dashboard }: { dashboard: DashboardData }) {
 
       {/* Agent vs Human + Avg Progress */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="border border-govuk-mid-grey rounded p-4">
+        <div className="border border-studio-border rounded-xl p-4">
           <h3 className="text-sm font-bold mb-2">Agent vs Human Actions</h3>
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <div className="flex h-3 rounded overflow-hidden bg-gray-100">
-                <div className="bg-blue-500 rounded-l" style={{ width: `${agentPct}%` }} />
-                <div className="bg-green-500 rounded-r" style={{ width: `${100 - agentPct}%` }} />
+              <div className="flex h-3 rounded-full overflow-hidden bg-gray-100">
+                <div className="bg-blue-500 rounded-l-full" style={{ width: `${agentPct}%` }} />
+                <div className="bg-green-500 rounded-r-full" style={{ width: `${100 - agentPct}%` }} />
               </div>
-              <div className="flex justify-between text-xs mt-1 text-govuk-dark-grey">
+              <div className="flex justify-between text-xs mt-1 text-gray-500">
                 <span>Agent: {dashboard.agentActionTotal}</span>
                 <span>Human: {dashboard.humanActionTotal}</span>
               </div>
             </div>
-            <div className="text-2xl font-bold">{agentPct}%</div>
+            <div className="text-3xl font-bold">{agentPct}%</div>
           </div>
-          <p className="text-xs text-govuk-dark-grey mt-1">of actions performed by agent</p>
+          <p className="text-xs text-gray-400 mt-1">of actions performed by agent</p>
         </div>
 
-        <div className="border border-govuk-mid-grey rounded p-4">
+        <div className="border border-studio-border rounded-xl p-4">
           <h3 className="text-sm font-bold mb-2">Average Progress</h3>
           <div className="flex items-center gap-4">
-            <div className="flex-1 h-3 bg-gray-100 rounded overflow-hidden">
+            <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-govuk-green rounded"
+                className="h-full bg-govuk-green rounded-full"
                 style={{ width: `${dashboard.avgProgress}%` }}
               />
             </div>
-            <div className="text-2xl font-bold">{dashboard.avgProgress}%</div>
+            <div className="text-3xl font-bold">{dashboard.avgProgress}%</div>
           </div>
-          <p className="text-xs text-govuk-dark-grey mt-1">of active cases through their journey</p>
+          <p className="text-xs text-gray-400 mt-1">of active cases through their journey</p>
         </div>
       </div>
     </div>
@@ -211,23 +196,24 @@ export default function ServicesPage() {
   }, []);
 
   if (loading) {
-    return <div className="text-center py-12 text-govuk-dark-grey">Loading services...</div>;
+    return <div className="text-center py-12 text-gray-500">Loading services...</div>;
   }
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-2">
-        <h1 className="text-3xl font-bold">Services</h1>
-        <a
-          href="/services/new"
-          className="bg-green-700 text-white px-4 py-2 rounded font-bold text-sm hover:bg-green-800 no-underline"
-        >
-          + Create new service
-        </a>
-      </div>
-      <p className="text-govuk-dark-grey mb-6">
-        {services.length} service(s) registered in the Agentic Legibility Stack.
-      </p>
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Services" }]} />
+      <PageHeader
+        title="Services"
+        subtitle={`${services.length} service(s) registered in the Agentic Legibility Stack.`}
+        actions={
+          <a
+            href="/services/new"
+            className="bg-govuk-green text-white px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90"
+          >
+            + Create new service
+          </a>
+        }
+      />
 
       {/* All-services dashboard */}
       {dashboard && <AllServicesDashboard dashboard={dashboard} />}
@@ -236,21 +222,21 @@ export default function ServicesPage() {
         {services.map((service) => (
           <div
             key={service.id}
-            className="border border-govuk-mid-grey hover:border-govuk-blue transition-colors"
+            className="border border-studio-border rounded-xl bg-white hover:shadow-sm transition-shadow"
           >
             <a
               href={`/services/${encodeURIComponent(service.id)}`}
-              className="block p-5 no-underline text-inherit"
+              className="block p-5"
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-xl font-bold">{service.name}</h2>
-                  <p className="text-sm text-govuk-dark-grey mt-1">{service.department}</p>
-                  <p className="text-sm mt-2">{service.description}</p>
+                  <h2 className="text-lg font-bold">{service.name}</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">{service.department}</p>
+                  <p className="text-sm mt-2 text-gray-700">{service.description}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold">{service.completeness}%</div>
-                  <div className="text-xs text-govuk-dark-grey">complete</div>
+                  <div className="text-3xl font-bold">{service.completeness}%</div>
+                  <div className="text-xs text-gray-500">complete</div>
                   {service.gapCount > 0 && (
                     <div className="text-xs text-red-600 mt-1">
                       {service.gapCount} gap(s)
@@ -260,11 +246,11 @@ export default function ServicesPage() {
               </div>
 
               <div className="flex gap-2 mt-3">
-                <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
                   Manifest
                 </span>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded ${
+                  className={`text-xs px-2 py-0.5 rounded-full ${
                     service.hasPolicy
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
@@ -273,7 +259,7 @@ export default function ServicesPage() {
                   Policy {service.hasPolicy ? "" : "(missing)"}
                 </span>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded ${
+                  className={`text-xs px-2 py-0.5 rounded-full ${
                     service.hasStateModel
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
@@ -282,7 +268,7 @@ export default function ServicesPage() {
                   State Model {service.hasStateModel ? "" : "(missing)"}
                 </span>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded ${
+                  className={`text-xs px-2 py-0.5 rounded-full ${
                     service.hasConsent
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
@@ -293,26 +279,26 @@ export default function ServicesPage() {
               </div>
             </a>
 
-            {/* Action bar: ledger, edit, delete + promote toggle */}
-            <div className="border-t border-govuk-mid-grey px-5 py-3 flex items-center justify-between bg-gray-50">
+            {/* Action bar */}
+            <div className="border-t border-studio-border px-5 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <a
                   href={`/services/${encodeURIComponent(service.id)}/ledger`}
-                  className="text-sm font-bold text-govuk-blue hover:underline no-underline"
+                  className="text-sm font-semibold text-studio-accent hover:underline"
                 >
                   View ledger
                 </a>
-                <span className="text-govuk-mid-grey">|</span>
+                <span className="text-gray-300">|</span>
                 <a
                   href={`/services/${encodeURIComponent(service.id)}/edit`}
-                  className="text-sm font-bold text-govuk-blue hover:underline no-underline"
+                  className="text-sm font-semibold text-studio-accent hover:underline"
                 >
                   Edit service
                 </a>
-                <span className="text-govuk-mid-grey">|</span>
+                <span className="text-gray-300">|</span>
                 <a
                   href={`/services/${encodeURIComponent(service.id)}`}
-                  className="text-sm font-bold text-red-600 hover:underline no-underline"
+                  className="text-sm font-semibold text-red-600 hover:underline"
                 >
                   Delete
                 </a>
@@ -320,12 +306,12 @@ export default function ServicesPage() {
 
               <div className="flex items-center gap-3">
                 {BUILT_IN_SERVICE_IDS.has(service.id) ? (
-                  <span className="text-sm text-govuk-dark-grey">
+                  <span className="text-sm text-gray-500">
                     <span className="text-blue-700 font-medium">Built-in</span>
                   </span>
                 ) : (
                   <>
-                    <span className="text-sm text-govuk-dark-grey">
+                    <span className="text-sm text-gray-500">
                       {service.promoted ? (
                         <span className="text-green-700 font-medium">Promoted</span>
                       ) : (

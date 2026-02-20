@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import CaseTimelineView from "./CaseTimelineView";
 import StateProgressFlow from "./StateProgressFlow";
 import ReviewDialog from "./ReviewDialog";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 interface LedgerCase {
   caseId: string;
@@ -48,22 +49,14 @@ interface StateModel {
   states: StateDefinition[];
 }
 
-const STATUS_BADGES: Record<string, { label: string; color: string }> = {
-  "in-progress": { label: "In progress", color: "bg-blue-100 text-blue-800" },
-  completed: { label: "Completed", color: "bg-green-100 text-green-800" },
-  rejected: { label: "Rejected", color: "bg-red-100 text-red-800" },
-  "handed-off": { label: "Handed off", color: "bg-yellow-100 text-yellow-800" },
-  abandoned: { label: "Abandoned", color: "bg-gray-100 text-gray-600" },
-};
-
 function CheckItem({ label, checked, detail }: { label: string; checked: boolean; detail?: string }) {
   return (
     <div className="flex items-center gap-2 text-sm">
       <span className={checked ? "text-green-600" : "text-gray-400"}>
         {checked ? "\u2713" : "\u2717"}
       </span>
-      <span className={checked ? "font-medium" : "text-govuk-dark-grey"}>{label}</span>
-      {detail && <span className="text-xs text-govuk-dark-grey">({detail})</span>}
+      <span className={checked ? "font-medium" : "text-gray-500"}>{label}</span>
+      {detail && <span className="text-xs text-gray-500">({detail})</span>}
     </div>
   );
 }
@@ -111,7 +104,7 @@ export default function CaseDetail({
 
   if (loading) {
     return (
-      <div className="text-center py-12 text-govuk-dark-grey">
+      <div className="text-center py-12 text-gray-500">
         Loading case...
       </div>
     );
@@ -119,14 +112,12 @@ export default function CaseDetail({
 
   if (error || !caseData) {
     return (
-      <div className="border border-red-200 bg-red-50 rounded p-4">
+      <div className="border border-red-200 bg-red-50 rounded-xl p-4">
         <p className="text-red-600 font-bold">Error loading case</p>
         <p className="text-sm text-red-600 mt-1">{error || "Case not found"}</p>
       </div>
     );
   }
-
-  const badge = STATUS_BADGES[caseData.status] || STATUS_BADGES.abandoned;
 
   return (
     <div className="space-y-6">
@@ -135,16 +126,14 @@ export default function CaseDetail({
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h2 className="text-2xl font-bold">{caseData.userId}</h2>
-            <span className={`px-2 py-0.5 text-xs rounded ${badge.color}`}>
-              {badge.label}
-            </span>
+            <StatusBadge status={caseData.status} />
             {caseData.reviewStatus && (
-              <span className="px-2 py-0.5 text-xs bg-orange-100 text-orange-800 rounded">
+              <span className="px-2 py-0.5 text-xs bg-orange-100 text-orange-800 rounded-full">
                 Review: {caseData.reviewStatus}
               </span>
             )}
           </div>
-          <p className="text-sm text-govuk-dark-grey">
+          <p className="text-sm text-gray-500">
             Case <span className="font-mono">{caseData.caseId.slice(0, 12)}...</span>
             {" "}&middot;{" "}
             Started{" "}
@@ -155,21 +144,21 @@ export default function CaseDetail({
         </div>
         <button
           onClick={() => setShowReview(true)}
-          className="bg-govuk-green text-white font-bold px-4 py-2 text-sm rounded hover:opacity-90"
+          className="bg-govuk-green text-white font-bold px-4 py-2 text-sm rounded-lg hover:opacity-90"
         >
           Submit for review
         </button>
       </div>
 
       {/* Progress */}
-      <div className="border border-govuk-mid-grey rounded p-4">
+      <div className="border border-studio-border rounded-xl bg-white p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold">Journey Progress</h3>
           <span className="text-lg font-bold">{caseData.progressPercent}%</span>
         </div>
-        <div className="w-full h-3 bg-gray-100 rounded overflow-hidden mb-4">
+        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mb-4">
           <div
-            className="h-full bg-govuk-green rounded transition-all"
+            className="h-full bg-govuk-green rounded-full transition-all"
             style={{ width: `${caseData.progressPercent}%` }}
           />
         </div>
@@ -184,7 +173,7 @@ export default function CaseDetail({
 
       {/* Checklist + Stats */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="border border-govuk-mid-grey rounded p-4">
+        <div className="border border-studio-border rounded-xl bg-white p-4">
           <h3 className="text-sm font-bold mb-3">Checklist</h3>
           <div className="space-y-2">
             <CheckItem label="Identity verified" checked={caseData.identityVerified} />
@@ -196,23 +185,23 @@ export default function CaseDetail({
           </div>
         </div>
 
-        <div className="border border-govuk-mid-grey rounded p-4">
+        <div className="border border-studio-border rounded-xl bg-white p-4">
           <h3 className="text-sm font-bold mb-3">Activity</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-govuk-dark-grey">Agent actions</span>
+              <span className="text-gray-500">Agent actions</span>
               <span className="font-bold">{caseData.agentActions}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-govuk-dark-grey">Human actions</span>
+              <span className="text-gray-500">Human actions</span>
               <span className="font-bold">{caseData.humanActions}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-govuk-dark-grey">Total events</span>
+              <span className="text-gray-500">Total events</span>
               <span className="font-bold">{caseData.eventCount}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-govuk-dark-grey">Last activity</span>
+              <span className="text-gray-500">Last activity</span>
               <span className="font-bold">
                 {new Date(caseData.lastActivityAt).toLocaleDateString("en-GB", {
                   dateStyle: "medium",
@@ -225,10 +214,10 @@ export default function CaseDetail({
 
       {/* Review info */}
       {caseData.reviewStatus && caseData.reviewReason && (
-        <div className="border border-orange-200 bg-orange-50 rounded p-4">
+        <div className="border border-orange-200 bg-orange-50 rounded-xl p-4">
           <h3 className="text-sm font-bold mb-1">Human Review</h3>
           <p className="text-sm">{caseData.reviewReason}</p>
-          <p className="text-xs text-govuk-dark-grey mt-1">
+          <p className="text-xs text-gray-500 mt-1">
             Status: {caseData.reviewStatus}
           </p>
         </div>

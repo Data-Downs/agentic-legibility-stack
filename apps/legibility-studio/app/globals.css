@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  /* GOV.UK accent colors */
   --govuk-blue: #1d70b8;
   --govuk-dark-blue: #003078;
   --govuk-black: #0b0c0c;
@@ -13,27 +14,30 @@
   --govuk-light-grey: #f3f2f1;
   --govuk-mid-grey: #b1b4b6;
   --govuk-dark-grey: #505a5f;
+
+  /* Studio layout */
+  --sidebar-width: 260px;
 }
 
 body {
-  font-family: "GDS Transport", "nta", Arial, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
   color: var(--govuk-black);
-  background-color: var(--govuk-white);
+  background-color: #f8f9fa;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 a {
-  color: var(--govuk-blue);
-  text-decoration: underline;
+  color: inherit;
+  text-decoration: none;
 }
 
 a:hover {
-  color: var(--govuk-dark-blue);
+  color: inherit;
 }
 
 a:visited {
-  color: #4c2c92;
+  color: inherit;
 }
 
 a:focus {

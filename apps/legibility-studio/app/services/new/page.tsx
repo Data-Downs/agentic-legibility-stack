@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ServiceForm, { formDataToApiPayload, type ServiceFormData } from "@/components/forms/ServiceForm";
+import Breadcrumbs from "@/components/layout/Breadcrumbs";
+import PageHeader from "@/components/ui/PageHeader";
 
 export default function CreateServicePage() {
   const router = useRouter();
@@ -36,17 +38,20 @@ export default function CreateServicePage() {
 
   return (
     <div>
-      <a href="/services" className="text-govuk-blue text-sm mb-4 inline-block">
-        &larr; Back to services
-      </a>
-
-      <h1 className="text-3xl font-bold mb-2">Create new service</h1>
-      <p className="text-govuk-dark-grey mb-6">
-        Define a new government service with its manifest, policy, state model, and consent artefacts.
-      </p>
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/" },
+          { label: "Services", href: "/services" },
+          { label: "Create new service" },
+        ]}
+      />
+      <PageHeader
+        title="Create new service"
+        subtitle="Define a new government service with its manifest, policy, state model, and consent artefacts."
+      />
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded p-4 mb-6 text-sm text-red-800">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-sm text-red-800">
           {error}
         </div>
       )}

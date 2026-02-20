@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import BottleneckChart from "./BottleneckChart";
 import CasesList from "./CasesList";
+import KPICard from "@/components/ui/KPICard";
 
 interface DashboardData {
   serviceId: string;
@@ -18,24 +19,6 @@ interface DashboardData {
   humanActionTotal: number;
   bottlenecks: Array<{ stateId: string; caseCount: number }>;
   recentCases: Array<Record<string, unknown>>;
-}
-
-function KPICard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
-  return (
-    <div className="border border-govuk-mid-grey rounded p-4">
-      <div className="text-2xl font-bold">{value}</div>
-      <div className="text-xs text-govuk-dark-grey font-bold mt-1">{label}</div>
-      {sub && <div className="text-xs text-govuk-dark-grey mt-0.5">{sub}</div>}
-    </div>
-  );
 }
 
 export default function LedgerDashboard({
@@ -68,7 +51,7 @@ export default function LedgerDashboard({
 
   if (loading) {
     return (
-      <div className="text-center py-12 text-govuk-dark-grey">
+      <div className="text-center py-12 text-gray-500">
         Loading dashboard...
       </div>
     );
@@ -76,10 +59,10 @@ export default function LedgerDashboard({
 
   if (error) {
     return (
-      <div className="border border-red-200 bg-red-50 rounded p-4">
+      <div className="border border-red-200 bg-red-50 rounded-xl p-4">
         <p className="text-red-600 font-bold">Error loading dashboard</p>
         <p className="text-sm text-red-600 mt-1">{error}</p>
-        <p className="text-xs text-govuk-dark-grey mt-2">
+        <p className="text-xs text-gray-500 mt-2">
           Make sure citizen-experience is running on port 3100.
         </p>
       </div>
@@ -88,9 +71,9 @@ export default function LedgerDashboard({
 
   if (!dashboard || dashboard.totalCases === 0) {
     return (
-      <div className="border border-govuk-mid-grey rounded p-6 text-center">
+      <div className="border border-studio-border rounded-xl bg-white p-6 text-center">
         <h3 className="text-lg font-bold mb-2">No cases yet</h3>
-        <p className="text-sm text-govuk-dark-grey">
+        <p className="text-sm text-gray-500">
           Cases will appear here once citizens start interacting with this
           service. Run <code className="bg-gray-100 px-1 rounded">npm run seed:ledger</code> to populate demo data.
         </p>
@@ -128,7 +111,7 @@ export default function LedgerDashboard({
       {/* Status bar */}
       <div>
         <h3 className="text-sm font-bold mb-2">Status Breakdown</h3>
-        <div className="flex h-4 rounded overflow-hidden">
+        <div className="flex h-4 rounded-full overflow-hidden">
           {dashboard.completedCases > 0 && (
             <div
               className="bg-green-500"
@@ -158,7 +141,7 @@ export default function LedgerDashboard({
             />
           )}
         </div>
-        <div className="flex gap-4 mt-2 text-xs text-govuk-dark-grey">
+        <div className="flex gap-4 mt-2 text-xs text-gray-500">
           <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full inline-block" /> Completed</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-500 rounded-full inline-block" /> Active</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 bg-yellow-500 rounded-full inline-block" /> Handed off</span>
@@ -168,36 +151,36 @@ export default function LedgerDashboard({
 
       {/* Second row: Agent vs Human + Avg Progress */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="border border-govuk-mid-grey rounded p-4">
+        <div className="border border-studio-border rounded-xl bg-white p-4">
           <h3 className="text-sm font-bold mb-2">Agent vs Human Actions</h3>
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <div className="flex h-3 rounded overflow-hidden bg-gray-100">
-                <div className="bg-blue-500 rounded-l" style={{ width: `${agentPct}%` }} />
-                <div className="bg-green-500 rounded-r" style={{ width: `${100 - agentPct}%` }} />
+              <div className="flex h-3 rounded-full overflow-hidden bg-gray-100">
+                <div className="bg-blue-500 rounded-l-full" style={{ width: `${agentPct}%` }} />
+                <div className="bg-green-500 rounded-r-full" style={{ width: `${100 - agentPct}%` }} />
               </div>
-              <div className="flex justify-between text-xs mt-1 text-govuk-dark-grey">
+              <div className="flex justify-between text-xs mt-1 text-gray-500">
                 <span>Agent: {dashboard.agentActionTotal}</span>
                 <span>Human: {dashboard.humanActionTotal}</span>
               </div>
             </div>
-            <div className="text-2xl font-bold">{agentPct}%</div>
+            <div className="text-3xl font-bold">{agentPct}%</div>
           </div>
-          <p className="text-xs text-govuk-dark-grey mt-1">of actions performed by agent</p>
+          <p className="text-xs text-gray-400 mt-1">of actions performed by agent</p>
         </div>
 
-        <div className="border border-govuk-mid-grey rounded p-4">
+        <div className="border border-studio-border rounded-xl bg-white p-4">
           <h3 className="text-sm font-bold mb-2">Average Progress</h3>
           <div className="flex items-center gap-4">
-            <div className="flex-1 h-3 bg-gray-100 rounded overflow-hidden">
+            <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-govuk-green rounded"
+                className="h-full bg-govuk-green rounded-full"
                 style={{ width: `${dashboard.avgProgress}%` }}
               />
             </div>
-            <div className="text-2xl font-bold">{dashboard.avgProgress}%</div>
+            <div className="text-3xl font-bold">{dashboard.avgProgress}%</div>
           </div>
-          <p className="text-xs text-govuk-dark-grey mt-1">of active cases through their journey</p>
+          <p className="text-xs text-gray-400 mt-1">of active cases through their journey</p>
         </div>
       </div>
 
@@ -205,7 +188,7 @@ export default function LedgerDashboard({
       {dashboard.bottlenecks.length > 0 && (
         <div>
           <h3 className="text-sm font-bold mb-3">Bottleneck States</h3>
-          <p className="text-xs text-govuk-dark-grey mb-3">
+          <p className="text-xs text-gray-500 mb-3">
             States where active cases are currently stuck.
           </p>
           <BottleneckChart bottlenecks={dashboard.bottlenecks} />

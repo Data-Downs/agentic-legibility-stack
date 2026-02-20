@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import TraceExplorer from "../../components/evidence/TraceExplorer";
 import ReplayView from "../../components/evidence/ReplayView";
+import Breadcrumbs from "@/components/layout/Breadcrumbs";
+import PageHeader from "@/components/ui/PageHeader";
 
 interface TraceEntry {
   traceId: string;
@@ -73,19 +75,19 @@ export default function EvidencePage() {
   };
 
   if (loading) {
-    return <div className="text-center py-12 text-govuk-dark-grey">Loading evidence...</div>;
+    return <div className="text-center py-12 text-gray-500">Loading evidence...</div>;
   }
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-2">Evidence Plane</h1>
-      <p className="text-govuk-dark-grey mb-6">
-        Browse traces and receipts from agent interactions.
-        {totalEvents > 0 && ` ${totalEvents} total events recorded.`}
-      </p>
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Evidence" }]} />
+      <PageHeader
+        title="Evidence Plane"
+        subtitle={`Browse traces and receipts from agent interactions.${totalEvents > 0 ? ` ${totalEvents} total events recorded.` : ""}`}
+      />
 
       {error && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded p-4 mb-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
           <p className="text-sm">{error}</p>
         </div>
       )}
@@ -94,13 +96,13 @@ export default function EvidencePage() {
       <div className="grid grid-cols-3 gap-6">
         {/* Trace list (left column) */}
         <div className="col-span-1">
-          <h2 className="font-bold text-sm text-govuk-dark-grey uppercase tracking-wide mb-3">
+          <h2 className="font-bold text-sm text-gray-500 uppercase tracking-wide mb-3">
             Sessions ({traces.length})
           </h2>
           {traces.length === 0 && !error && (
-            <div className="bg-gray-50 border border-gray-200 rounded p-6 text-center">
-              <p className="text-govuk-dark-grey text-sm">No traces recorded yet.</p>
-              <p className="text-xs text-govuk-dark-grey mt-2">
+            <div className="bg-white border border-studio-border rounded-xl p-6 text-center">
+              <p className="text-gray-500 text-sm">No traces recorded yet.</p>
+              <p className="text-xs text-gray-400 mt-2">
                 Chat with the agent to generate traces.
               </p>
             </div>
@@ -110,15 +112,15 @@ export default function EvidencePage() {
               <button
                 key={trace.traceId}
                 onClick={() => loadTrace(trace.traceId)}
-                className={`w-full text-left border rounded p-3 transition-colors ${
+                className={`w-full text-left border rounded-xl p-3 transition-colors ${
                   selectedTraceId === trace.traceId
-                    ? "border-govuk-blue bg-blue-50"
-                    : "border-govuk-mid-grey hover:border-govuk-blue"
+                    ? "border-studio-accent bg-blue-50"
+                    : "border-studio-border bg-white hover:border-studio-accent"
                 }`}
               >
                 <div className="font-mono text-xs font-bold truncate">{trace.traceId}</div>
                 <div className="flex justify-between mt-1">
-                  <span className="text-xs text-govuk-dark-grey">
+                  <span className="text-xs text-gray-500">
                     {new Date(trace.firstEvent).toLocaleString("en-GB")}
                   </span>
                   <span className="text-xs font-bold">{trace.eventCount} events</span>
@@ -131,25 +133,25 @@ export default function EvidencePage() {
         {/* Detail panel (right columns) */}
         <div className="col-span-2">
           {!selectedTraceId && (
-            <div className="bg-gray-50 border border-gray-200 rounded p-12 text-center">
-              <p className="text-govuk-dark-grey">Select a session to explore its trace events.</p>
+            <div className="bg-white border border-studio-border rounded-xl p-12 text-center">
+              <p className="text-gray-500">Select a session to explore its trace events.</p>
             </div>
           )}
 
           {selectedTraceId && detailLoading && (
-            <div className="text-center py-8 text-govuk-dark-grey">Loading trace...</div>
+            <div className="text-center py-8 text-gray-500">Loading trace...</div>
           )}
 
           {selectedTraceId && !detailLoading && (
             <div>
               {/* Tabs */}
-              <div className="flex gap-1 border-b border-govuk-mid-grey mb-4">
+              <div className="flex gap-1 border-b border-studio-border mb-4">
                 <button
                   onClick={() => setTab("explorer")}
                   className={`text-sm px-4 py-2 border-b-2 transition-colors ${
                     tab === "explorer"
-                      ? "border-govuk-blue text-govuk-blue font-bold"
-                      : "border-transparent text-govuk-dark-grey hover:text-black"
+                      ? "border-studio-accent text-studio-accent font-bold"
+                      : "border-transparent text-gray-500 hover:text-black"
                   }`}
                 >
                   Explorer
@@ -158,8 +160,8 @@ export default function EvidencePage() {
                   onClick={() => setTab("replay")}
                   className={`text-sm px-4 py-2 border-b-2 transition-colors ${
                     tab === "replay"
-                      ? "border-govuk-blue text-govuk-blue font-bold"
-                      : "border-transparent text-govuk-dark-grey hover:text-black"
+                      ? "border-studio-accent text-studio-accent font-bold"
+                      : "border-transparent text-gray-500 hover:text-black"
                   }`}
                 >
                   Replay

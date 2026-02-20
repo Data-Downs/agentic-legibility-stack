@@ -357,16 +357,16 @@ export function formDataToApiPayload(data: ServiceFormData) {
 function Section({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-govuk-mid-grey rounded mb-4">
+    <div className="border border-studio-border rounded-xl bg-white mb-4">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full text-left p-3 flex justify-between items-center hover:bg-gray-50 font-bold text-sm"
+        className="w-full text-left p-4 flex justify-between items-center hover:bg-gray-50 rounded-t-xl font-bold text-sm"
       >
         {title}
-        <span className="text-xs text-govuk-dark-grey">{open ? "Collapse" : "Expand"}</span>
+        <span className="text-xs text-gray-500">{open ? "Collapse" : "Expand"}</span>
       </button>
-      {open && <div className="border-t border-govuk-mid-grey p-4">{children}</div>}
+      {open && <div className="border-t border-studio-border p-4">{children}</div>}
     </div>
   );
 }
@@ -375,8 +375,8 @@ function Section({ title, children, defaultOpen = false }: { title: string; chil
 
 function ToggleSection({ title, enabled, onToggle, children }: { title: string; enabled: boolean; onToggle: (v: boolean) => void; children: React.ReactNode }) {
   return (
-    <div className="border border-govuk-mid-grey rounded mb-4">
-      <div className="p-3 flex justify-between items-center">
+    <div className="border border-studio-border rounded-xl bg-white mb-4">
+      <div className="p-4 flex justify-between items-center">
         <span className="font-bold text-sm">{title}</span>
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input
@@ -388,7 +388,7 @@ function ToggleSection({ title, enabled, onToggle, children }: { title: string; 
           {enabled ? "Enabled" : "Disabled"}
         </label>
       </div>
-      {enabled && <div className="border-t border-govuk-mid-grey p-4">{children}</div>}
+      {enabled && <div className="border-t border-studio-border p-4">{children}</div>}
     </div>
   );
 }
@@ -437,7 +437,7 @@ export default function ServiceForm({
     onSubmit(form);
   }
 
-  const inputClass = "w-full border border-govuk-mid-grey rounded px-3 py-2 text-sm";
+  const inputClass = "w-full border border-studio-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-studio-accent";
 
   return (
     <form onSubmit={handleSubmit}>
@@ -706,11 +706,11 @@ export default function ServiceForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-green-700 text-white px-6 py-2 rounded font-bold text-sm hover:bg-green-800 disabled:opacity-50"
+          className="bg-govuk-green text-white px-6 py-2 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-50"
         >
           {isSubmitting ? "Saving..." : submitLabel}
         </button>
-        <a href="/services" className="px-6 py-2 rounded border border-govuk-mid-grey text-sm hover:bg-gray-50">
+        <a href="/services" className="px-6 py-2 rounded-lg border border-studio-border text-sm hover:bg-gray-50">
           Cancel
         </a>
       </div>

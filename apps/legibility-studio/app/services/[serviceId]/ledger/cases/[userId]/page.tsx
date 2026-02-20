@@ -2,6 +2,7 @@
 
 import { use } from "react";
 import CaseDetail from "@/components/ledger/CaseDetail";
+import Breadcrumbs from "@/components/layout/Breadcrumbs";
 
 export default function CaseDetailPage({
   params,
@@ -12,12 +13,15 @@ export default function CaseDetailPage({
 
   return (
     <div>
-      <a
-        href={`/services/${encodeURIComponent(serviceId)}/ledger`}
-        className="text-govuk-blue text-sm mb-4 inline-block"
-      >
-        &larr; Back to ledger
-      </a>
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/" },
+          { label: "Services", href: "/services" },
+          { label: serviceId, href: `/services/${encodeURIComponent(serviceId)}` },
+          { label: "Ledger", href: `/services/${encodeURIComponent(serviceId)}/ledger` },
+          { label: userId },
+        ]}
+      />
 
       <CaseDetail serviceId={serviceId} userId={userId} />
     </div>
