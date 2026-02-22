@@ -314,8 +314,8 @@
       content: '';
       position: absolute;
       top: 0.5rem;
-      left: calc(50% - 160px);
-      width: 320px;
+      left: calc(50% - 220px);
+      width: 440px;
       height: 2px;
       background: #b1b4b6;
     }
@@ -461,6 +461,7 @@
       <li><a href="#artefacts">Artefacts</a></li>
       <li><a href="#evidence">Evidence</a></li>
       <li><a href="#agents">Agents</a></li>
+      <li><a href="#demos">Demos</a></li>
       <li><a href="#packages">Packages</a></li>
       <li><a href="#get-started">Get Started</a></li>
     </ul>
@@ -594,6 +595,10 @@
         <div class="diagram-box" style="border-left-color: #00703c;">
           <strong>Check State Pension</strong>
           <span>DWP</span>
+        </div>
+        <div class="diagram-box" style="border-left-color: #00703c;">
+          <strong>Become a Robot</strong>
+          <span>Mock</span>
         </div>
       </div>
 
@@ -739,7 +744,28 @@
       </div>
       <div class="card card-accent card-green">
         <h3>Legibility Studio</h3>
-        <p>Administrators see the full trace explorer, replay engine, service definitions, and gap analysis.</p>
+        <p>Administrators see the full trace explorer, replay engine, service definitions, gap analysis, and operational dashboards.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 2.5rem; margin-bottom: 1rem;">Service Ledger</h3>
+    <p style="color: #505a5f; max-width: 700px; margin-bottom: 1.5rem;">
+      The Service Ledger extends the Evidence Plane with case-level operational tracking.
+      It provides a dashboard view of all active cases across services, with KPI metrics,
+      bottleneck analysis, state progress flows, and case review workflows.
+    </p>
+    <div class="grid-3">
+      <div class="card card-accent card-orange">
+        <h3>Case Tracking</h3>
+        <p>Every citizen journey becomes a trackable case with state history, timeline views, and review capabilities.</p>
+      </div>
+      <div class="card card-accent card-purple">
+        <h3>Operational KPIs</h3>
+        <p>Completion rates, average processing times, bottleneck identification, and sparkline trend charts per service.</p>
+      </div>
+      <div class="card card-accent card-blue">
+        <h3>Review Workflows</h3>
+        <p>Cases can be reviewed, approved, reset, or escalated. Full audit trail maintained for every action.</p>
       </div>
     </div>
   </div>
@@ -788,12 +814,12 @@
   <div class="container">
     <h2>Demo Services &amp; Personas</h2>
     <p class="section-intro">
-      Three government services and three citizen personas, each designed to exercise
+      Four services and four citizen personas, each designed to exercise
       different parts of the architecture.
     </p>
 
     <h3 style="margin-bottom: 1rem;">Services</h3>
-    <div class="grid-3" style="margin-bottom: 2.5rem;">
+    <div class="grid-2" style="margin-bottom: 2.5rem;">
       <div class="card card-accent card-blue">
         <div class="service-dept">DVLA</div>
         <h3>Renew Driving Licence</h3>
@@ -809,10 +835,15 @@
         <h3>Check State Pension</h3>
         <p>Read-only forecast lookup. No payment, no application. Tests information retrieval and credential sharing.</p>
       </div>
+      <div class="card card-accent card-purple">
+        <div class="service-dept">Mock</div>
+        <h3>Become a Robot</h3>
+        <p>A mock demonstration service used for testing the architecture with intentionally absurd scenarios.</p>
+      </div>
     </div>
 
     <h3 style="margin-bottom: 1rem;">Personas</h3>
-    <div class="grid-3">
+    <div class="grid-2">
       <div class="card card-accent card-purple">
         <h3>Emma &amp; Liam</h3>
         <p class="persona-desc">Young expecting couple, first baby. Good for benefits, family services, and driving scenarios.</p>
@@ -824,6 +855,10 @@
       <div class="card card-accent card-green">
         <h3>Margaret</h3>
         <p class="persona-desc">Retired, 71, managing health conditions. Tests pension, over-pension-age eligibility, and driving renewal for over-70s.</p>
+      </div>
+      <div class="card card-accent card-orange">
+        <h3>Priya</h3>
+        <p class="persona-desc">Tests interactive task card flows, form-based inputs, and the full Universal Credit journey with consent and state tracking.</p>
       </div>
     </div>
   </div>
@@ -859,8 +894,8 @@
         <tr><th>App</th><th>Port</th><th>Purpose</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>citizen-experience</code></td><td>3100</td><td>Citizen-facing chat with persona picker and agent selection</td></tr>
-        <tr><td><code>legibility-studio</code></td><td>3101</td><td>Admin dashboard: service definitions, evidence explorer, gap analysis</td></tr>
+        <tr><td><code>citizen-experience</code></td><td>3100</td><td>Citizen-facing chat with persona picker, agent selection, interactive task cards, consent flows, and journey tracking</td></tr>
+        <tr><td><code>legibility-studio</code></td><td>3101</td><td>Admin dashboard: service designer, evidence explorer, gap analysis, service ledger, and case management</td></tr>
       </tbody>
     </table>
 
