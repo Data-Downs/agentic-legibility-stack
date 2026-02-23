@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 import * as mcpClient from "@/lib/mcp-client";
+import * as localMcpClient from "@/lib/local-mcp-client";
 import { CapabilityInvoker, HandoffManager } from "@als/runtime";
 import { AnthropicAdapter } from "@als/adapters";
 import type { AnthropicChatInput, AnthropicChatOutput } from "@als/adapters";
@@ -53,6 +54,36 @@ async function ensureMcpConnection() {
       }
     });
   }
+}
+
+// ── Local MCP connection (for MCP mode) ──
+let localMcpConnecting = false;
+async function ensureLocalMcpConnection() {
+  if (localMcpClient.isLocalConnected()) return;
+  if (localMcpConnecting) return;
+  localMcpConnecting = true;
+  try {
+    const success = await localMcpClient.connectLocal();
+    if (success) {
+      console.log("Local MCP connected — service tools available");
+    } else {
+      console.warn("Local MCP unavailable — MCP mode will have no service tools");
+    }
+  } finally {
+    localMcpConnecting = false;
+  }
+}
+
+/** Check if a tool name belongs to the local MCP service tools */
+const SERVICE_TOOL_ACTIONS = [
+  "_check_eligibility",
+  "_get_requirements",
+  "_get_consent_model",
+  "_advance_state",
+  "_get_service_info",
+];
+function isLocalServiceTool(name: string): boolean {
+  return SERVICE_TOOL_ACTIONS.some((action) => name.endsWith(action));
 }
 
 async function loadFile(filePath: string): Promise<string> {
@@ -494,6 +525,7 @@ interface ChatInput {
   generateTitle?: boolean;
   ucState?: string;
   ucStateHistory?: string[];
+  serviceMode?: "json" | "mcp";
 }
 
 interface ChatOutput {
@@ -540,9 +572,14 @@ interface ChatOutput {
 }
 
 async function chatHandler(input: unknown): Promise<ChatOutput> {
-  const { persona, agent, scenario, messages, generateTitle, ucState: clientUcState, ucStateHistory: clientStateHistory } = input as ChatInput;
+  const { persona, agent, scenario, messages, generateTitle, ucState: clientUcState, ucStateHistory: clientStateHistory, serviceMode } = input as ChatInput;
+
+  const isMcpMode = serviceMode === "mcp";
 
   await ensureMcpConnection();
+  if (isMcpMode) {
+    await ensureLocalMcpConnection();
+  }
 
   console.log(`\n--- Chat Request ---`);
   console.log(`Persona: ${persona}, Agent: ${agent}, Scenario: ${scenario}`);
@@ -566,15 +603,26 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   }
 
   const userPostcode = personaData.address?.postcode || "";
-  const mcpTools = mcpClient.getToolsForClaude();
-  const hasTools = mcpTools.length > 0;
+  const govmcpTools = mcpClient.getToolsForClaude();
 
-  // ── Policy Evaluation ──
+  // In MCP mode, combine local service tools + govmcp tools
+  // In JSON mode, only use govmcp tools (service logic handled inline)
+  let allTools: Array<{ name: string; description: string; input_schema: Record<string, unknown> }>;
+  if (isMcpMode) {
+    const localTools = localMcpClient.getLocalToolsForClaude();
+    allTools = [...localTools, ...govmcpTools];
+    console.log(`   MCP mode: ${localTools.length} local + ${govmcpTools.length} govmcp = ${allTools.length} tools`);
+  } else {
+    allTools = govmcpTools;
+  }
+  const hasTools = allTools.length > 0;
+
+  // ── Policy Evaluation (JSON mode only — MCP mode delegates to tools) ──
   const serviceId = resolveServiceId(scenario);
   let policyResultInfo: ChatOutput["policyResult"] | undefined;
   let policyContext = "";
 
-  if (serviceId) {
+  if (!isMcpMode && serviceId) {
     const ruleset = await loadPolicyRuleset(serviceId);
     if (ruleset) {
       const context = buildPolicyContext(personaData);
@@ -610,12 +658,12 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     systemPrompt += policyContext;
   }
 
-  // ── State Model Journey ──
+  // ── State Model Journey (JSON mode: inline, MCP mode: via tools) ──
   let stateMachine: StateMachine | null = null;
   let consentModel: Record<string, unknown> | null = null;
   const currentUcState = clientUcState || "not-started";
 
-  if (serviceId) {
+  if (!isMcpMode && serviceId) {
     const stateModelDef = await loadStateModel(serviceId);
     consentModel = await loadConsentModel(serviceId);
 
@@ -634,7 +682,15 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   }
 
   if (hasTools) {
-    systemPrompt += `\n\n---\n\nLIVE GOV.UK DATA TOOLS:\nYou have access to tools that can look up real, current UK government data.\nUse these when the user asks questions that benefit from real, up-to-date information.\nFor example:\n- search_govuk to find official guidance on benefits, driving, parenting, tax\n- govuk_content to fetch a specific GOV.UK page by its path\n- find_mp to look up the user's MP (their postcode is ${userPostcode})\n- lookup_postcode for local council and constituency info (their postcode is ${userPostcode})\n- ea_current_floods to check flood warnings in their area\n- get_bank_holidays for upcoming bank holidays\n- search_hansard to find what Parliament has discussed on a topic\n- find_courts to find nearby courts\n- fsa_food_alerts_search for current food safety alerts\n\nWhen you use these tools, present the information naturally as part of your response.\nDo NOT mention "tools" or "MCP" to the user — just weave the real data into your answer.\nAlways prefer real data from tools over making up or guessing information.`;
+    if (isMcpMode) {
+      // MCP mode: include service tool instructions + govmcp tool instructions
+      systemPrompt += `\n\n---\n\nSERVICE TOOLS (MCP MODE):\nYou have access to tools for the government service the citizen is using.\nThese tools let you check eligibility, advance the state machine, get requirements, and manage consent.\n\nFor the current service, use these tools to guide the citizen:\n- Use the _check_eligibility tool to evaluate whether the citizen qualifies (pass their data as citizen_data)\n- Use the _get_requirements tool to see what inputs the service needs\n- Use the _get_consent_model tool to understand what data sharing consent is required\n- Use the _advance_state tool to transition to the next step (provide current_state and trigger)\n- Use the _get_service_info tool for full service metadata\n\nIMPORTANT: The citizen's current state is "${currentUcState}". When using _advance_state, pass this as current_state.\nAfter advancing state, tell the citizen what happened and what comes next.\nDo NOT fabricate eligibility results, payment amounts, dates, or reference numbers — use the tools.\n\nThe citizen's data for eligibility checks:\n${JSON.stringify(buildPolicyContext(personaData), null, 2)}`;
+
+      systemPrompt += `\n\nLIVE GOV.UK DATA TOOLS:\nYou also have access to tools for real UK government data.\nFor example:\n- search_govuk for official guidance\n- lookup_postcode for local info (citizen postcode: ${userPostcode})\n- find_mp for constituency MP\n- ea_current_floods for flood warnings\n\nPresent all information naturally. Do NOT mention "tools" or "MCP" to the user.`;
+    } else {
+      // JSON mode: only govmcp tool instructions
+      systemPrompt += `\n\n---\n\nLIVE GOV.UK DATA TOOLS:\nYou have access to tools that can look up real, current UK government data.\nUse these when the user asks questions that benefit from real, up-to-date information.\nFor example:\n- search_govuk to find official guidance on benefits, driving, parenting, tax\n- govuk_content to fetch a specific GOV.UK page by its path\n- find_mp to look up the user's MP (their postcode is ${userPostcode})\n- lookup_postcode for local council and constituency info (their postcode is ${userPostcode})\n- ea_current_floods to check flood warnings in their area\n- get_bank_holidays for upcoming bank holidays\n- search_hansard to find what Parliament has discussed on a topic\n- find_courts to find nearby courts\n- fsa_food_alerts_search for current food safety alerts\n\nWhen you use these tools, present the information naturally as part of your response.\nDo NOT mention "tools" or "MCP" to the user — just weave the real data into your answer.\nAlways prefer real data from tools over making up or guessing information.`;
+    }
   }
 
   systemPrompt += `\n\n---\n\nRemember: Stay in character as ${agent.toUpperCase()} agent, communicate according to the persona style, and help with the ${scenario} scenario.`;
@@ -668,7 +724,7 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     const adapterInput: AnthropicChatInput = {
       systemPrompt,
       messages: loopMessages,
-      tools: hasTools ? (mcpTools as unknown as Array<Record<string, unknown>>) : undefined,
+      tools: hasTools ? (allTools as unknown as Array<Record<string, unknown>>) : undefined,
     };
 
     const adapterResult = await llmAdapter.execute({
@@ -711,6 +767,8 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
         if (toolCall.name === "ea_current_floods") {
           const city = personaData.address?.city || "";
           toolResult = await getLocalFloodData(city);
+        } else if (isMcpMode && isLocalServiceTool(toolCall.name)) {
+          toolResult = await localMcpClient.callLocalTool(toolCall.name, toolCall.input);
         } else {
           toolResult = await mcpClient.callTool(toolCall.name, toolCall.input);
         }
@@ -766,7 +824,60 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   const stateTransitions: Array<{ fromState: string; toState: string; trigger: string }> = [];
   let ucStateInfo: ChatOutput["ucState"] | undefined;
 
-  if (stateMachine) {
+  // In MCP mode, extract state transitions from tool call results
+  if (isMcpMode) {
+    // Parse state transitions from _advance_state tool results
+    for (const toolName of toolsUsed) {
+      if (toolName.endsWith("_advance_state")) {
+        // The tool result was already fed back to Claude; we can also parse from
+        // the loopMessages to extract the actual state transition data
+        // Look for tool_result messages that contain advance_state results
+        for (const msg of loopMessages) {
+          if (msg.role === "user" && Array.isArray(msg.content)) {
+            for (const part of msg.content as Array<Record<string, unknown>>) {
+              if (part.type === "tool_result" && typeof part.content === "string") {
+                try {
+                  const parsed = JSON.parse(part.content);
+                  if (parsed.success && parsed.fromState && parsed.toState) {
+                    stateTransitions.push({
+                      fromState: parsed.fromState,
+                      toState: parsed.toState,
+                      trigger: parsed.trigger || "unknown",
+                    });
+                  }
+                } catch {
+                  // Not JSON or not a state transition result
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Build ucStateInfo from MCP tool results
+    const latestState = stateTransitions.length > 0
+      ? stateTransitions[stateTransitions.length - 1].toState
+      : currentUcState;
+
+    const updatedHistory = [...(clientStateHistory || [])];
+    if (!updatedHistory.includes(currentUcState)) {
+      updatedHistory.push(currentUcState);
+    }
+    for (const t of stateTransitions) {
+      if (!updatedHistory.includes(t.toState)) {
+        updatedHistory.push(t.toState);
+      }
+    }
+
+    ucStateInfo = {
+      currentState: latestState,
+      previousState: stateTransitions.length > 0 ? stateTransitions[0].fromState : undefined,
+      trigger: stateTransitions.length > 0 ? stateTransitions[stateTransitions.length - 1].trigger : undefined,
+      allowedTransitions: [], // MCP mode: agent discovers these via tools
+      stateHistory: updatedHistory,
+    };
+  } else if (stateMachine) {
     // State transition — from structured output
     if (structuredOutput?.stateTransition) {
       const trigger = structuredOutput.stateTransition;
@@ -919,10 +1030,10 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   }
 
   // ── Consent Requests ──
-  // Only surface consent cards when the state machine is at eligibility-checked.
-  // Once consent is granted (state moves to consent-given), do NOT re-serve them.
+  // In MCP mode, consent info comes from _get_consent_model tool calls (agent-driven)
+  // In JSON mode, consent cards are surfaced at specific states
   let consentRequests: ChatOutput["consentRequests"] | undefined;
-  if (consentModel && stateMachine) {
+  if (!isMcpMode && consentModel && stateMachine) {
     const currentStateId = stateMachine.getState();
     if (currentStateId === "eligibility-checked") {
       const grants = (consentModel.grants || []) as Array<Record<string, unknown>>;
@@ -1079,7 +1190,7 @@ invoker.registerHandler("agent.chat", chatHandler);
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { persona, agent, scenario, messages, generateTitle, ucState, ucStateHistory } = body;
+    const { persona, agent, scenario, messages, generateTitle, ucState, ucStateHistory, serviceMode } = body;
 
     if (!persona || !agent || !scenario || !messages) {
       return NextResponse.json(
@@ -1117,7 +1228,7 @@ export async function POST(request: NextRequest) {
     // Route through CapabilityInvoker — the ONLY way to call services
     const result = await invoker.invoke(
       "agent.chat",
-      { persona, agent, scenario, messages, generateTitle, ucState, ucStateHistory },
+      { persona, agent, scenario, messages, generateTitle, ucState, ucStateHistory, serviceMode },
       context
     );
 

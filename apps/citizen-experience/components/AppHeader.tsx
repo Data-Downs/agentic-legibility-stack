@@ -19,12 +19,15 @@ const personas = [
 export function AppHeader() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mcpConnected, setMcpConnected] = useState(false);
+  const [localMcpConnected, setLocalMcpConnected] = useState(false);
   const [agentSheetOpen, setAgentSheetOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const persona = useAppStore((s) => s.persona);
   const agent = useAppStore((s) => s.agent);
+  const serviceMode = useAppStore((s) => s.serviceMode);
   const setAgent = useAppStore((s) => s.setAgent);
+  const setServiceMode = useAppStore((s) => s.setServiceMode);
   const setPersona = useAppStore((s) => s.setPersona);
   const currentView = useAppStore((s) => s.currentView);
   const currentService = useAppStore((s) => s.currentService);
@@ -35,8 +38,14 @@ export function AppHeader() {
     const check = () => {
       fetch("/api/mcp-status")
         .then((r) => r.json())
-        .then((d) => setMcpConnected(d.connected))
-        .catch(() => setMcpConnected(false));
+        .then((d) => {
+          setMcpConnected(d.connected);
+          setLocalMcpConnected(d.localMcpConnected ?? false);
+        })
+        .catch(() => {
+          setMcpConnected(false);
+          setLocalMcpConnected(false);
+        });
     };
     check();
     const interval = setInterval(check, 30000);
@@ -110,16 +119,30 @@ export function AppHeader() {
             <span className="text-white font-bold text-lg font-govuk">
               GOV.UK
             </span>
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 ${
-                mcpConnected ? "bg-govuk-green" : "bg-govuk-red"
-              }`}
-              title={
-                mcpConnected
-                  ? "MCP connected — live GOV.UK data"
-                  : "MCP disconnected"
-              }
-            />
+            <span className="flex items-center gap-0.5 shrink-0">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  mcpConnected ? "bg-govuk-green" : "bg-govuk-red"
+                }`}
+                title={
+                  mcpConnected
+                    ? "GOV.UK MCP connected"
+                    : "GOV.UK MCP disconnected"
+                }
+              />
+              {serviceMode === "mcp" && (
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    localMcpConnected ? "bg-blue-400" : "bg-gray-400"
+                  }`}
+                  title={
+                    localMcpConnected
+                      ? "Local MCP connected"
+                      : "Local MCP not connected"
+                  }
+                />
+              )}
+            </span>
             <span className="text-white text-sm truncate opacity-80">
               {title}
             </span>
@@ -182,8 +205,10 @@ export function AppHeader() {
                     className="flex items-center justify-between w-full p-3 hover:bg-govuk-light-grey rounded-b-lg"
                   >
                     <span className="text-sm">
-                      Agent:{" "}
                       <strong>{agent.toUpperCase()}</strong>
+                      <span className="text-govuk-dark-grey ml-1">
+                        / {serviceMode.toUpperCase()}
+                      </span>
                     </span>
                     <svg
                       width="16"
@@ -247,6 +272,46 @@ export function AppHeader() {
                 </label>
               ))}
             </div>
+
+            {/* Service mode toggle */}
+            <div className="border-t border-govuk-mid-grey pt-4 mb-6">
+              <h2 className="text-lg font-bold mb-4">Service mode</h2>
+              <div className="space-y-3">
+                {(["json", "mcp"] as const).map((m) => (
+                  <label
+                    key={m}
+                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer ${
+                      serviceMode === m
+                        ? "border-govuk-blue bg-blue-50"
+                        : "border-govuk-mid-grey"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="serviceMode"
+                      value={m}
+                      checked={serviceMode === m}
+                      onChange={() => setServiceMode(m)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <strong>
+                        {m === "json" ? "JSON" : "MCP"}
+                        <span className="font-normal text-govuk-dark-grey ml-1">
+                          {m === "json" ? "(stable)" : "(experimental)"}
+                        </span>
+                      </strong>
+                      <p className="text-sm text-govuk-dark-grey mt-0.5">
+                        {m === "json"
+                          ? "Service data loaded directly from JSON files — deterministic orchestration"
+                          : "Service data accessed via MCP tool calls — agent-driven autonomy"}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <button
               onClick={() => setAgentSheetOpen(false)}
               className="w-full bg-govuk-green text-white font-bold py-3 rounded-lg hover:bg-[#005a30]"

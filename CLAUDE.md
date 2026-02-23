@@ -11,10 +11,11 @@ apps/
   legibility-studio/    → Admin dashboard for services, traces, gap analysis (Next.js, port 3001)
 
 packages/
-  adapters/     → LLM + MCP integration (Anthropic SDK lives here ONLY)
+  adapters/     → LLM + MCP client integration (Anthropic SDK lives here ONLY)
   evidence/     → SQLite append-only store for traces + receipts
   identity/     → User identity and authentication
   legibility/   → State models and legibility logic
+  mcp-server/   → Local MCP server exposing service JSON artefacts as tools
   personal-data/→ Personal data handling
   runtime/      → CapabilityInvoker and runtime orchestration
   schemas/      → Shared TypeScript schemas
@@ -33,7 +34,8 @@ data/
 ## Architecture rules — IMPORTANT
 - ALL service calls route through `CapabilityInvoker` in `@als/runtime` (single choke point)
 - ALL LLM calls go through `AnthropicAdapter` in `@als/adapters` — zero direct Anthropic SDK usage elsewhere
-- `@anthropic-ai/sdk` and `@modelcontextprotocol/sdk` live in `@als/adapters` ONLY
+- `@anthropic-ai/sdk` lives in `@als/adapters` ONLY
+- `@modelcontextprotocol/sdk` CLIENT usage lives in `@als/adapters` — SERVER usage lives in `@als/mcp-server`
 - legibility-studio fetches evidence from citizen-experience API (`http://localhost:3000/api/traces`) — it does NOT import `@als/evidence` directly
 
 ## Build gotchas — READ BEFORE CHANGING DEPENDENCIES

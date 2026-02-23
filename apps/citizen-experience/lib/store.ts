@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type {
   PersonaData,
   AgentType,
+  ServiceMode,
   ServiceType,
   ViewType,
   Conversation,
@@ -17,6 +18,7 @@ interface AppStore {
   // Identity
   persona: string | null;
   agent: AgentType;
+  serviceMode: ServiceMode;
   personaData: PersonaData | null;
   enrichedData: Record<string, unknown> | null;
 
@@ -63,6 +65,7 @@ interface AppStore {
   // Actions
   setPersona: (id: string) => Promise<void>;
   setAgent: (agent: AgentType) => void;
+  setServiceMode: (mode: ServiceMode) => void;
   navigateTo: (view: ViewType, service?: ServiceType | null) => void;
   navigateBack: () => void;
   sendMessage: (text: string) => Promise<void>;
@@ -137,6 +140,7 @@ export { getConversations, getTasks, saveTasks };
 export const useAppStore = create<AppStore>((set, get) => ({
   persona: null,
   agent: "dot",
+  serviceMode: "json",
   personaData: null,
   enrichedData: null,
   currentView: "persona-picker",
@@ -203,6 +207,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ agent });
     if (typeof window !== "undefined") {
       sessionStorage.setItem("agent", agent);
+    }
+  },
+
+  setServiceMode: (mode: ServiceMode) => {
+    set({ serviceMode: mode });
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("serviceMode", mode);
     }
   },
 
@@ -299,6 +310,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           generateTitle: isNewConversation,
           ucState: state.ucState,
           ucStateHistory: state.ucStateHistory,
+          serviceMode: state.serviceMode,
         }),
       });
 

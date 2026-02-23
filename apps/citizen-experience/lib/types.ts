@@ -117,6 +117,7 @@ export interface ChatApiRequest {
   generateTitle?: boolean;
   ucState?: string;
   ucStateHistory?: string[];
+  serviceMode?: ServiceMode;
 }
 
 export interface ChatApiResponse {
@@ -170,6 +171,7 @@ export interface StoredTask {
 }
 
 export type AgentType = "dot" | "max";
+export type ServiceMode = "json" | "mcp";
 export type ServiceType = "driving" | "benefits" | "family" | (string & {});
 export type ScenarioType = "driving" | "benefits" | "parenting";
 export type ViewType =
