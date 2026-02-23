@@ -9,6 +9,7 @@ import type { InvocationContext, PolicyRuleset, StateModelDefinition } from "@al
 import { PolicyEvaluator, StateMachine } from "@als/legibility";
 import { getTraceEmitter, getReceiptGenerator } from "@/lib/evidence";
 import { getRegistry } from "@/lib/registry";
+import { extractStructuredOutput } from "@/lib/extract-structured-output";
 
 // ── AnthropicAdapter — the ONLY Anthropic SDK usage ──
 const llmAdapter = new AnthropicAdapter();
@@ -240,21 +241,123 @@ async function loadConsentModel(serviceId: string): Promise<Record<string, unkno
   return null;
 }
 
-/** Per-state instructions for the UC journey */
+/** Per-state instructions for the UC journey.
+ *
+ * DESIGN RULES:
+ *  - Each state does ONE thing, then emits ONE transition (or waits for user input).
+ *  - The LLM must NEVER claim an action has happened that requires a later state
+ *    (e.g. "your claim is submitted" while still at consent-given).
+ *  - The LLM must NEVER fabricate payment amounts, dates, or reference numbers.
+ *  - States that collect structured data (housing, bank) must NOT include tasks in the JSON block —
+ *    the server injects them deterministically.
+ */
 const UC_STATE_INSTRUCTIONS: Record<string, string> = {
-  "not-started": `The citizen has just started. They are already authenticated via GOV.UK One Login — identity verification is complete. Welcome them warmly, explain briefly what Universal Credit is, and tell them you'll check their eligibility now. Emit [STATE_TRANSITION: check-eligibility] and present the eligibility results.`,
-  "identity-verified": `Identity has been verified. Acknowledge this, then tell them you'll now check their eligibility. Emit [STATE_TRANSITION: check-eligibility] and present the results.`,
-  "eligibility-checked": `Eligibility has been checked. Present the results clearly. If eligible, explain that you need their consent to share data with DWP. Do NOT transition yet — wait for the user to grant consent via the consent cards.`,
-  "consent-given": `Consent has been granted. Now confirm the personal details you already have from their records (name, DOB, NI number, address). List what you have and ask "Does all of this look correct?" Do NOT transition — wait for the user to confirm.`,
-  "personal-details-collected": `Personal details confirmed. Now ask about their housing situation — do they rent or own? How much is their rent? Who is their landlord? Do NOT transition — wait for the user to provide their housing details.`,
-  "housing-details-collected": `Housing details collected. Now confirm the employment and income data you have — show what's on file and ask if it's correct or if anything has changed. Do NOT transition — wait for the user to confirm.`,
-  "income-details-collected": `Income details collected. Now ask for bank details — sort code and account number for UC payments. This data is NOT in the persona data, so you MUST ask the citizen to provide it. Do NOT transition — wait for the user to provide their bank details.`,
-  "bank-details-verified": `Bank details verified. Summarize EVERYTHING collected across all steps and ask the citizen to confirm before submitting. Do NOT transition — wait for the user to say "yes, submit it".`,
-  "claim-submitted": `The claim has been submitted. Provide a claim reference (generate a realistic one like UC-2026-XXXX). Explain: 5-week wait for first payment, they'll need to attend an interview at their local Jobcentre Plus, they should set up their UC journal. Emit [STATE_TRANSITION: schedule-interview].`,
-  "awaiting-interview": `An interview has been scheduled. Explain what to expect at the Jobcentre Plus interview, what documents to bring. The journey pauses here until the interview. If the citizen seems ready, emit [STATE_TRANSITION: activate-claim].`,
-  "claim-active": `The UC claim is now active! Congratulate them. Explain estimated payment amounts and dates, the UC journal, and reporting requirements. This is the end of the journey.`,
-  "rejected": `The application was rejected. Explain why clearly and sympathetically. Mention the mandatory reconsideration and appeal process. Provide the DWP helpline number (0800 328 5644).`,
-  "handed-off": `This case has been referred to a human advisor. Explain why and provide the DWP helpline (0800 328 5644, Mon-Fri 8am-6pm).`,
+  "not-started": `The citizen has just started. They are already authenticated via GOV.UK One Login — identity verification is complete.
+Welcome them and explain briefly what Universal Credit is.
+The system will automatically check their eligibility — present the eligibility results in this same response.
+Use the POLICY EVALUATION section above to explain whether they are eligible and why.
+If eligible, explain that you need their consent to share certain data with DWP before proceeding.
+Interactive consent cards will appear automatically below your message for the citizen to review.
+Set "stateTransition" to "check-eligibility" in the JSON block.
+Do NOT skip ahead — do not mention housing, bank details, or submission yet.
+Do NOT include any tasks in the JSON block — the eligibility check is automatic, not a task.`,
+
+  "identity-verified": `Identity has been verified. Check eligibility and present the results.
+Use the POLICY EVALUATION section above. If eligible, explain consent is needed next.
+Set "stateTransition" to "check-eligibility" in the JSON block.
+Do NOT include any tasks in the JSON block.
+Do NOT discuss any later steps yet.`,
+
+  "eligibility-checked": `Eligibility has already been checked and results were presented.
+The citizen is now reviewing consent cards that appeared below your previous message.
+If the citizen's message contains consent decisions (granted/denied), acknowledge them, thank the citizen, and then present their personal details for confirmation (name, DOB, NI number, address). Ask "Does everything look correct?"
+Set "stateTransition" to "grant-consent" in the JSON block so the system records consent.
+If the citizen asks a question, answer it — but remind them to review the consent cards below. Do NOT set a transition.
+Do NOT re-explain eligibility — it's already done.
+Do NOT discuss housing, bank details, income, or any later steps yet.
+Do NOT include any tasks in the JSON block.`,
+
+  "consent-given": `Consent has been granted and personal details have been confirmed from records.
+Thank the citizen for granting consent. Confirm you have their personal details on file (name, DOB, NI number, address — list them briefly).
+Explain that a housing details form will appear below for them to fill in.
+Do NOT include any tasks in the JSON block — the system provides the housing card automatically.
+Do NOT discuss bank details, income, or submission yet.`,
+
+  "personal-details-collected": `Personal details are confirmed.
+Now explain that you need their housing details to calculate any housing support.
+An interactive card will appear below for them to fill in their housing situation — tell them to use it.
+Do NOT include any tasks in the JSON block — the system provides the card automatically.
+If the user's message already contains housing details (e.g. "I am a private renter and pay £400"), acknowledge the housing data, then confirm the employment data on file (status, previous employer, end date) is correct, and mention that a bank account card will appear next.
+Set "stateTransition" to "collect-housing-details" in the JSON block.
+Otherwise, briefly explain what's needed and STOP. Do not transition until their housing data arrives.
+Do NOT discuss submission yet.`,
+
+  "housing-details-collected": `Housing details have been collected.
+The system has automatically confirmed the employment and income data on file.
+An interactive bank account card will appear for the citizen to select a payment account.
+Briefly acknowledge the housing data, confirm the employment details on record (status, employer, end date), and tell them to choose their bank account using the card below.
+Do NOT include any tasks in the JSON block — the system provides the bank card automatically.
+Do NOT discuss submission or payment amounts yet.`,
+
+  "income-details-collected": `Income and employment details confirmed.
+Now explain you need a bank account for UC payments.
+An interactive card will appear for them to select a saved account or enter a new one.
+Do NOT include any tasks in the JSON block — the system provides the card automatically.
+If the user's message already contains bank details (sort code, account number), acknowledge and set "stateTransition" to "verify-bank-details" in the JSON block.
+Otherwise, briefly explain what's needed and STOP. Do not transition until bank data arrives.
+Do NOT discuss submission or payment amounts yet.`,
+
+  "bank-details-verified": `Bank details verified. Now present a COMPLETE SUMMARY of everything collected:
+- Personal details (name, DOB, NI number, address)
+- Housing (tenure type, rent amount)
+- Employment (status, previous employer)
+- Bank account (bank name, last 4 digits only — do NOT show full sort code/account number)
+Ask: "Shall I submit your Universal Credit application now?"
+When the citizen confirms, set "stateTransition" to "submit-claim" in the JSON block.
+Do NOT fabricate any payment amounts or dates.`,
+
+  "claim-submitted": `The claim has been submitted successfully!
+Tell the citizen:
+- Their claim is now with DWP for processing
+- The standard assessment period is 5 weeks before the first payment
+- They will receive an exact payment calculation from DWP
+- They will need to attend an interview at their local Jobcentre Plus
+- They should set up their UC online journal (link will be in their confirmation email)
+Do NOT fabricate specific payment amounts, exact dates, or reference numbers — say "DWP will confirm these details".
+Set "stateTransition" to "schedule-interview" in the JSON block.
+Do NOT set any other transitions.`,
+
+  "awaiting-interview": `An interview is being arranged. Tell the citizen:
+- They will be contacted by their local Jobcentre Plus to schedule an initial interview
+- What to bring: photo ID, bank statements, tenancy agreement, proof of housing costs
+- What to expect: discussion of their work search plans and claimant commitment
+Set "stateTransition" to "activate-claim" in the JSON block.
+Do NOT set any other transitions.`,
+
+  "claim-active": `The UC claim is now active! Congratulate them warmly.
+Explain:
+- DWP will confirm their exact payment amount and date by post and in their UC journal
+- They must keep their UC journal updated with job search activity
+- They must report any changes in circumstances immediately
+This is the FINAL message of the journey — do NOT ask follow-up questions or prompt for further input.
+End with a warm closing statement.
+Do NOT include any tasks in the JSON block.
+Do NOT fabricate payment amounts or dates.`,
+
+  "rejected": `The application was not successful. Explain why clearly and sympathetically.
+Mention:
+- Mandatory reconsideration: they can ask DWP to look at the decision again within 1 month
+- Appeal: they can appeal to an independent tribunal if reconsideration is unsuccessful
+- DWP helpline: 0800 328 5644 (Mon-Fri 8am-6pm)
+This is the FINAL message — do NOT ask follow-up questions.
+Do NOT include any tasks in the JSON block.`,
+
+  "handed-off": `This case has been referred to a human advisor for further review.
+Explain why, and provide:
+- DWP helpline: 0800 328 5644 (Mon-Fri 8am-6pm)
+- They can also visit their local Jobcentre Plus
+This is the FINAL message — do NOT ask follow-up questions.
+Do NOT include any tasks in the JSON block.`,
 };
 
 /** Build state-aware context for the system prompt */
@@ -297,7 +400,8 @@ function buildStateContext(
   ctx += `- Employment: ${employment ? "AVAILABLE" : "NEED TO ASK"}\n`;
   ctx += `- Income: ${financials ? "PARTIALLY AVAILABLE" : "NEED TO ASK"}\n`;
   ctx += `- Housing tenure: ${address?.housingStatus ? "AVAILABLE" : "NEED TO ASK"}\n`;
-  ctx += `- Bank details: NOT AVAILABLE — MUST ASK CITIZEN\n`;
+  const bankAccounts = (financials?.bankAccounts as Array<Record<string, unknown>>) || [];
+  ctx += `- Bank accounts: ${bankAccounts.length > 0 ? `${bankAccounts.length} ON FILE — citizen selects which one (or enters a different one)` : "NOT AVAILABLE — MUST ASK CITIZEN"}\n`;
 
   // Consent grants needed
   if (consentModel) {
@@ -310,14 +414,11 @@ function buildStateContext(
     }
   }
 
-  ctx += `\nSTATE TRANSITION MARKERS:\n`;
-  ctx += `When you determine a state transition should happen, include this marker on its own line:\n`;
-  ctx += `[STATE_TRANSITION: trigger-name]\n`;
-  ctx += `For example: [STATE_TRANSITION: verify-identity]\n`;
-  ctx += `IMPORTANT: Only emit ONE state transition per response. Do NOT skip ahead or combine steps.\n`;
-  ctx += `IMPORTANT: For states that collect data (housing, bank details, income), do NOT emit a transition until the user has actually provided the information in a message. Ask for the data and STOP — wait for their reply.\n`;
-  ctx += `Place transitions AFTER your conversational text but BEFORE any [TASK:] markers.\n`;
-  ctx += `The transition markers will be stripped from the displayed response.\n`;
+  ctx += `\nSTATE TRANSITIONS:\n`;
+  ctx += `When you determine a state transition should happen, set the "stateTransition" field in the JSON block to the trigger name.\n`;
+  ctx += `For example: "stateTransition": "verify-identity"\n`;
+  ctx += `IMPORTANT: Only set ONE state transition per response. Do NOT skip ahead or combine steps.\n`;
+  ctx += `IMPORTANT: For states that collect data (housing, bank details, income), do NOT set a transition until the user has actually provided the information in a message. Ask for the data and STOP — wait for their reply.\n`;
 
   return ctx;
 }
@@ -538,11 +639,21 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
 
   systemPrompt += `\n\n---\n\nRemember: Stay in character as ${agent.toUpperCase()} agent, communicate according to the persona style, and help with the ${scenario} scenario.`;
 
+  systemPrompt += `\n\nACCURACY GUARDRAILS — CRITICAL:
+- Do NOT fabricate specific payment amounts (e.g. "£393.45/month"). Instead say "DWP will calculate and confirm your exact payment amount."
+- Do NOT fabricate specific payment dates (e.g. "14th March 2026"). Instead say "Your first payment will be approximately 5 weeks after your claim date."
+- Do NOT fabricate claim reference numbers. Instead say "You will receive a reference number by email/post."
+- Do NOT perform benefit calculations — these are complex and depend on many factors only DWP can assess.
+- You MAY mention general facts: the 5-week waiting period, the UC journal requirement, Jobcentre Plus interviews.
+- When presenting data from the citizen's records, show EXACTLY what is in the data — do not embellish or assume.`;
+
   if (generateTitle) {
-    systemPrompt += `\n\nCONVERSATION TITLE:\nSince this is the start of a new conversation, include a short title on the VERY FIRST line of your response in this exact format:\n[TITLE: Your short 3-8 word title here]\nThe title should describe the user's intent or action (e.g. "Renewing MOT for Ford Focus", "Checking flood warnings in Cambridge", "Understanding PIP eligibility").\nAfter the title line, continue with your normal response. The title line will be stripped before showing the response.`;
+    systemPrompt += `\n\nCONVERSATION TITLE:\nSince this is the start of a new conversation, include a "title" field in the JSON block at the end of your response.\nThe title should be a short 3-8 word phrase describing the user's intent or action (e.g. "Renewing MOT for Ford Focus", "Checking flood warnings in Cambridge", "Understanding PIP eligibility").`;
   }
 
-  systemPrompt += `\n\nACTIONABLE TASKS:\nWhen your response contains actionable next steps, mark each one using this format on its own line:\n[TASK: short description | detail: one-sentence explanation | type: agent or user | data: comma-separated list of persona data fields needed]\nOptionally add a due date: [TASK: description | detail: explanation | type: user | due: YYYY-MM-DD | data: fields needed]\n\nRules:\n- "type: agent" = something YOU can do (look up data, check eligibility, pre-fill a form)\n- "type: user" = something the USER must do themselves (bring documents, book a test, call a number)\n- "data:" lists what persona data is relevant (e.g. "vehicle registration, MOT date" or "NI number, income")\n- Only include "due" when there is a genuine deadline from the persona's data\n- Keep descriptions under 60 characters, detail under 150 characters\n- Only create tasks for genuinely actionable items, not general advice\n- Maximum 3 tasks per response\n- Place [TASK:] markers at the very end of your response, after all your conversational text`;
+  systemPrompt += `\n\nACTIONABLE TASKS:\nWhen your response contains actionable next steps, include them in the "tasks" array of the JSON block.\nEach task object has these fields:\n- "description": short summary (max 60 chars)\n- "detail": one-sentence explanation (max 150 chars)\n- "type": "agent" (something you can do) or "user" (something the citizen must do)\n- "dueDate": optional, ISO date string YYYY-MM-DD (only when there is a genuine deadline)\n- "dataNeeded": optional array of persona data field names relevant to the task\n\nRules:\n- Maximum 3 tasks per response\n- Only create tasks for genuinely actionable items, not general advice`;
+
+  systemPrompt += `\n\nSTRUCTURED OUTPUT FORMAT — CRITICAL:\nAt the END of every response, you MUST append a fenced JSON block containing structured metadata.\nThe block must be the LAST thing in your response, after all conversational text.\nFormat:\n\`\`\`json\n{\n  "title": "Short title or null",\n  "tasks": [],\n  "stateTransition": "trigger-name or null"\n}\n\`\`\`\n\nRules:\n- ALWAYS include the JSON block, even if all fields are null/empty\n- "title": set only when instructed (first message of a new conversation), otherwise null\n- "tasks": array of task objects (see ACTIONABLE TASKS above), or empty array []\n- "stateTransition": the trigger name for the current state transition, or null if none\n- The JSON block will be stripped before showing your response to the citizen`;
 
   // Agentic loop — ALL LLM calls go through the AnthropicAdapter
   let loopMessages = [...messages];
@@ -624,17 +735,17 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     break;
   }
 
-  // Parse title
+  // ── Extract structured output (title, tasks, stateTransition) from JSON block ──
+  const { parsed: structuredOutput, cleanText } = extractStructuredOutput(responseText);
+  responseText = cleanText;
+
+  // Title
   let conversationTitle: string | null = null;
-  if (generateTitle) {
-    const titleMatch = responseText.match(/^\[TITLE:\s*(.+?)\]\n?/);
-    if (titleMatch) {
-      conversationTitle = titleMatch[1].trim();
-      responseText = responseText.replace(/^\[TITLE:\s*.+?\]\n?/, "").trim();
-    }
+  if (generateTitle && structuredOutput?.title) {
+    conversationTitle = structuredOutput.title;
   }
 
-  // Parse tasks
+  // Tasks — from structured output
   const tasks: Array<{
     id: string;
     description: string;
@@ -642,37 +753,23 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     type: string;
     dueDate: string | null;
     dataNeeded: string[];
-  }> = [];
-  const taskRegex =
-    /\[TASK:\s*(.+?)\s*\|\s*(?:detail:\s*)?(.+?)\s*\|\s*(?:type:\s*)?(agent|user)(?:\s*\|\s*(?:due:\s*)?(\d{4}-\d{2}-\d{2}))?(?:\s*\|\s*(?:data:\s*)?([^[\]]+?))?\s*\]\n?/gi;
-  let taskMatch;
-  while ((taskMatch = taskRegex.exec(responseText)) !== null) {
-    tasks.push({
-      id: `task_${Date.now()}_${tasks.length}`,
-      description: taskMatch[1].trim(),
-      detail: taskMatch[2].trim(),
-      type: taskMatch[3].trim().toLowerCase(),
-      dueDate: taskMatch[4] || null,
-      dataNeeded: taskMatch[5]
-        ? taskMatch[5]
-            .trim()
-            .split(",")
-            .map((s: string) => s.trim())
-            .filter(Boolean)
-        : [],
-    });
-  }
-  responseText = responseText.replace(taskRegex, "").trim();
+  }> = (structuredOutput?.tasks || []).map((t, i) => ({
+    id: `task_${Date.now()}_${i}`,
+    description: t.description,
+    detail: t.detail,
+    type: t.type,
+    dueDate: t.dueDate || null,
+    dataNeeded: t.dataNeeded || [],
+  }));
 
   // ── State Transition Parsing ──
   const stateTransitions: Array<{ fromState: string; toState: string; trigger: string }> = [];
   let ucStateInfo: ChatOutput["ucState"] | undefined;
 
   if (stateMachine) {
-    const transitionRegex = /\[STATE_TRANSITION:\s*([^\]]+)\]\n?/gi;
-    let transMatch;
-    while ((transMatch = transitionRegex.exec(responseText)) !== null) {
-      const trigger = transMatch[1].trim();
+    // State transition — from structured output
+    if (structuredOutput?.stateTransition) {
+      const trigger = structuredOutput.stateTransition;
       const result = stateMachine.transition(trigger);
       if (result.success) {
         stateTransitions.push({
@@ -685,7 +782,120 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
         console.warn(`   State transition FAILED: ${result.error}`);
       }
     }
-    responseText = responseText.replace(transitionRegex, "").trim();
+
+    // ── Deterministic transition fallback ──
+    // Two categories:
+    //  1. FORCED transitions — states where the outcome is deterministic and
+    //     does not depend on user input (eligibility check uses data we already have).
+    //     These fire when the current state (after any LLM transition) is in the map.
+    //     This handles both "LLM forgot" and "LLM used verify-identity instead of
+    //     check-eligibility" by chaining: not-started → identity-verified → eligibility-checked.
+    //  2. PATTERN transitions — states where structured data arrives from task card
+    //     forms. These match the user's message content.
+
+    // Chain of deterministic transitions — each entry maps a state to the
+    // trigger that should fire automatically. We loop so that e.g.
+    // not-started → verify-identity → identity-verified → check-eligibility
+    // all resolve in a single request.
+    // Declared outside blocks so both first-pass and post-pattern pass can use it.
+    const FORCED_TRANSITIONS: Record<string, string> = {
+      "not-started": "verify-identity",
+      "identity-verified": "check-eligibility",
+      // Personal details already on file from persona data — auto-advance
+      "consent-given": "collect-personal-details",
+      // Income/employment data is already on file — auto-confirm and advance
+      // so the bank card appears right after housing is submitted.
+      "housing-details-collected": "collect-income-details",
+    };
+
+    {
+      let forcedTrigger = FORCED_TRANSITIONS[stateMachine.getState()];
+      while (forcedTrigger) {
+        const result = stateMachine.transition(forcedTrigger);
+        if (result.success) {
+          stateTransitions.push({
+            fromState: result.fromState,
+            toState: result.toState,
+            trigger: result.trigger,
+          });
+          console.log(`   Forced transition (deterministic): ${result.fromState} → ${result.toState} (${forcedTrigger})`);
+          // Check if the new state also has a forced transition
+          forcedTrigger = FORCED_TRANSITIONS[stateMachine.getState()];
+        } else {
+          break;
+        }
+      }
+    }
+
+    if (stateTransitions.length === 0) {
+      const lastUserMsg = messages.filter((m: { role: string }) => m.role === "user").pop();
+      const userText = typeof lastUserMsg?.content === "string" ? lastUserMsg.content : "";
+
+      // Pattern transitions — match user message content from card submissions
+      // and natural-language confirmations at each state. These are fallbacks
+      // in case the LLM forgets to set stateTransition in its JSON block.
+      const AUTO_TRANSITIONS: Record<string, { trigger: string; pattern: RegExp }> = {
+        "eligibility-checked": {
+          trigger: "grant-consent",
+          pattern: /I have reviewed all consent|consent.*granted|granted.*consent|please proceed/i,
+        },
+        "consent-given": {
+          trigger: "collect-personal-details",
+          pattern: /everything.*correct|looks correct|details.*correct|yes.*correct|confirm|that's right|all correct/i,
+        },
+        "personal-details-collected": {
+          trigger: "collect-housing-details",
+          pattern: /housing details|private renter|council tenant|homeowner|living with family|tenure/i,
+        },
+        "housing-details-collected": {
+          trigger: "collect-income-details",
+          pattern: /yes|correct|that's right|confirm|looks good|all correct|no changes/i,
+        },
+        "income-details-collected": {
+          trigger: "verify-bank-details",
+          pattern: /sort code|account number|bank.*account|please use my/i,
+        },
+        "bank-details-verified": {
+          trigger: "submit-claim",
+          pattern: /yes|submit|go ahead|confirm|please submit/i,
+        },
+      };
+
+      const currentStateKey = stateMachine.getState();
+      const autoConfig = AUTO_TRANSITIONS[currentStateKey];
+      if (autoConfig && autoConfig.pattern.test(userText)) {
+        const result = stateMachine.transition(autoConfig.trigger);
+        if (result.success) {
+          stateTransitions.push({
+            fromState: result.fromState,
+            toState: result.toState,
+            trigger: result.trigger,
+          });
+          console.log(`   Auto-transition (LLM fallback): ${result.fromState} → ${result.toState} (${autoConfig.trigger})`);
+        }
+      }
+    }
+
+    // Second pass — chain forced transitions after pattern transitions.
+    // If a pattern transition landed on a state with a forced transition,
+    // the chain continues (e.g. pattern → consent-given, forced → personal-details-collected).
+    {
+      let forcedTrigger = FORCED_TRANSITIONS[stateMachine.getState()];
+      while (forcedTrigger) {
+        const result = stateMachine.transition(forcedTrigger);
+        if (result.success) {
+          stateTransitions.push({
+            fromState: result.fromState,
+            toState: result.toState,
+            trigger: result.trigger,
+          });
+          console.log(`   Forced transition (post-pattern): ${result.fromState} → ${result.toState} (${forcedTrigger})`);
+          forcedTrigger = FORCED_TRANSITIONS[stateMachine.getState()];
+        } else {
+          break;
+        }
+      }
+    }
 
     const updatedHistory = [...(clientStateHistory || [])];
     if (!updatedHistory.includes(currentUcState)) {
@@ -709,11 +919,12 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   }
 
   // ── Consent Requests ──
+  // Only surface consent cards when the state machine is at eligibility-checked.
+  // Once consent is granted (state moves to consent-given), do NOT re-serve them.
   let consentRequests: ChatOutput["consentRequests"] | undefined;
   if (consentModel && stateMachine) {
     const currentStateId = stateMachine.getState();
-    // Surface consent requests when entering consent-related states
-    if (currentStateId === "eligibility-checked" || currentStateId === "consent-given") {
+    if (currentStateId === "eligibility-checked") {
       const grants = (consentModel.grants || []) as Array<Record<string, unknown>>;
       consentRequests = grants.map(g => ({
         id: g.id as string,
@@ -723,6 +934,82 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
         purpose: g.purpose as string,
       }));
     }
+  }
+
+  // ── Deterministic Task Injection for data-collection states ──
+  // ONLY inject structured-form tasks at the correct states. The LLM is told
+  // not to include tasks for these states, but if it does anyway we
+  // replace its tasks with our deterministic ones (correct dataNeeded fields).
+  if (stateMachine) {
+    const preTransitionState = currentUcState;
+    const postTransitionState = stateMachine.getState();
+    const HOUSING_DATA_FIELDS = new Set(["tenure_type", "housing_tenure", "housing_status", "monthly_rent", "rent", "address", "housing tenure"]);
+    const BANK_DATA_FIELDS = new Set(["sort_code", "account_number", "bank_accounts", "bank_account", "bank_details", "bank accounts"]);
+
+    const transitioned = stateTransitions.length > 0;
+    // Only inject the structured form task when we're AT the data-collection state
+    // and did NOT just transition OUT of it (which means data was already submitted).
+    const isHousingState = (
+      (postTransitionState === "personal-details-collected") ||
+      (preTransitionState === "personal-details-collected" && !transitioned)
+    );
+    const isBankState = (
+      (postTransitionState === "income-details-collected") ||
+      (preTransitionState === "income-details-collected" && !transitioned)
+    );
+
+    if (isHousingState) {
+      // Remove any LLM-generated housing tasks (wrong dataNeeded fields)
+      const filtered = tasks.filter(t => !t.dataNeeded.some(d => HOUSING_DATA_FIELDS.has(d)));
+      tasks.length = 0;
+      tasks.push(...filtered);
+      // Inject the correct deterministic task
+      tasks.push({
+        id: `task_housing_${Date.now()}`,
+        description: "Provide your housing details",
+        detail: "Select your housing situation and enter your monthly rent if applicable",
+        type: "user",
+        dueDate: null,
+        dataNeeded: ["tenure_type", "monthly_rent"],
+      });
+    }
+
+    if (isBankState) {
+      // Remove any LLM-generated bank tasks (wrong dataNeeded fields)
+      const filtered = tasks.filter(t => !t.dataNeeded.some(d => BANK_DATA_FIELDS.has(d)));
+      tasks.length = 0;
+      tasks.push(...filtered);
+      // Inject the correct deterministic task
+      tasks.push({
+        id: `task_bank_${Date.now()}`,
+        description: "Select a bank account for UC payments",
+        detail: "Choose which account you'd like Universal Credit payments sent to, or enter new details",
+        type: "user",
+        dueDate: null,
+        dataNeeded: ["sort_code", "account_number"],
+      });
+    }
+
+    // For states that should NOT have housing/bank tasks, strip any the LLM generated
+    if (!isHousingState && !isBankState) {
+      const stripped = tasks.filter(t => {
+        const hasHousingField = t.dataNeeded.some(d => HOUSING_DATA_FIELDS.has(d));
+        const hasBankField = t.dataNeeded.some(d => BANK_DATA_FIELDS.has(d));
+        return !hasHousingField && !hasBankField;
+      });
+      tasks.length = 0;
+      tasks.push(...stripped);
+    }
+
+    // Strip eligibility-related tasks — eligibility is checked automatically by the
+    // server, never as a user-clickable task card.
+    const ELIGIBILITY_KEYWORDS = /eligib|verify.*identity|identity.*verif|check.*uc|uc.*check/i;
+    const preEligibilityStrip = tasks.filter(t => {
+      const text = `${t.description} ${t.detail}`;
+      return !ELIGIBILITY_KEYWORDS.test(text);
+    });
+    tasks.length = 0;
+    tasks.push(...preEligibilityStrip);
   }
 
   // ── Handoff Detection ──

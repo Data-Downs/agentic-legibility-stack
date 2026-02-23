@@ -11,7 +11,7 @@ import type {
   UCStateInfo,
   ConsentGrant,
 } from "./types";
-import { SERVICE_TO_SCENARIO } from "./types";
+import { SERVICE_TO_SCENARIO, PERSONA_DEFAULT_SERVICE } from "./types";
 
 interface AppStore {
   // Identity
@@ -57,6 +57,8 @@ interface AppStore {
     dueDate: string | null;
     dataNeeded: string[];
   }>;
+  taskCompletions: Record<string, string>;
+  tasksSubmitted: boolean;
 
   // Actions
   setPersona: (id: string) => Promise<void>;
@@ -71,6 +73,9 @@ interface AppStore {
   setConsentDecision: (grantId: string, decision: "granted" | "denied") => void;
   clearConsentDecision: (grantId: string) => void;
   submitConsent: () => Promise<void>;
+  setTaskCompletion: (taskId: string, message: string) => void;
+  clearTaskCompletion: (taskId: string) => void;
+  submitTasks: () => Promise<void>;
 }
 
 // localStorage-backed conversation store
@@ -151,6 +156,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   consentDecisions: {},
   consentSubmitted: false,
   lastResponseTasks: [],
+  taskCompletions: {},
+  tasksSubmitted: false,
 
   setPersona: async (id: string) => {
     set({
@@ -241,6 +248,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       consentDecisions: {},
       consentSubmitted: false,
       lastResponseTasks: [],
+      taskCompletions: {},
+      tasksSubmitted: false,
     });
     if (service !== undefined) {
       set({ currentService: service });
@@ -262,10 +271,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   sendMessage: async (text: string) => {
+    const TERMINAL_STATES = new Set(["claim-active", "rejected", "handed-off"]);
     const state = get();
     if (!state.persona || !state.personaData || state.isLoading) return;
+    if (state.ucState && TERMINAL_STATES.has(state.ucState)) return;
 
-    const service = state.currentService || "driving";
+    const service = state.currentService || PERSONA_DEFAULT_SERVICE[state.persona] || "driving";
     const scenario = SERVICE_TO_SCENARIO[service] || service;
     const isNewConversation = state.conversationHistory.length === 0;
 
@@ -365,6 +376,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
         lastUcStateInfo: data.ucState ?? state.lastUcStateInfo,
         pendingConsent: data.consentRequests ?? [],
         lastResponseTasks: data.tasks ?? [],
+        // Reset task tracking when new tasks arrive
+        taskCompletions: (data.tasks && data.tasks.length > 0) ? {} : state.taskCompletions,
+        tasksSubmitted: (data.tasks && data.tasks.length > 0) ? false : state.tasksSubmitted,
         // Reset consent tracking when state changes (new consent batch may appear)
         consentDecisions: (data.ucState?.currentState !== state.ucState)
           ? {}
@@ -423,6 +437,38 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     set({ consentSubmitted: true });
     await state.sendMessage(lines.join("\n"));
+  },
+
+  setTaskCompletion: (taskId: string, message: string) => {
+    set((s) => ({
+      taskCompletions: { ...s.taskCompletions, [taskId]: message },
+    }));
+  },
+
+  clearTaskCompletion: (taskId: string) => {
+    set((s) => {
+      const updated = { ...s.taskCompletions };
+      delete updated[taskId];
+      return { taskCompletions: updated };
+    });
+  },
+
+  submitTasks: async () => {
+    const state = get();
+    const { lastResponseTasks, taskCompletions } = state;
+
+    const lines: string[] = [];
+
+    for (const task of lastResponseTasks) {
+      const completion = taskCompletions[task.id];
+      if (!completion) continue;
+      lines.push(completion);
+    }
+
+    if (lines.length === 0) return;
+
+    set({ tasksSubmitted: true });
+    await state.sendMessage(lines.join("\n\n"));
   },
 
   setReasoning: (reasoning: string) => {

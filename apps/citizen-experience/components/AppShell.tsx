@@ -9,11 +9,16 @@ import { MessageInput } from "./MessageInput";
 import { ReasoningFab } from "./ReasoningPanel";
 import { AppHeader } from "./AppHeader";
 
+const TERMINAL_STATES = new Set(["claim-active", "rejected", "handed-off"]);
+
 export function AppShell() {
   const currentView = useAppStore((s) => s.currentView);
   const persona = useAppStore((s) => s.persona);
+  const ucState = useAppStore((s) => s.ucState);
   const setPersona = useAppStore((s) => s.setPersona);
   const setAgent = useAppStore((s) => s.setAgent);
+
+  const journeyComplete = !!(ucState && TERMINAL_STATES.has(ucState));
 
   // Restore session on mount
   useEffect(() => {
@@ -57,8 +62,8 @@ export function AppShell() {
         </div>
       </main>
 
-      {/* Input bar (visible on everything except persona-picker) */}
-      {persona && currentView !== "persona-picker" && <MessageInput />}
+      {/* Input bar — hidden on persona-picker and when journey is complete */}
+      {persona && currentView !== "persona-picker" && !journeyComplete && <MessageInput />}
 
       {/* Reasoning FAB */}
       <ReasoningFab />

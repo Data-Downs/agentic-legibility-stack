@@ -1,12 +1,17 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import { useAppStore } from "@/lib/store";
 import HandoffNotice from "./handoff/HandoffNotice";
 import { TaskCard } from "./TaskCard";
+import { TaskSummaryCard } from "./TaskSummaryCard";
 import { ConsentCard } from "./ConsentCard";
 import { ConsentSummaryCard } from "./ConsentSummaryCard";
 import { StateProgressTracker } from "./StateProgressTracker";
+import { JourneyCompleteCard } from "./JourneyCompleteCard";
+
+const TERMINAL_STATES = new Set(["claim-active", "rejected", "handed-off"]);
 
 function TypingIndicator() {
   return (
@@ -34,6 +39,9 @@ export function ChatView() {
   const consentDecisions = useAppStore((s) => s.consentDecisions);
   const consentSubmitted = useAppStore((s) => s.consentSubmitted);
   const lastResponseTasks = useAppStore((s) => s.lastResponseTasks);
+  const taskCompletions = useAppStore((s) => s.taskCompletions);
+  const tasksSubmitted = useAppStore((s) => s.tasksSubmitted);
+  const lastAssistantRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Derived consent state
@@ -43,18 +51,48 @@ export function ChatView() {
     .filter((g) => g.required)
     .some((g) => consentDecisions[g.id] === "denied");
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversationHistory, isLoading, activeHandoff, ucState]);
+  // Derived task state
+  const allTasksCompleted = lastResponseTasks.length > 0 &&
+    lastResponseTasks.every((t) => taskCompletions[t.id] !== undefined);
 
-  // Scroll when summary card appears
+  // Whether to show task cards (after the last assistant message)
+  const showTasks = !isLoading && lastResponseTasks.length > 0 && !tasksSubmitted;
+  // Whether to show consent cards (after tasks are done or when no tasks)
+  const showConsent = !isLoading && pendingConsent.length > 0 && !consentSubmitted &&
+    (lastResponseTasks.length === 0 || tasksSubmitted);
+
+  // Scroll to the top of the last assistant message when new content arrives
+  const scrollToLastAssistant = () => {
+    lastAssistantRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // Scroll to bottom to reveal cards (consent, task summary, etc.)
+  const scrollToEnd = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (!isLoading && (showTasks || showConsent)) {
+      scrollToEnd();
+    } else {
+      scrollToLastAssistant();
+    }
+  }, [conversationHistory, isLoading, activeHandoff, ucState, showTasks, showConsent]);
+
+  // Scroll when summary cards appear
   useEffect(() => {
     if (allConsentsActioned && !consentSubmitted) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollToEnd();
     }
   }, [allConsentsActioned, consentSubmitted]);
 
-  // Find the index of the last assistant message
+  useEffect(() => {
+    if (allTasksCompleted && !tasksSubmitted) {
+      scrollToEnd();
+    }
+  }, [allTasksCompleted, tasksSubmitted]);
+
+  // Find the index of the last assistant message (for scroll ref)
   const lastAssistantIdx = conversationHistory.reduce(
     (acc, msg, idx) => (msg.role === "assistant" ? idx : acc),
     -1,
@@ -94,6 +132,7 @@ export function ChatView() {
           </div>
         )}
 
+        {/* Message bubbles */}
         {conversationHistory.map((msg, idx) => {
           if (typeof msg.content !== "string") return null;
 
@@ -101,74 +140,88 @@ export function ChatView() {
           const isLastAssistant = idx === lastAssistantIdx;
 
           return (
-            <div key={idx}>
-              {/* Message bubble */}
+            <div key={idx} ref={isLastAssistant ? lastAssistantRef : undefined}>
               <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                 <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                     isUser
-                      ? "bg-govuk-blue text-white rounded-br-sm"
-                      : "bg-govuk-light-grey text-govuk-black rounded-bl-sm"
+                      ? "bg-govuk-blue text-white rounded-br-sm whitespace-pre-wrap"
+                      : "bg-govuk-light-grey text-govuk-black rounded-bl-sm prose prose-sm prose-neutral max-w-none"
                   }`}
                 >
-                  {msg.content}
+                  {isUser ? msg.content : <ReactMarkdown>{msg.content}</ReactMarkdown>}
                 </div>
               </div>
-
-              {/* Task cards — shown after the last assistant message, gated by !isLoading */}
-              {isLastAssistant && !isLoading && (
-                <div className="max-w-[85%] mt-1">
-                  {lastResponseTasks.length > 0 && lastResponseTasks.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onAccept={() => {
-                        const msg = task.type === "user"
-                          ? `I've done it — ${task.description.toLowerCase()}`
-                          : `Yes, please go ahead — ${task.description.toLowerCase()}`;
-                        useAppStore.getState().sendMessage(msg);
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Consent cards — SEPARATE block, NOT gated by !isLoading so they stay visible during submission */}
-              {isLastAssistant && pendingConsent.length > 0 && !consentSubmitted && (
-                <div className="max-w-[85%] mt-1">
-                  {pendingConsent.map((grant) => (
-                    <ConsentCard
-                      key={grant.id}
-                      grant={grant}
-                      decision={consentDecisions[grant.id]}
-                      onDecision={(id, decision) => {
-                        useAppStore.getState().setConsentDecision(id, decision);
-                      }}
-                      onReset={(id) => {
-                        useAppStore.getState().clearConsentDecision(id);
-                      }}
-                      disabled={isLoading}
-                    />
-                  ))}
-
-                  {/* Summary card appears when all decisions are made */}
-                  {allConsentsActioned && (
-                    <ConsentSummaryCard
-                      grants={pendingConsent}
-                      decisions={consentDecisions}
-                      onSubmit={() => useAppStore.getState().submitConsent()}
-                      onChangeDecision={(id) => {
-                        useAppStore.getState().clearConsentDecision(id);
-                      }}
-                      hasRequiredDenials={hasRequiredDenials}
-                      isSubmitting={isLoading}
-                    />
-                  )}
-                </div>
-              )}
             </div>
           );
         })}
+
+        {/* Task cards — rendered outside the message loop for reliability */}
+        {showTasks && (
+          <div className="max-w-[85%] mt-1">
+            {lastResponseTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                completion={taskCompletions[task.id]}
+                onComplete={(id, message) => {
+                  useAppStore.getState().setTaskCompletion(id, message);
+                }}
+                onReset={(id) => {
+                  useAppStore.getState().clearTaskCompletion(id);
+                }}
+                disabled={isLoading}
+              />
+            ))}
+
+            {/* Summary card appears when all tasks are completed */}
+            {allTasksCompleted && (
+              <TaskSummaryCard
+                tasks={lastResponseTasks}
+                completions={taskCompletions}
+                onChangeTask={(id) => {
+                  useAppStore.getState().clearTaskCompletion(id);
+                }}
+                onSubmit={() => useAppStore.getState().submitTasks()}
+                isSubmitting={isLoading}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Consent cards — rendered outside the message loop for reliability */}
+        {showConsent && (
+          <div className="max-w-[85%] mt-1">
+            {pendingConsent.map((grant) => (
+              <ConsentCard
+                key={grant.id}
+                grant={grant}
+                decision={consentDecisions[grant.id]}
+                onDecision={(id, decision) => {
+                  useAppStore.getState().setConsentDecision(id, decision);
+                }}
+                onReset={(id) => {
+                  useAppStore.getState().clearConsentDecision(id);
+                }}
+                disabled={isLoading}
+              />
+            ))}
+
+            {/* Summary card appears when all decisions are made */}
+            {allConsentsActioned && (
+              <ConsentSummaryCard
+                grants={pendingConsent}
+                decisions={consentDecisions}
+                onSubmit={() => useAppStore.getState().submitConsent()}
+                onChangeDecision={(id) => {
+                  useAppStore.getState().clearConsentDecision(id);
+                }}
+                hasRequiredDenials={hasRequiredDenials}
+                isSubmitting={isLoading}
+              />
+            )}
+          </div>
+        )}
 
         {/* Handoff notice */}
         {activeHandoff && activeHandoff.triggered && (
@@ -180,6 +233,13 @@ export function ChatView() {
               phone={(activeHandoff.routing?.suggestedQueue as string) || undefined}
               onDismiss={() => useAppStore.setState({ activeHandoff: null })}
             />
+          </div>
+        )}
+
+        {/* Journey complete card — shown when state is terminal */}
+        {!isLoading && ucState && TERMINAL_STATES.has(ucState) && (
+          <div className="max-w-[85%] mt-1">
+            <JourneyCompleteCard state={ucState as "claim-active" | "rejected" | "handed-off"} />
           </div>
         )}
 
