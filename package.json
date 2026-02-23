@@ -10,6 +10,7 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "test": "turbo test",
+    "clean": "rm -rf apps/citizen-experience/.next apps/legibility-studio/.next",
     "seed": "npx tsx scripts/seed-traces.ts",
     "seed:ledger": "npx tsx scripts/seed-ledger.ts"
   },
