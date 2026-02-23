@@ -6,8 +6,7 @@ import { useAppStore } from "@/lib/store";
 import HandoffNotice from "./handoff/HandoffNotice";
 import { TaskCard } from "./TaskCard";
 import { TaskSummaryCard } from "./TaskSummaryCard";
-import { ConsentCard } from "./ConsentCard";
-import { ConsentSummaryCard } from "./ConsentSummaryCard";
+import { ConsentPanel } from "./ConsentCard";
 import { StateProgressTracker } from "./StateProgressTracker";
 import { JourneyCompleteCard } from "./JourneyCompleteCard";
 
@@ -45,8 +44,6 @@ export function ChatView() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Derived consent state
-  const allConsentsActioned = pendingConsent.length > 0 &&
-    pendingConsent.every((g) => consentDecisions[g.id] !== undefined);
   const hasRequiredDenials = pendingConsent
     .filter((g) => g.required)
     .some((g) => consentDecisions[g.id] === "denied");
@@ -78,13 +75,6 @@ export function ChatView() {
       scrollToLastAssistant();
     }
   }, [conversationHistory, isLoading, activeHandoff, ucState, showTasks, showConsent]);
-
-  // Scroll when summary cards appear
-  useEffect(() => {
-    if (allConsentsActioned && !consentSubmitted) {
-      scrollToEnd();
-    }
-  }, [allConsentsActioned, consentSubmitted]);
 
   useEffect(() => {
     if (allTasksCompleted && !tasksSubmitted) {
@@ -189,37 +179,20 @@ export function ChatView() {
           </div>
         )}
 
-        {/* Consent cards — rendered outside the message loop for reliability */}
+        {/* Consent panel — single grouped card for all grants */}
         {showConsent && (
           <div className="max-w-[85%] mt-1">
-            {pendingConsent.map((grant) => (
-              <ConsentCard
-                key={grant.id}
-                grant={grant}
-                decision={consentDecisions[grant.id]}
-                onDecision={(id, decision) => {
-                  useAppStore.getState().setConsentDecision(id, decision);
-                }}
-                onReset={(id) => {
-                  useAppStore.getState().clearConsentDecision(id);
-                }}
-                disabled={isLoading}
-              />
-            ))}
-
-            {/* Summary card appears when all decisions are made */}
-            {allConsentsActioned && (
-              <ConsentSummaryCard
-                grants={pendingConsent}
-                decisions={consentDecisions}
-                onSubmit={() => useAppStore.getState().submitConsent()}
-                onChangeDecision={(id) => {
-                  useAppStore.getState().clearConsentDecision(id);
-                }}
-                hasRequiredDenials={hasRequiredDenials}
-                isSubmitting={isLoading}
-              />
-            )}
+            <ConsentPanel
+              grants={pendingConsent}
+              decisions={consentDecisions}
+              onDecision={(id, decision) => {
+                useAppStore.getState().setConsentDecision(id, decision);
+              }}
+              onSubmit={() => useAppStore.getState().submitConsent()}
+              hasRequiredDenials={hasRequiredDenials}
+              isSubmitting={isLoading}
+              disabled={isLoading}
+            />
           </div>
         )}
 

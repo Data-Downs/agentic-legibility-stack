@@ -2,122 +2,175 @@
 
 import type { ConsentGrant } from "@/lib/types";
 
-interface ConsentCardProps {
-  grant: ConsentGrant;
-  decision?: "granted" | "denied";
-  onDecision?: (grantId: string, decision: "granted" | "denied") => void;
-  onReset?: (grantId: string) => void;
+interface ConsentPanelProps {
+  grants: ConsentGrant[];
+  decisions: Record<string, "granted" | "denied">;
+  onDecision: (grantId: string, decision: "granted" | "denied") => void;
+  onSubmit: () => void;
+  hasRequiredDenials: boolean;
+  isSubmitting: boolean;
   disabled?: boolean;
 }
 
-export function ConsentCard({ grant, decision, onDecision, onReset, disabled }: ConsentCardProps) {
-  const borderColor = decision === "granted"
-    ? "#00703c"
-    : decision === "denied"
-      ? "#b1b4b6"
-      : "#912b88";
-
-  const badgeBg = decision === "granted"
-    ? "bg-green-100 text-green-800"
-    : decision === "denied"
-      ? "bg-gray-100 text-gray-600"
-      : "bg-purple-100 text-purple-800";
-
-  const badgeText = decision === "granted"
-    ? "Consent Granted"
-    : decision === "denied"
-      ? "Declined"
-      : "Consent Required";
-
+function GrantRow({
+  grant,
+  decision,
+  onDecision,
+  disabled,
+}: {
+  grant: ConsentGrant;
+  decision?: "granted" | "denied";
+  onDecision: (grantId: string, decision: "granted" | "denied") => void;
+  disabled?: boolean;
+}) {
   return (
-    <div
-      className={`my-2 rounded-lg border bg-white ${decision === "denied" ? "opacity-60" : ""}`}
-      style={{ borderLeft: `4px solid ${borderColor}` }}
-    >
-      <div className="px-3 py-2.5">
-        {/* Header */}
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${badgeBg}`}>
-            {badgeText}
-          </span>
-          {!decision && grant.required && (
-            <span className="text-[10px] text-red-600 font-medium">Required</span>
-          )}
-          {decision === "granted" && (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00703c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          )}
-        </div>
-
-        {/* Description */}
+    <div className={`px-3 py-3 ${decision === "denied" ? "opacity-60" : ""}`}>
+      {/* Description + required badge */}
+      <div className="flex items-start justify-between gap-2">
         <p className={`text-sm font-medium ${decision === "denied" ? "text-govuk-dark-grey" : "text-govuk-black"}`}>
           {grant.description}
         </p>
-        <p className="text-xs text-govuk-dark-grey mt-0.5">{grant.purpose}</p>
-
-        {/* Data that will be shared */}
-        <div className="mt-2">
-          <p className="text-[10px] font-bold uppercase text-govuk-dark-grey mb-1">Data to be shared:</p>
-          <div className="flex flex-wrap gap-1">
-            {grant.data_shared.map((d) => (
-              <span
-                key={d}
-                className={`text-[10px] px-1.5 py-0.5 rounded ${
-                  decision === "denied"
-                    ? "bg-gray-100 text-gray-500"
-                    : "bg-purple-50 text-purple-700"
-                }`}
-              >
-                {d.replace(/_/g, " ")}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Source */}
-        <p className="text-[10px] text-govuk-dark-grey mt-1.5">
-          Source: <span className="font-medium">{grant.source.replace(/-/g, " ")}</span>
-          {grant.duration && <> &middot; Duration: {grant.duration.replace(/-/g, " ")}</>}
-        </p>
-
-        {/* Pending — show action buttons */}
-        {!decision && (
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={() => onDecision?.(grant.id, "granted")}
-              disabled={disabled}
-              className="text-xs font-bold text-white px-3 py-1 rounded disabled:opacity-50"
-              style={{ backgroundColor: "#912b88" }}
-            >
-              I agree
-            </button>
-            <button
-              onClick={() => onDecision?.(grant.id, "denied")}
-              disabled={disabled}
-              className="text-xs font-medium text-govuk-dark-grey px-3 py-1 rounded border border-govuk-mid-grey hover:bg-gray-50 disabled:opacity-50"
-            >
-              No thanks
-            </button>
-          </div>
+        {grant.required && (
+          <span className="text-[10px] text-red-600 font-medium whitespace-nowrap shrink-0 mt-0.5">
+            Required
+          </span>
         )}
+      </div>
+      <p className="text-xs text-govuk-dark-grey mt-0.5">{grant.purpose}</p>
 
-        {/* Granted or Denied — show Change link */}
-        {decision && !disabled && (
-          <div className="mt-2 flex items-center justify-between">
-            <span className={`text-xs font-medium ${
-              decision === "granted" ? "text-green-700" : "text-govuk-dark-grey"
-            }`}>
-              {decision === "granted" ? "You agreed to share this data" : "You declined this consent"}
+      {/* Data tags */}
+      <div className="mt-2">
+        <p className="text-[10px] font-bold uppercase text-govuk-dark-grey mb-1">Data to be shared:</p>
+        <div className="flex flex-wrap gap-1">
+          {grant.data_shared.map((d) => (
+            <span
+              key={d}
+              className={`text-[10px] px-1.5 py-0.5 rounded ${
+                decision === "denied"
+                  ? "bg-gray-100 text-gray-500"
+                  : "bg-purple-50 text-purple-700"
+              }`}
+            >
+              {d.replace(/_/g, " ")}
             </span>
-            <button
-              onClick={() => onReset?.(grant.id)}
-              className="text-xs text-govuk-blue underline hover:no-underline"
-            >
-              Change
-            </button>
-          </div>
-        )}
+          ))}
+        </div>
+      </div>
+
+      {/* Source + duration */}
+      <p className="text-[10px] text-govuk-dark-grey mt-1.5">
+        Source: <span className="font-medium">{grant.source.replace(/-/g, " ")}</span>
+        {grant.duration && <> &middot; Duration: {grant.duration.replace(/-/g, " ")}</>}
+      </p>
+
+      {/* Decision controls */}
+      <div className="flex items-center gap-2 mt-2">
+        <button
+          onClick={() => onDecision(grant.id, "granted")}
+          disabled={disabled}
+          className={`text-xs font-bold px-3 py-1 rounded transition-colors disabled:opacity-50 ${
+            decision === "granted"
+              ? "bg-[#912b88] text-white"
+              : "border border-govuk-mid-grey text-govuk-dark-grey hover:bg-purple-50"
+          }`}
+        >
+          {decision === "granted" && (
+            <svg className="inline -mt-0.5 mr-1" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+          I agree
+        </button>
+        <button
+          onClick={() => onDecision(grant.id, "denied")}
+          disabled={disabled}
+          className={`text-xs font-medium px-3 py-1 rounded transition-colors disabled:opacity-50 ${
+            decision === "denied"
+              ? "bg-gray-200 text-govuk-dark-grey"
+              : "border border-govuk-mid-grey text-govuk-dark-grey hover:bg-gray-50"
+          }`}
+        >
+          No thanks
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function ConsentPanel({
+  grants,
+  decisions,
+  onDecision,
+  onSubmit,
+  hasRequiredDenials,
+  isSubmitting,
+  disabled,
+}: ConsentPanelProps) {
+  const allDecided = grants.length > 0 && grants.every((g) => decisions[g.id] !== undefined);
+  const canSubmit = allDecided && !hasRequiredDenials && !isSubmitting && !disabled;
+
+  return (
+    <div
+      className="my-2 rounded-lg border bg-white"
+      style={{ borderLeft: "4px solid #912b88" }}
+    >
+      {/* Panel header */}
+      <div className="px-3 py-2.5 border-b border-gray-100">
+        <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">
+          Consent Required
+        </span>
+        <p className="text-xs text-govuk-dark-grey mt-1">
+          Review and grant consent for your application.
+        </p>
+      </div>
+
+      {/* Grant rows */}
+      <div className="divide-y divide-gray-100">
+        {grants.map((grant) => (
+          <GrantRow
+            key={grant.id}
+            grant={grant}
+            decision={decisions[grant.id]}
+            onDecision={onDecision}
+            disabled={disabled || isSubmitting}
+          />
+        ))}
+      </div>
+
+      {/* Required denials warning */}
+      {hasRequiredDenials && (
+        <div className="mx-3 mb-2 bg-yellow-50 border-l-4 border-yellow-400 p-2.5 rounded-r">
+          <p className="text-xs font-bold text-yellow-800">
+            Required consents declined
+          </p>
+          <p className="text-[10px] text-yellow-700 mt-0.5">
+            You have declined one or more required consents. Your application
+            cannot proceed without these. Please change your decisions above to
+            continue.
+          </p>
+        </div>
+      )}
+
+      {/* Submit button */}
+      <div className="px-3 pb-3 pt-1">
+        <button
+          onClick={onSubmit}
+          disabled={!canSubmit}
+          className={`w-full py-2 rounded font-bold text-sm transition-colors ${
+            canSubmit
+              ? "bg-[#00703c] text-white hover:bg-[#005a30]"
+              : "bg-govuk-mid-grey text-white cursor-not-allowed"
+          }`}
+        >
+          {isSubmitting ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Submitting...
+            </span>
+          ) : (
+            "Submit and continue"
+          )}
+        </button>
       </div>
     </div>
   );
