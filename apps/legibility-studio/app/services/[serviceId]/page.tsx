@@ -386,7 +386,7 @@ export default function ServiceDetailPage({
           </div>
         </div>
         <div className="text-right">
-          <div className="text-3xl font-bold">{completeness}%</div>
+          <div className="text-3xl font-light tracking-tight">{completeness}%</div>
           <div className="text-xs text-gray-500">artefact completeness</div>
         </div>
       </div>

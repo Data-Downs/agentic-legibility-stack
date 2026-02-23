@@ -80,38 +80,38 @@ function AllServicesDashboard({ dashboard }: { dashboard: DashboardData }) {
         <div className="flex h-4 rounded-full overflow-hidden">
           {dashboard.completedCases > 0 && (
             <div
-              className="bg-green-500"
+              className="bg-govuk-blue"
               style={{ width: `${(dashboard.completedCases / dashboard.totalCases) * 100}%` }}
               title={`${dashboard.completedCases} completed`}
             />
           )}
           {dashboard.activeCases > 0 && (
             <div
-              className="bg-blue-500"
+              className="bg-govuk-blue/70"
               style={{ width: `${(dashboard.activeCases / dashboard.totalCases) * 100}%` }}
               title={`${dashboard.activeCases} active`}
             />
           )}
           {dashboard.handedOffCases > 0 && (
             <div
-              className="bg-yellow-500"
+              className="bg-govuk-blue/45"
               style={{ width: `${(dashboard.handedOffCases / dashboard.totalCases) * 100}%` }}
               title={`${dashboard.handedOffCases} handed off`}
             />
           )}
           {dashboard.rejectedCases > 0 && (
             <div
-              className="bg-red-500"
+              className="bg-govuk-blue/25"
               style={{ width: `${(dashboard.rejectedCases / dashboard.totalCases) * 100}%` }}
               title={`${dashboard.rejectedCases} rejected`}
             />
           )}
         </div>
         <div className="flex gap-4 mt-2 text-xs text-gray-500">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full inline-block" /> Completed</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-500 rounded-full inline-block" /> Active</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-yellow-500 rounded-full inline-block" /> Handed off</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-500 rounded-full inline-block" /> Rejected</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-govuk-blue rounded-full inline-block" /> Completed</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-govuk-blue/70 rounded-full inline-block" /> Active</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-govuk-blue/45 rounded-full inline-block" /> Handed off</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-govuk-blue/25 rounded-full inline-block" /> Rejected</span>
         </div>
       </div>
 
@@ -122,15 +122,15 @@ function AllServicesDashboard({ dashboard }: { dashboard: DashboardData }) {
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <div className="flex h-3 rounded-full overflow-hidden bg-gray-100">
-                <div className="bg-blue-500 rounded-l-full" style={{ width: `${agentPct}%` }} />
-                <div className="bg-green-500 rounded-r-full" style={{ width: `${100 - agentPct}%` }} />
+                <div className="bg-govuk-blue rounded-l-full" style={{ width: `${agentPct}%` }} />
+                <div className="bg-govuk-blue/25 rounded-r-full" style={{ width: `${100 - agentPct}%` }} />
               </div>
               <div className="flex justify-between text-xs mt-1 text-gray-500">
                 <span>Agent: {dashboard.agentActionTotal}</span>
                 <span>Human: {dashboard.humanActionTotal}</span>
               </div>
             </div>
-            <div className="text-3xl font-bold">{agentPct}%</div>
+            <div className="text-3xl font-light tracking-tight">{agentPct}%</div>
           </div>
           <p className="text-xs text-gray-400 mt-1">of actions performed by agent</p>
         </div>
@@ -140,11 +140,11 @@ function AllServicesDashboard({ dashboard }: { dashboard: DashboardData }) {
           <div className="flex items-center gap-4">
             <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-govuk-green rounded-full"
+                className="h-full bg-govuk-blue/70 rounded-full"
                 style={{ width: `${dashboard.avgProgress}%` }}
               />
             </div>
-            <div className="text-3xl font-bold">{dashboard.avgProgress}%</div>
+            <div className="text-3xl font-light tracking-tight">{dashboard.avgProgress}%</div>
           </div>
           <p className="text-xs text-gray-400 mt-1">of active cases through their journey</p>
         </div>
@@ -235,7 +235,7 @@ export default function ServicesPage() {
                   <p className="text-sm mt-2 text-gray-700">{service.description}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold">{service.completeness}%</div>
+                  <div className="text-3xl font-light tracking-tight">{service.completeness}%</div>
                   <div className="text-xs text-gray-500">complete</div>
                   {service.gapCount > 0 && (
                     <div className="text-xs text-red-600 mt-1">
