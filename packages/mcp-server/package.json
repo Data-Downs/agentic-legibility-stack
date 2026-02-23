@@ -12,7 +12,8 @@
   "dependencies": {
     "@als/schemas": "*",
     "@als/legibility": "*",
-    "@modelcontextprotocol/sdk": "^1.26.0"
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "tsx": "^4.0.0",

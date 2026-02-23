@@ -77,10 +77,7 @@ async function ensureLocalMcpConnection() {
 /** Check if a tool name belongs to the local MCP service tools */
 const SERVICE_TOOL_ACTIONS = [
   "_check_eligibility",
-  "_get_requirements",
-  "_get_consent_model",
   "_advance_state",
-  "_get_service_info",
 ];
 function isLocalServiceTool(name: string): boolean {
   return SERVICE_TOOL_ACTIONS.some((action) => name.endsWith(action));
@@ -683,8 +680,36 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
 
   if (hasTools) {
     if (isMcpMode) {
-      // MCP mode: include service tool instructions + govmcp tool instructions
-      systemPrompt += `\n\n---\n\nSERVICE TOOLS (MCP MODE):\nYou have access to tools for the government service the citizen is using.\nThese tools let you check eligibility, advance the state machine, get requirements, and manage consent.\n\nFor the current service, use these tools to guide the citizen:\n- Use the _check_eligibility tool to evaluate whether the citizen qualifies (pass their data as citizen_data)\n- Use the _get_requirements tool to see what inputs the service needs\n- Use the _get_consent_model tool to understand what data sharing consent is required\n- Use the _advance_state tool to transition to the next step (provide current_state and trigger)\n- Use the _get_service_info tool for full service metadata\n\nIMPORTANT: The citizen's current state is "${currentUcState}". When using _advance_state, pass this as current_state.\nAfter advancing state, tell the citizen what happened and what comes next.\nDo NOT fabricate eligibility results, payment amounts, dates, or reference numbers — use the tools.\n\nThe citizen's data for eligibility checks:\n${JSON.stringify(buildPolicyContext(personaData), null, 2)}`;
+      // MCP mode: load service context from MCP resources + prompts
+      let mcpServiceContext = "";
+      try {
+        const manifestJson = await localMcpClient.readLocalResource(`service://${serviceId}/manifest`);
+        const policyJson = await localMcpClient.readLocalResource(`service://${serviceId}/policy`);
+        const consentJson = await localMcpClient.readLocalResource(`service://${serviceId}/consent`);
+        const stateModelJson = await localMcpClient.readLocalResource(`service://${serviceId}/state-model`);
+
+        if (manifestJson) mcpServiceContext += `\nSERVICE MANIFEST:\n${manifestJson}\n`;
+        if (policyJson) mcpServiceContext += `\nPOLICY RULES:\n${policyJson}\n`;
+        if (consentJson) mcpServiceContext += `\nCONSENT MODEL:\n${consentJson}\n`;
+        if (stateModelJson) mcpServiceContext += `\nSTATE MODEL:\n${stateModelJson}\n`;
+      } catch (err) {
+        console.warn("Failed to read MCP resources:", err instanceof Error ? err.message : err);
+      }
+
+      // Try to use journey prompt template from MCP server
+      const slug = serviceId.split(".").slice(1).join(".").replace(/-/g, "_");
+      try {
+        const journeyPrompt = await localMcpClient.getLocalPrompt(`${slug}_journey`);
+        if (journeyPrompt?.messages?.[0]?.content?.text) {
+          mcpServiceContext += `\nJOURNEY GUIDE:\n${journeyPrompt.messages[0].content.text}\n`;
+        }
+      } catch {
+        // Journey prompt not available — continue without it
+      }
+
+      systemPrompt += `\n\n---\n\nSERVICE CONTEXT (MCP MODE):\n${mcpServiceContext}`;
+
+      systemPrompt += `\n\nSERVICE TOOLS (MCP MODE):\nYou have access to tools for the government service the citizen is using.\n\nFor the current service, use these tools to guide the citizen:\n- Use the _check_eligibility tool to evaluate whether the citizen qualifies (pass their data as citizen_data)\n- Use the _advance_state tool to transition to the next step (provide current_state and trigger)\n\nService metadata, requirements, and consent model are already loaded above from MCP resources.\n\nIMPORTANT: The citizen's current state is "${currentUcState}". When using _advance_state, pass this as current_state.\nAfter advancing state, tell the citizen what happened and what comes next.\nDo NOT fabricate eligibility results, payment amounts, dates, or reference numbers — use the tools.\n\nThe citizen's data for eligibility checks:\n${JSON.stringify(buildPolicyContext(personaData), null, 2)}`;
 
       systemPrompt += `\n\nLIVE GOV.UK DATA TOOLS:\nYou also have access to tools for real UK government data.\nFor example:\n- search_govuk for official guidance\n- lookup_postcode for local info (citizen postcode: ${userPostcode})\n- find_mp for constituency MP\n- ea_current_floods for flood warnings\n\nPresent all information naturally. Do NOT mention "tools" or "MCP" to the user.`;
     } else {
@@ -1056,6 +1081,16 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     const postTransitionState = stateMachine.getState();
     const HOUSING_DATA_FIELDS = new Set(["tenure_type", "housing_tenure", "housing_status", "monthly_rent", "rent", "address", "housing tenure"]);
     const BANK_DATA_FIELDS = new Set(["sort_code", "account_number", "bank_accounts", "bank_account", "bank_details", "bank accounts"]);
+    // Match the same keyword patterns the TaskCard UI uses to detect form types,
+    // so tasks whose description mentions "housing" don't render as housing forms.
+    const HOUSING_KEYWORDS = /housing|tenure|rent|own.*home|accommodation/i;
+    const BANK_KEYWORDS = /bank\s*account|payment\s*account|sort\s*code/i;
+    function taskMatchesHousing(t: { dataNeeded: string[]; description: string; detail: string }) {
+      return t.dataNeeded.some(d => HOUSING_DATA_FIELDS.has(d)) || HOUSING_KEYWORDS.test(`${t.description} ${t.detail}`);
+    }
+    function taskMatchesBank(t: { dataNeeded: string[]; description: string; detail: string }) {
+      return t.dataNeeded.some(d => BANK_DATA_FIELDS.has(d)) || BANK_KEYWORDS.test(`${t.description} ${t.detail}`);
+    }
 
     const transitioned = stateTransitions.length > 0;
     // Only inject the structured form task when we're AT the data-collection state
@@ -1070,8 +1105,8 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     );
 
     if (isHousingState) {
-      // Remove any LLM-generated housing tasks (wrong dataNeeded fields)
-      const filtered = tasks.filter(t => !t.dataNeeded.some(d => HOUSING_DATA_FIELDS.has(d)));
+      // Remove any LLM-generated housing tasks (by dataNeeded OR description keywords)
+      const filtered = tasks.filter(t => !taskMatchesHousing(t));
       tasks.length = 0;
       tasks.push(...filtered);
       // Inject the correct deterministic task
@@ -1086,8 +1121,8 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     }
 
     if (isBankState) {
-      // Remove any LLM-generated bank tasks (wrong dataNeeded fields)
-      const filtered = tasks.filter(t => !t.dataNeeded.some(d => BANK_DATA_FIELDS.has(d)));
+      // Remove any LLM-generated bank tasks (by dataNeeded OR description keywords)
+      const filtered = tasks.filter(t => !taskMatchesBank(t));
       tasks.length = 0;
       tasks.push(...filtered);
       // Inject the correct deterministic task
@@ -1103,11 +1138,7 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
 
     // For states that should NOT have housing/bank tasks, strip any the LLM generated
     if (!isHousingState && !isBankState) {
-      const stripped = tasks.filter(t => {
-        const hasHousingField = t.dataNeeded.some(d => HOUSING_DATA_FIELDS.has(d));
-        const hasBankField = t.dataNeeded.some(d => BANK_DATA_FIELDS.has(d));
-        return !hasHousingField && !hasBankField;
-      });
+      const stripped = tasks.filter(t => !taskMatchesHousing(t) && !taskMatchesBank(t));
       tasks.length = 0;
       tasks.push(...stripped);
     }

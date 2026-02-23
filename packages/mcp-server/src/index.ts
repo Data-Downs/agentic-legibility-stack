@@ -1,10 +1,10 @@
 /**
  * @als/mcp-server — Local MCP server for service artefacts
  *
- * Exposes government service capabilities as MCP tools.
- * Reads from data/services/ JSON files and provides:
- *   - check_eligibility, get_requirements, get_consent_model,
- *     advance_state, get_service_info per service.
+ * Exposes government service capabilities as MCP primitives:
+ *   - Resources: service metadata, policy, consent, state-model per service
+ *   - Tools: check_eligibility, advance_state per service (with annotations)
+ *   - Prompts: journey template, eligibility check template per service
  *
  * Transport: stdio (standard MCP pattern for local servers)
  * Usage: npx tsx packages/mcp-server/src/index.ts
@@ -21,13 +21,13 @@ async function main() {
 
   console.error(`[MCP Server] Loading services from: ${servicesDir}`);
 
-  const { server, toolCount, serviceCount } = await createServer(servicesDir);
+  const { server, toolCount, resourceCount, promptCount, serviceCount } = await createServer(servicesDir);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
   console.error(
-    `[MCP Server] Running on stdio — ${serviceCount} services, ${toolCount} tools`
+    `[MCP Server] Running on stdio — ${serviceCount} services, ${resourceCount} resources, ${toolCount} tools, ${promptCount} prompts`
   );
 }
 

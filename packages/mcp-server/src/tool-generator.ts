@@ -1,12 +1,12 @@
 /**
  * tool-generator.ts — Generates MCP tool definitions from service JSON artefacts
  *
- * For each service, generates up to 5 tools:
+ * For each service, generates up to 2 tools:
  *   - {prefix}_check_eligibility    (if policy.json exists)
- *   - {prefix}_get_requirements     (always, from manifest)
- *   - {prefix}_get_consent_model    (if consent.json exists)
  *   - {prefix}_advance_state        (if state-model.json exists)
- *   - {prefix}_get_service_info     (always, from manifest)
+ *
+ * Read-only lookups (service info, requirements, consent model) are now
+ * served as MCP Resources — see resource-generator.ts.
  */
 
 import { ArtefactStore, type ServiceArtefacts } from "@als/legibility";
@@ -18,6 +18,11 @@ export interface McpToolDefinition {
     type: "object";
     properties: Record<string, unknown>;
     required?: string[];
+  };
+  annotations: {
+    readOnlyHint: boolean;
+    destructiveHint: boolean;
+    idempotentHint: boolean;
   };
 }
 
@@ -39,21 +44,7 @@ export function generateToolsForService(
   const serviceName = artefacts.manifest.name;
   const tools: McpToolDefinition[] = [];
 
-  // Always: service info
-  tools.push({
-    name: `${prefix}_get_service_info`,
-    description: `Get full metadata for the "${serviceName}" service, including department, SLA, fees, redress, and handoff details.`,
-    inputSchema: { type: "object", properties: {} },
-  });
-
-  // Always: requirements (from manifest)
-  tools.push({
-    name: `${prefix}_get_requirements`,
-    description: `Get the input/output schemas, evidence requirements, and consent requirements for the "${serviceName}" service.`,
-    inputSchema: { type: "object", properties: {} },
-  });
-
-  // If policy exists: eligibility check
+  // If policy exists: eligibility check (read-only computation)
   if (artefacts.policy) {
     tools.push({
       name: `${prefix}_check_eligibility`,
@@ -69,19 +60,15 @@ export function generateToolsForService(
         },
         required: ["citizen_data"],
       },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+      },
     });
   }
 
-  // If consent exists: consent model
-  if (artefacts.consent) {
-    tools.push({
-      name: `${prefix}_get_consent_model`,
-      description: `Get the consent model for the "${serviceName}" service, including all consent grants, data shared, delegation scopes, and revocation details.`,
-      inputSchema: { type: "object", properties: {} },
-    });
-  }
-
-  // If state model exists: state advancement
+  // If state model exists: state advancement (mutating)
   if (artefacts.stateModel) {
     const stateIds = artefacts.stateModel.states.map((s) => s.id);
     const triggers = [
@@ -108,6 +95,11 @@ export function generateToolsForService(
           },
         },
         required: ["current_state", "trigger"],
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
       },
     });
   }
