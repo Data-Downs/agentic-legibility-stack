@@ -3,10 +3,10 @@
  *
  * Each action maps to a real operation using @als/legibility:
  *   - check_eligibility → PolicyEvaluator.evaluate()
- *   - get_requirements  → manifest input/output schemas
- *   - get_consent_model → full consent.json
  *   - advance_state     → StateMachine.transition()
- *   - get_service_info  → full manifest.json
+ *
+ * Read-only lookups (service info, requirements, consent model) are now
+ * served as MCP Resources — see resource-generator.ts.
  */
 
 import {
@@ -47,29 +47,6 @@ export function handleToolCall(
   }
 
   switch (action) {
-    case "get_service_info": {
-      return {
-        content: [
-          { type: "text", text: JSON.stringify(artefacts.manifest, null, 2) },
-        ],
-      };
-    }
-
-    case "get_requirements": {
-      const requirements = {
-        input_schema: artefacts.manifest.input_schema,
-        output_schema: artefacts.manifest.output_schema,
-        evidence_requirements: artefacts.manifest.evidence_requirements || [],
-        consent_requirements: artefacts.manifest.consent_requirements || [],
-        constraints: artefacts.manifest.constraints || null,
-      };
-      return {
-        content: [
-          { type: "text", text: JSON.stringify(requirements, null, 2) },
-        ],
-      };
-    }
-
     case "check_eligibility": {
       if (!artefacts.policy) {
         return {
@@ -85,24 +62,6 @@ export function handleToolCall(
       const result = policyEvaluator.evaluate(artefacts.policy, citizenData);
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    case "get_consent_model": {
-      if (!artefacts.consent) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "No consent model defined for this service.",
-            },
-          ],
-        };
-      }
-      return {
-        content: [
-          { type: "text", text: JSON.stringify(artefacts.consent, null, 2) },
-        ],
       };
     }
 

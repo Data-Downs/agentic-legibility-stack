@@ -2,12 +2,11 @@
  * Local MCP Client — Connection to the local @als/mcp-server
  *
  * Spawns packages/mcp-server as a child process via stdio transport
- * and provides the same interface as mcp-client.ts (govmcp):
- *   - connectLocal()              → spawn server + connect
- *   - getLocalToolsForClaude()    → returns tools in Claude API format
- *   - callLocalTool(name, args)   → execute a tool call
- *   - isLocalConnected()          → check connection status
- *   - disconnectLocal()           → kill child process
+ * and provides access to MCP primitives:
+ *   - Tools:     getLocalToolsForClaude(), callLocalTool()
+ *   - Resources: listLocalResources(), readLocalResource()
+ *   - Prompts:   listLocalPrompts(), getLocalPrompt()
+ *   - Lifecycle: connectLocal(), disconnectLocal(), isLocalConnected()
  */
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -18,6 +17,24 @@ interface ClaudeTool {
   name: string;
   description: string;
   input_schema: Record<string, unknown>;
+}
+
+interface McpResource {
+  uri: string;
+  name: string;
+  description?: string;
+  mimeType?: string;
+}
+
+interface McpPrompt {
+  name: string;
+  description?: string;
+  arguments?: Array<{ name: string; description?: string; required?: boolean }>;
+}
+
+interface McpPromptMessage {
+  role: string;
+  content: { type: string; text?: string };
 }
 
 let client: Client | null = null;
@@ -137,6 +154,84 @@ export async function callLocalTool(
       }
     }
     return { error: `Local MCP tool call failed: ${msg}` };
+  }
+}
+
+// ── Resource support ──
+
+export async function listLocalResources(): Promise<McpResource[]> {
+  if (!connected || !client) return [];
+
+  try {
+    const result = await client.listResources();
+    return (result.resources || []).map((r) => ({
+      uri: r.uri,
+      name: r.name,
+      description: r.description,
+      mimeType: r.mimeType,
+    }));
+  } catch (error) {
+    console.error("Local MCP listResources failed:", error instanceof Error ? error.message : error);
+    return [];
+  }
+}
+
+export async function readLocalResource(uri: string): Promise<string | null> {
+  if (!connected || !client) return null;
+
+  try {
+    const result = await client.readResource({ uri });
+    if (result.contents && result.contents.length > 0) {
+      const first = result.contents[0];
+      if ("text" in first && typeof first.text === "string") {
+        return first.text;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error(`Local MCP readResource failed (${uri}):`, error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+// ── Prompt support ──
+
+export async function listLocalPrompts(): Promise<McpPrompt[]> {
+  if (!connected || !client) return [];
+
+  try {
+    const result = await client.listPrompts();
+    return (result.prompts || []).map((p) => ({
+      name: p.name,
+      description: p.description,
+      arguments: p.arguments?.map((a) => ({
+        name: a.name,
+        description: a.description,
+        required: a.required,
+      })),
+    }));
+  } catch (error) {
+    console.error("Local MCP listPrompts failed:", error instanceof Error ? error.message : error);
+    return [];
+  }
+}
+
+export async function getLocalPrompt(
+  name: string,
+  args?: Record<string, string>
+): Promise<{ messages: McpPromptMessage[] } | null> {
+  if (!connected || !client) return null;
+
+  try {
+    const result = await client.getPrompt({ name, arguments: args });
+    const messages = (result.messages || []).map((m) => ({
+      role: m.role,
+      content: m.content as { type: string; text?: string },
+    }));
+    return { messages };
+  } catch (error) {
+    console.error(`Local MCP getPrompt failed (${name}):`, error instanceof Error ? error.message : error);
+    return null;
   }
 }
 

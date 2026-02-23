@@ -1,51 +1,85 @@
 /**
- * server.ts — MCP Server setup
+ * server.ts — MCP Server setup using high-level McpServer API
  *
- * Creates an MCP server that exposes service tools generated from
- * the JSON artefacts in data/services/. Handles tools/list and tools/call.
+ * Creates an MCP server that exposes government service artefacts as:
+ *   - Resources: manifest, policy, consent, state-model per service
+ *   - Tools: check_eligibility (read-only), advance_state (mutating) per service
+ *   - Prompts: journey template, eligibility check template per service
  */
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ArtefactStore } from "@als/legibility";
-import { generateAllTools, type ToolMapping, type McpToolDefinition } from "./tool-generator";
+import { generateAllTools } from "./tool-generator";
 import { handleToolCall } from "./tool-handlers";
+import { registerAllResources } from "./resource-generator";
+import { registerAllPrompts } from "./prompt-generator";
+
+/** Map tool action names to Zod input shapes for registerTool */
+const TOOL_ZOD_SCHEMAS: Record<string, Record<string, z.ZodType>> = {
+  check_eligibility: {
+    citizen_data: z.record(z.string(), z.unknown()).describe(
+      "Citizen context data for policy evaluation (e.g. age, jurisdiction, employment_status, savings, etc.)"
+    ),
+  },
+  advance_state: {
+    current_state: z.string().describe("Current state ID"),
+    trigger: z.string().describe("Transition trigger name"),
+  },
+};
 
 export async function createServer(servicesDir: string): Promise<{
-  server: Server;
+  server: McpServer;
   toolCount: number;
+  resourceCount: number;
+  promptCount: number;
   serviceCount: number;
 }> {
   const store = new ArtefactStore();
   const serviceCount = await store.loadFromDirectory(servicesDir);
 
+  const mcpServer = new McpServer(
+    { name: "als-service-tools", version: "0.2.0" },
+    { capabilities: { resources: {}, tools: {}, prompts: {} } }
+  );
+
+  // ── Resources (4 per service: manifest, policy, consent, state-model) ──
+  const resourceCount = registerAllResources(mcpServer, store);
+
+  // ── Tools (2 per service: check_eligibility, advance_state) ──
   const { tools, toolMap } = generateAllTools(store);
 
-  console.error(
-    `[MCP Server] Loaded ${serviceCount} services, ${tools.length} tools`
-  );
-  for (const [name, mapping] of toolMap) {
-    console.error(`  - ${name} → ${mapping.serviceId}:${mapping.action}`);
+  for (const tool of tools) {
+    const mapping = toolMap.get(tool.name);
+    if (!mapping) continue;
+
+    const zodShape = TOOL_ZOD_SCHEMAS[mapping.action];
+    if (!zodShape) continue;
+
+    mcpServer.registerTool(
+      tool.name,
+      {
+        description: tool.description,
+        inputSchema: zodShape,
+        annotations: tool.annotations,
+      },
+      (args: Record<string, unknown>) => {
+        const result = handleToolCall(tool.name, args, store, toolMap);
+        return result as CallToolResult;
+      }
+    );
   }
 
-  const server = new Server(
-    { name: "als-service-tools", version: "0.1.0" },
-    { capabilities: { tools: {} } }
+  // ── Prompts (journey + eligibility_check per service) ──
+  const promptCount = registerAllPrompts(mcpServer, store);
+
+  console.error(
+    `[MCP Server] Loaded ${serviceCount} services: ${resourceCount} resources, ${tools.length} tools, ${promptCount} prompts`
   );
+  for (const [name, mapping] of toolMap) {
+    console.error(`  - tool: ${name} → ${mapping.serviceId}:${mapping.action}`);
+  }
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: tools.map((t) => ({
-      name: t.name,
-      description: t.description,
-      inputSchema: t.inputSchema,
-    })),
-  }));
-
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const { name, arguments: args } = request.params;
-    const result = handleToolCall(name, args || {}, store, toolMap);
-    return result as unknown as Record<string, unknown>;
-  });
-
-  return { server, toolCount: tools.length, serviceCount };
+  return { server: mcpServer, toolCount: tools.length, resourceCount, promptCount, serviceCount };
 }
