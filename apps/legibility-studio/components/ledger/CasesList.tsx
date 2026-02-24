@@ -34,7 +34,7 @@ export default function CasesList({ serviceId }: { serviceId: string }) {
       if (statusFilter) params.set("status", statusFilter);
 
       const res = await fetch(
-        `http://localhost:3100/api/ledger/services/${encodeURIComponent(serviceId)}/cases?${params}`,
+        `${process.env.NEXT_PUBLIC_CITIZEN_API || "http://localhost:3100"}/api/ledger/services/${encodeURIComponent(serviceId)}/cases?${params}`,
       );
       const data = await res.json();
       setCases(data.cases || []);

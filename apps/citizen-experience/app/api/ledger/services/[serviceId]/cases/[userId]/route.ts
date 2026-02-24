@@ -21,9 +21,9 @@ export async function GET(
     const decodedService = decodeURIComponent(serviceId);
     const decodedUser = decodeURIComponent(userId);
 
-    const store = getLedgerStore();
+    const store = await getLedgerStore();
     const caseId = CaseStore.caseId(decodedUser, decodedService);
-    const ledgerCase = store.getCase(caseId);
+    const ledgerCase = await store.getCase(caseId);
 
     if (!ledgerCase) {
       return NextResponse.json(
@@ -32,7 +32,7 @@ export async function GET(
       );
     }
 
-    const timeline = store.getCaseTimeline(caseId);
+    const timeline = await store.getCaseTimeline(caseId);
     const stateModel = loadStateModel(decodedService);
 
     return NextResponse.json({

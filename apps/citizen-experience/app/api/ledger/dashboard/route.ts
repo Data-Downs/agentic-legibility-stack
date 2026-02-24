@@ -13,8 +13,8 @@ export async function OPTIONS() {
 
 export async function GET() {
   try {
-    const store = getLedgerStore();
-    const dashboard = store.getDashboardAll();
+    const store = await getLedgerStore();
+    const dashboard = await store.getDashboardAll();
     return NextResponse.json(dashboard, { headers: corsHeaders });
   } catch (error) {
     console.error("[Ledger] All-services dashboard error:", error);

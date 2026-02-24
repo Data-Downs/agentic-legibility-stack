@@ -42,18 +42,18 @@ export async function POST(request: NextRequest) {
     });
 
     // Emit trace event
-    const emitter = getTraceEmitter();
+    const emitter = await getTraceEmitter();
     const span = emitter.startSpan({
       traceId: traceId || handoffPackage.traceId,
       sessionId: `session_${Date.now()}`,
       capabilityId: serviceId,
     });
-    emitter.emit("handoff.initiated", span, {
+    await emitter.emit("handoff.initiated", span, {
       handoffId: handoffPackage.id,
       reason: handoffPackage.reason.category,
       urgency: handoffPackage.urgency,
     });
-    emitter.emit("handoff.package.created", span, {
+    await emitter.emit("handoff.package.created", span, {
       handoffId: handoffPackage.id,
       department: handoffPackage.routing.department,
       queue: handoffPackage.routing.suggestedQueue,

@@ -19,12 +19,13 @@ export async function OPTIONS() {
  */
 export async function GET() {
   try {
-    const store = getTraceStore();
-    const traces = store.listTraces(100);
+    const store = await getTraceStore();
+    const traces = await store.listTraces(100);
+    const totalEvents = await store.getEventCount();
 
     return NextResponse.json({
       count: traces.length,
-      totalEvents: store.eventCount,
+      totalEvents,
       traces,
     }, { headers: corsHeaders });
   } catch (error) {

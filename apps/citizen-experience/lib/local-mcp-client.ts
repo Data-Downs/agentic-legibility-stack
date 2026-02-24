@@ -43,6 +43,11 @@ let connected = false;
 let localTools: ClaudeTool[] = [];
 
 export async function connectLocal(): Promise<boolean> {
+  // MCP mode uses StdioClientTransport which spawns a child process — not possible on Workers
+  if (process.env.CF_PAGES || process.env.__NEXT_ON_PAGES__) {
+    console.warn("MCP mode unavailable in production (no child process spawning on Cloudflare Workers)");
+    return false;
+  }
   if (connected && client) return true;
 
   try {

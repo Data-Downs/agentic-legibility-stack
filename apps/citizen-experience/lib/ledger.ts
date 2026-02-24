@@ -7,6 +7,8 @@ import fs from "fs";
 import path from "path";
 import type { StateModelDefinition } from "@als/schemas";
 import { getCaseStore } from "./evidence";
+import type { CaseStore } from "@als/evidence";
+import { getServiceArtefact } from "./service-data";
 
 /** Resolve the filesystem directory slug from a serviceId */
 function serviceDirSlug(serviceId: string): string {
@@ -16,6 +18,10 @@ function serviceDirSlug(serviceId: string): string {
 
 /** Load a state model definition for a service */
 export function loadStateModel(serviceId: string): StateModelDefinition | null {
+  // Try bundled data first (works on Cloudflare)
+  const bundled = getServiceArtefact(serviceId, "stateModel");
+  if (bundled) return bundled as unknown as StateModelDefinition;
+  // Fallback to filesystem
   const slug = serviceDirSlug(serviceId);
   for (const base of [
     path.join(process.cwd(), "..", "..", "data", "services"),
@@ -38,6 +44,6 @@ export function getTotalStates(serviceId: string): number {
 }
 
 /** Get the CaseStore singleton */
-export function getLedgerStore() {
+export async function getLedgerStore(): Promise<CaseStore> {
   return getCaseStore();
 }

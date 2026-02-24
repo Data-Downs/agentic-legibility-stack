@@ -52,14 +52,9 @@ export class TraceEmitter {
     this.totalStatesMap[serviceId] = total;
   }
 
-  /** Get or create the CaseStore (lazily from the TraceStore's DB) */
+  /** Get the CaseStore instance */
   getCaseStore(): CaseStore | null {
-    if (this.caseStore) return this.caseStore;
-    if (this.store) {
-      this.caseStore = new CaseStore(this.store.getDatabase());
-      return this.caseStore;
-    }
-    return null;
+    return this.caseStore;
   }
 
   /** Create a new span context for a trace */
@@ -80,12 +75,12 @@ export class TraceEmitter {
   }
 
   /** Emit a trace event */
-  emit(
+  async emit(
     type: TraceEventType,
     span: SpanContext,
     payload: Record<string, unknown>,
     parentSpanId?: string
-  ): TraceEvent {
+  ): Promise<TraceEvent> {
     const event: TraceEvent = {
       id: `evt_${generateId()}`,
       traceId: span.traceId,
@@ -104,23 +99,23 @@ export class TraceEmitter {
     // Persist if store is connected
     if (this.store) {
       try {
-        this.store.append(event);
+        await this.store.append(event);
       } catch (err) {
         console.error("[TraceEmitter] Failed to persist event:", err);
       }
     }
 
     // Update ledger case if this is a ledger-relevant event
-    this.updateLedger(event);
+    await this.updateLedger(event);
 
     return event;
   }
 
   /** Emit a batch of events (from CapabilityInvoker results, for example) */
-  emitBatch(events: TraceEvent[]): void {
+  async emitBatch(events: TraceEvent[]): Promise<void> {
     if (this.store && events.length > 0) {
       try {
-        this.store.appendBatch(events);
+        await this.store.appendBatch(events);
       } catch (err) {
         console.error("[TraceEmitter] Failed to persist batch:", err);
       }
@@ -128,12 +123,12 @@ export class TraceEmitter {
 
     // Update ledger for each event in the batch
     for (const event of events) {
-      this.updateLedger(event);
+      await this.updateLedger(event);
     }
   }
 
   /** Update ledger case if this is a relevant event */
-  private updateLedger(event: TraceEvent): void {
+  private async updateLedger(event: TraceEvent): Promise<void> {
     if (!LEDGER_EVENT_TYPES.has(event.type)) return;
 
     const cs = this.getCaseStore();
@@ -142,18 +137,18 @@ export class TraceEmitter {
     try {
       const serviceId = event.metadata.capabilityId || (event.payload.serviceId as string);
       const totalStates = serviceId ? this.totalStatesMap[serviceId] : undefined;
-      cs.upsertCase(event, totalStates);
+      await cs.upsertCase(event, totalStates);
     } catch (err) {
       console.error("[TraceEmitter] Failed to update ledger case:", err);
     }
   }
 
   /** End a span by emitting a terminal event */
-  endSpan(
+  async endSpan(
     span: SpanContext,
     type: TraceEventType,
     payload: Record<string, unknown>
-  ): TraceEvent {
+  ): Promise<TraceEvent> {
     return this.emit(type, span, payload);
   }
 }

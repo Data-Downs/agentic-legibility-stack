@@ -21,11 +21,11 @@ export class ReceiptGenerator {
   }
 
   /** Create a receipt from an invocation result */
-  fromInvocationResult(
+  async fromInvocationResult(
     result: InvocationResult,
     citizen: { id: string; name?: string },
     traceId: string
-  ): Receipt {
+  ): Promise<Receipt> {
     const receipt: Receipt = {
       id: `rcpt_${generateId()}`,
       traceId,
@@ -44,7 +44,7 @@ export class ReceiptGenerator {
     // Persist if store is connected
     if (this.store) {
       try {
-        this.store.storeReceipt(receipt);
+        await this.store.storeReceipt(receipt);
       } catch (err) {
         console.error("[ReceiptGenerator] Failed to persist receipt:", err);
       }
@@ -54,7 +54,7 @@ export class ReceiptGenerator {
   }
 
   /** Create a receipt for a custom action (not from an invocation) */
-  create(opts: {
+  async create(opts: {
     traceId: string;
     capabilityId: string;
     citizen: { id: string; name?: string };
@@ -62,7 +62,7 @@ export class ReceiptGenerator {
     outcome: Receipt["outcome"];
     details?: Record<string, unknown>;
     dataShared?: string[];
-  }): Receipt {
+  }): Promise<Receipt> {
     const receipt: Receipt = {
       id: `rcpt_${generateId()}`,
       traceId: opts.traceId,
@@ -77,7 +77,7 @@ export class ReceiptGenerator {
 
     if (this.store) {
       try {
-        this.store.storeReceipt(receipt);
+        await this.store.storeReceipt(receipt);
       } catch (err) {
         console.error("[ReceiptGenerator] Failed to persist receipt:", err);
       }

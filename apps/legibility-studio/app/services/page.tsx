@@ -162,7 +162,7 @@ export default function ServicesPage() {
   useEffect(() => {
     Promise.all([
       fetch("/api/services").then((r) => r.json()),
-      fetch("http://localhost:3100/api/ledger/dashboard").then((r) => r.json()).catch(() => null),
+      fetch(`${process.env.NEXT_PUBLIC_CITIZEN_API || "http://localhost:3100"}/api/ledger/dashboard`).then((r) => r.json()).catch(() => null),
     ]).then(([servicesData, dashboardData]) => {
       setServices(servicesData.services || []);
       if (dashboardData && !dashboardData.error && dashboardData.totalCases > 0) {

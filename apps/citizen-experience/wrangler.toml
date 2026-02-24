@@ -1,0 +1,17 @@
+#:schema node_modules/wrangler/config-schema.json
+
+name = "als-citizen"
+main = ".open-next/worker.js"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+assets = { directory = ".open-next/assets", binding = "ASSETS" }
+
+# Env vars are set here as [vars]; secrets set via `wrangler secret put`
+# Note: ANTHROPIC_API_KEY should be set via `wrangler secret put ANTHROPIC_API_KEY`
+# but in OpenNext, secrets are available through getCloudflareContext().env
+
+[[d1_databases]]
+binding = "DB"
+database_name = "als-evidence"
+database_id = "41c89a7c-c2d9-457e-b3ae-506046e8645c"

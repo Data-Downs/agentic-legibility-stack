@@ -33,7 +33,7 @@ export default function LedgerDashboard({
 
   useEffect(() => {
     fetch(
-      `http://localhost:3100/api/ledger/services/${encodeURIComponent(serviceId)}/dashboard`,
+      `${process.env.NEXT_PUBLIC_CITIZEN_API || "http://localhost:3100"}/api/ledger/services/${encodeURIComponent(serviceId)}/dashboard`,
     )
       .then((r) => r.json())
       .then((data) => {
