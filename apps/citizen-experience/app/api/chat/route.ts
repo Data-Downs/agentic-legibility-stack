@@ -11,7 +11,7 @@ import { PolicyEvaluator, StateMachine } from "@als/legibility";
 import { getTraceEmitter, getReceiptGenerator } from "@/lib/evidence";
 import { getRegistry } from "@/lib/registry";
 import { extractStructuredOutput } from "@/lib/extract-structured-output";
-import { getServiceArtefact, getPersonaData, getPromptFile, isCloudflare } from "@/lib/service-data";
+import { getServiceArtefact, getPersonaData, getPromptFile } from "@/lib/service-data";
 
 // ── AnthropicAdapter — the ONLY Anthropic SDK usage ──
 // Lazy-initialized at request time so Cloudflare Worker secrets are available
@@ -23,25 +23,30 @@ async function getLLMAdapter(): Promise<AnthropicAdapter> {
   if (llmAdapterPromise) return llmAdapterPromise;
 
   llmAdapterPromise = (async () => {
-    // Try process.env first (works in local dev)
-    let apiKey = process.env.ANTHROPIC_API_KEY;
-    // On Cloudflare Workers, secrets live in getCloudflareContext().env
-    if (!apiKey) {
-      try {
-        const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { env } = getCloudflareContext() as { env: any };
-        apiKey = env?.ANTHROPIC_API_KEY;
-      } catch {
-        // Not on Cloudflare
+    try {
+      // Try process.env first (works in local dev)
+      let apiKey = process.env.ANTHROPIC_API_KEY;
+      // On Cloudflare Workers, secrets live in getCloudflareContext().env
+      if (!apiKey) {
+        try {
+          const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { env } = getCloudflareContext() as { env: any };
+          apiKey = env?.ANTHROPIC_API_KEY;
+        } catch {
+          // Not on Cloudflare
+        }
       }
+      if (!apiKey) {
+        console.warn("⚠️  ANTHROPIC_API_KEY is not set — chat will fail.");
+      }
+      llmAdapter = new AnthropicAdapter();
+      llmAdapter.initialize({ apiKey });
+      return llmAdapter;
+    } catch (err) {
+      llmAdapterPromise = null;
+      throw err;
     }
-    if (!apiKey) {
-      console.warn("⚠️  ANTHROPIC_API_KEY is not set — chat will fail.");
-    }
-    llmAdapter = new AnthropicAdapter();
-    llmAdapter.initialize({ apiKey });
-    return llmAdapter;
   })();
 
   return llmAdapterPromise;
@@ -794,7 +799,7 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
 
       systemPrompt += `\n\n---\n\nSERVICE CONTEXT (MCP MODE):\n${mcpServiceContext}`;
 
-      systemPrompt += `\n\nSERVICE TOOLS (MCP MODE):\nYou have access to tools for the government service the citizen is using.\n\nFor the current service, use these tools to guide the citizen:\n- Use the _check_eligibility tool to evaluate whether the citizen qualifies (pass their data as citizen_data)\n- Use the _advance_state tool to transition to the next step (provide current_state and trigger)\n\nService metadata, requirements, and consent model are already loaded above from MCP resources.\n\nIMPORTANT: The citizen's current state is "${currentUcState}". When using _advance_state, pass this as current_state.\nAfter advancing state, tell the citizen what happened and what comes next.\nDo NOT fabricate eligibility results, payment amounts, dates, or reference numbers — use the tools.\n\nThe citizen's data for eligibility checks:\n${JSON.stringify(buildPolicyContext(personaData), null, 2)}`;
+      systemPrompt += `\n\nSERVICE TOOLS (MCP MODE):\nYou have access to tools for the government service the citizen is using.\n\nFor the current service, use these tools to guide the citizen:\n- Use the _check_eligibility tool to evaluate whether the citizen qualifies (pass their data as citizen_data)\n- Use the _advance_state tool to transition to the next step (provide current_state and trigger)\n\nService metadata, requirements, and consent model are already loaded above from MCP resources.\n\nIMPORTANT: The citizen's current state is "${currentUcState || stateMachine?.getState() || "not-started"}". When using _advance_state, pass this as current_state.\nAfter advancing state, tell the citizen what happened and what comes next.\nDo NOT fabricate eligibility results, payment amounts, dates, or reference numbers — use the tools.\n\nThe citizen's data for eligibility checks:\n${JSON.stringify(buildPolicyContext(personaData), null, 2)}`;
 
       systemPrompt += `\n\nLIVE GOV.UK DATA TOOLS:\nYou also have access to tools for real UK government data.\nFor example:\n- search_govuk for official guidance\n- lookup_postcode for local info (citizen postcode: ${userPostcode})\n- find_mp for constituency MP\n- ea_current_floods for flood warnings\n\nPresent all information naturally. Do NOT mention "tools" or "MCP" to the user.`;
     } else {

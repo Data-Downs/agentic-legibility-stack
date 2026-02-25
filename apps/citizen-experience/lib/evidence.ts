@@ -26,44 +26,50 @@ async function ensureInit(): Promise<void> {
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
-    // Try Cloudflare D1 first — getCloudflareContext() will throw in non-CF envs
     try {
-      const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-      const { env } = getCloudflareContext();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const db = (env as any).DB;
-      if (db) {
-        adapter = new D1Adapter(db);
-        console.log("[Evidence] D1Adapter initialized via getCloudflareContext()");
+      // Try Cloudflare D1 first — getCloudflareContext() will throw in non-CF envs
+      try {
+        const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+        const { env } = getCloudflareContext();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const db = (env as any).DB;
+        if (db) {
+          adapter = new D1Adapter(db);
+          console.log("[Evidence] D1Adapter initialized via getCloudflareContext()");
+        }
+      } catch {
+        // Not on Cloudflare — fall through to SQLite
       }
-    } catch {
-      // Not on Cloudflare — fall through to SQLite
+
+      if (!adapter) {
+        // Local dev: dynamically import SqliteAdapter from a separate entry point
+        // to prevent the bundler from tracing better-sqlite3 (native C++ module)
+        const path = await import("path");
+        const { SqliteAdapter } = await import("@als/evidence/sqlite");
+        const dbPath = path.join(process.cwd(), "data", "traces.db");
+        adapter = await SqliteAdapter.create(dbPath);
+        console.log(`[Evidence] SqliteAdapter initialized at ${dbPath}`);
+      }
+
+      store = new TraceStore(adapter);
+      caseStore = new CaseStore(adapter);
+
+      // On D1, tables are created by migrations — skip init().
+      // On SQLite, init() creates tables if they don't exist.
+      if (adapter instanceof D1Adapter) {
+        console.log("[Evidence] Skipping init() — tables created by D1 migration");
+      } else {
+        await store.init();
+        await caseStore.init();
+      }
+
+      emitter = new TraceEmitter(store, caseStore);
+      receiptGen = new ReceiptGenerator(store);
+    } catch (err) {
+      initPromise = null;
+      adapter = null;
+      throw err;
     }
-
-    if (!adapter) {
-      // Local dev: dynamically import SqliteAdapter from a separate entry point
-      // to prevent the bundler from tracing better-sqlite3 (native C++ module)
-      const path = await import("path");
-      const { SqliteAdapter } = await import("@als/evidence/sqlite");
-      const dbPath = path.join(process.cwd(), "data", "traces.db");
-      adapter = await SqliteAdapter.create(dbPath);
-      console.log(`[Evidence] SqliteAdapter initialized at ${dbPath}`);
-    }
-
-    store = new TraceStore(adapter);
-    caseStore = new CaseStore(adapter);
-
-    // On D1, tables are created by migrations — skip init().
-    // On SQLite, init() creates tables if they don't exist.
-    if (adapter instanceof D1Adapter) {
-      console.log("[Evidence] Skipping init() — tables created by D1 migration");
-    } else {
-      await store.init();
-      await caseStore.init();
-    }
-
-    emitter = new TraceEmitter(store, caseStore);
-    receiptGen = new ReceiptGenerator(store);
   })();
 
   return initPromise;
