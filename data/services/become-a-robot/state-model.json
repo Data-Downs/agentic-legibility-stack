@@ -17,7 +17,7 @@
     {
       "from": "Applying",
       "to": "Accepted",
-      "trigger": ""
+      "trigger": "accept-application"
     }
   ]
 }

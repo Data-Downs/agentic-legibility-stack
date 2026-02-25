@@ -34,7 +34,7 @@ export default function CasesList({ serviceId }: { serviceId: string }) {
       if (statusFilter) params.set("status", statusFilter);
 
       const res = await fetch(
-        `http://localhost:3100/api/ledger/services/${encodeURIComponent(serviceId)}/cases?${params}`,
+        `${process.env.NEXT_PUBLIC_CITIZEN_API || "http://localhost:3100"}/api/ledger/services/${encodeURIComponent(serviceId)}/cases?${params}`,
       );
       const data = await res.json();
       setCases(data.cases || []);
@@ -88,17 +88,17 @@ export default function CasesList({ serviceId }: { serviceId: string }) {
         <p className="text-sm text-gray-500 py-4 italic">No cases found.</p>
       ) : (
         <>
-          <div className="border border-studio-border rounded-xl bg-white overflow-hidden">
+          <div className="border border-studio-border rounded-xl bg-white">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-studio-border bg-gray-50 text-left">
-                  <th className="py-3 px-4 font-semibold">User</th>
-                  <th className="py-3 px-4 font-semibold">Status</th>
-                  <th className="py-3 px-4 font-semibold">Current State</th>
-                  <th className="py-3 px-4 font-semibold text-right">Progress</th>
-                  <th className="py-3 px-4 font-semibold text-right">Events</th>
-                  <th className="py-3 px-4 font-semibold">Last Activity</th>
-                  <th className="py-3 px-4"></th>
+                <tr className="text-left">
+                  <th className="py-3 px-4 font-semibold sticky top-0 bg-gray-50 z-10 border-b border-studio-border">User</th>
+                  <th className="py-3 px-4 font-semibold sticky top-0 bg-gray-50 z-10 border-b border-studio-border">Status</th>
+                  <th className="py-3 px-4 font-semibold sticky top-0 bg-gray-50 z-10 border-b border-studio-border">Current State</th>
+                  <th className="py-3 px-4 font-semibold sticky top-0 bg-gray-50 z-10 border-b border-studio-border text-right">Progress</th>
+                  <th className="py-3 px-4 font-semibold sticky top-0 bg-gray-50 z-10 border-b border-studio-border text-right">Events</th>
+                  <th className="py-3 px-4 font-semibold sticky top-0 bg-gray-50 z-10 border-b border-studio-border">Last Activity</th>
+                  <th className="py-3 px-4 sticky top-0 bg-gray-50 z-10 border-b border-studio-border"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-studio-border">
@@ -121,7 +121,7 @@ export default function CasesList({ serviceId }: { serviceId: string }) {
                       <div className="flex items-center justify-end gap-2">
                         <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-govuk-green rounded-full"
+                            className="h-full bg-govuk-blue rounded-full"
                             style={{ width: `${c.progressPercent}%` }}
                           />
                         </div>

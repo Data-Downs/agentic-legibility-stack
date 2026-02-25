@@ -11,15 +11,45 @@ import { PolicyEvaluator, StateMachine } from "@als/legibility";
 import { getTraceEmitter, getReceiptGenerator } from "@/lib/evidence";
 import { getRegistry } from "@/lib/registry";
 import { extractStructuredOutput } from "@/lib/extract-structured-output";
+import { getServiceArtefact, getPersonaData, getPromptFile } from "@/lib/service-data";
 
 // ── AnthropicAdapter — the ONLY Anthropic SDK usage ──
-const llmAdapter = new AnthropicAdapter();
-llmAdapter.initialize({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+// Lazy-initialized at request time so Cloudflare Worker secrets are available
+let llmAdapter: AnthropicAdapter | null = null;
+let llmAdapterPromise: Promise<AnthropicAdapter> | null = null;
 
-if (!process.env.ANTHROPIC_API_KEY) {
-  console.warn("⚠️  ANTHROPIC_API_KEY is not set — chat will fail. Create apps/citizen-experience/.env.local with your key.");
+async function getLLMAdapter(): Promise<AnthropicAdapter> {
+  if (llmAdapter) return llmAdapter;
+  if (llmAdapterPromise) return llmAdapterPromise;
+
+  llmAdapterPromise = (async () => {
+    try {
+      // Try process.env first (works in local dev)
+      let apiKey = process.env.ANTHROPIC_API_KEY;
+      // On Cloudflare Workers, secrets live in getCloudflareContext().env
+      if (!apiKey) {
+        try {
+          const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { env } = getCloudflareContext() as { env: any };
+          apiKey = env?.ANTHROPIC_API_KEY;
+        } catch {
+          // Not on Cloudflare
+        }
+      }
+      if (!apiKey) {
+        console.warn("⚠️  ANTHROPIC_API_KEY is not set — chat will fail.");
+      }
+      llmAdapter = new AnthropicAdapter();
+      llmAdapter.initialize({ apiKey });
+      return llmAdapter;
+    } catch (err) {
+      llmAdapterPromise = null;
+      throw err;
+    }
+  })();
+
+  return llmAdapterPromise;
 }
 
 // ── Singleton CapabilityInvoker ──
@@ -84,11 +114,19 @@ function isLocalServiceTool(name: string): boolean {
 }
 
 async function loadFile(filePath: string): Promise<string> {
+  // Try bundled data first (works on Cloudflare + local)
+  const bundled = getPromptFile(filePath);
+  if (bundled) return bundled;
+  // Fallback to filesystem (local dev only)
   const fullPath = path.join(process.cwd(), filePath);
   return fs.readFile(fullPath, "utf-8");
 }
 
 async function loadPersonaData(personaId: string) {
+  // Try bundled data first (works on Cloudflare + local)
+  const bundled = getPersonaData(personaId);
+  if (bundled) return bundled;
+  // Fallback to filesystem
   const raw = await loadFile(`data/${personaId}.json`);
   return JSON.parse(raw);
 }
@@ -101,8 +139,11 @@ function serviceDirSlug(serviceId: string): string {
 
 /** Load a policy ruleset for any service — works for both known and Studio-created services */
 async function loadPolicyRuleset(serviceId: string): Promise<PolicyRuleset | null> {
+  // Try bundled data first
+  const bundled = getServiceArtefact(serviceId, "policy");
+  if (bundled) return bundled as unknown as PolicyRuleset;
+  // Fallback to filesystem
   const slug = serviceDirSlug(serviceId);
-  // Try monorepo-relative path first, then cwd-relative
   for (const base of [
     path.join(process.cwd(), "..", "..", "data", "services"),
     path.join(process.cwd(), "data", "services"),
@@ -175,6 +216,8 @@ function buildPolicyContext(personaData: Record<string, unknown>): Record<string
 
 /** Load a manifest for a service */
 async function loadManifest(serviceId: string): Promise<Record<string, unknown> | null> {
+  const bundled = getServiceArtefact(serviceId, "manifest");
+  if (bundled) return bundled;
   const slug = serviceDirSlug(serviceId);
   for (const base of [
     path.join(process.cwd(), "..", "..", "data", "services"),
@@ -237,6 +280,8 @@ function generateScenarioPrompt(manifest: Record<string, unknown>): string {
 
 /** Load a state model for a service */
 async function loadStateModel(serviceId: string): Promise<StateModelDefinition | null> {
+  const bundled = getServiceArtefact(serviceId, "stateModel");
+  if (bundled) return bundled as unknown as StateModelDefinition;
   const slug = serviceDirSlug(serviceId);
   for (const base of [
     path.join(process.cwd(), "..", "..", "data", "services"),
@@ -254,6 +299,8 @@ async function loadStateModel(serviceId: string): Promise<StateModelDefinition |
 
 /** Load consent model for a service */
 async function loadConsentModel(serviceId: string): Promise<Record<string, unknown> | null> {
+  const bundled = getServiceArtefact(serviceId, "consent");
+  if (bundled) return bundled;
   const slug = serviceDirSlug(serviceId);
   for (const base of [
     path.join(process.cwd(), "..", "..", "data", "services"),
@@ -388,17 +435,54 @@ This is the FINAL message — do NOT ask follow-up questions.
 Do NOT include any tasks in the JSON block.`,
 };
 
+/** Check if a serviceId is the Universal Credit service (UC-specific state logic applies) */
+function isUcService(serviceId: string): boolean {
+  return serviceId === "dwp.apply-universal-credit";
+}
+
 /** Build state-aware context for the system prompt */
 function buildStateContext(
   stateModel: StateModelDefinition,
   consentModel: Record<string, unknown> | null,
   currentState: string,
   personaData: Record<string, unknown>,
+  serviceId: string,
+  manifest: Record<string, unknown> | null,
 ): string {
   const sm = new StateMachine(stateModel);
   sm.setState(currentState);
 
   const allowed = sm.allowedTransitions();
+
+  // For non-UC services, build a generic state context from the state model
+  if (!isUcService(serviceId)) {
+    const serviceName = (manifest?.name as string) || serviceId;
+    let ctx = `\n\n---\n\nSTATE MODEL JOURNEY:\n`;
+    ctx += `You are guiding the citizen through the "${serviceName}" service.\n`;
+    ctx += `Current state: ${currentState}\n`;
+    ctx += `Is terminal: ${sm.isTerminal() ? "YES — journey complete" : "NO — journey in progress"}\n`;
+    if (allowed.length > 0) {
+      ctx += `Available transitions: ${allowed.map(t => `${t.trigger} → ${t.to}`).join(", ")}\n`;
+    }
+    ctx += `\nAll states: ${stateModel.states.map(s => `${s.id} (${s.type})`).join(", ")}\n`;
+
+    // Consent info
+    if (consentModel) {
+      const grants = (consentModel.grants || []) as Array<Record<string, unknown>>;
+      if (grants.length > 0) {
+        ctx += `\nCONSENT REQUIREMENTS:\n`;
+        for (const grant of grants) {
+          ctx += `- ${grant.id}: ${grant.description} (data: ${(grant.data_shared as string[]).join(", ")})\n`;
+        }
+      }
+    }
+
+    ctx += `\nGuide the citizen naturally through the service states. Use the POLICY EVALUATION above (if present) to determine eligibility. If eligible, help them proceed.\n`;
+    ctx += `When a state transition should happen, set "stateTransition" in the JSON block to the trigger name.\n`;
+    return ctx;
+  }
+
+  // UC-specific state context
   const stateInstruction = UC_STATE_INSTRUCTIONS[currentState] || "";
 
   let ctx = `\n\n---\n\nSTATE MODEL JOURNEY:\n`;
@@ -658,23 +742,29 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   // ── State Model Journey (JSON mode: inline, MCP mode: via tools) ──
   let stateMachine: StateMachine | null = null;
   let consentModel: Record<string, unknown> | null = null;
-  const currentUcState = clientUcState || "not-started";
+  // For UC, default to "not-started"; for other services, use the initial state from the state model
+  const isUc = isUcService(serviceId);
+  const currentUcState = clientUcState || (isUc ? "not-started" : undefined);
 
   if (!isMcpMode && serviceId) {
     const stateModelDef = await loadStateModel(serviceId);
     consentModel = await loadConsentModel(serviceId);
+    const manifest = await loadManifest(serviceId);
 
     if (stateModelDef) {
       stateMachine = new StateMachine(stateModelDef);
-      stateMachine.setState(currentUcState);
+      // For UC, restore client state; for other services, start at initial state from model
+      if (currentUcState) {
+        stateMachine.setState(currentUcState);
+      }
 
       // Register total states so the case store can calculate progress %
-      getTraceEmitter().setTotalStates(serviceId, stateModelDef.states.length);
+      (await getTraceEmitter()).setTotalStates(serviceId, stateModelDef.states.length);
 
-      const stateContext = buildStateContext(stateModelDef, consentModel, currentUcState, personaData);
+      const stateContext = buildStateContext(stateModelDef, consentModel, stateMachine.getState(), personaData, serviceId, manifest);
       systemPrompt += stateContext;
 
-      console.log(`   State: ${currentUcState}, Allowed: ${stateMachine.allowedTransitions().map(t => t.trigger).join(", ")}`);
+      console.log(`   State: ${stateMachine.getState()}, Allowed: ${stateMachine.allowedTransitions().map(t => t.trigger).join(", ")}`);
     }
   }
 
@@ -709,7 +799,7 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
 
       systemPrompt += `\n\n---\n\nSERVICE CONTEXT (MCP MODE):\n${mcpServiceContext}`;
 
-      systemPrompt += `\n\nSERVICE TOOLS (MCP MODE):\nYou have access to tools for the government service the citizen is using.\n\nFor the current service, use these tools to guide the citizen:\n- Use the _check_eligibility tool to evaluate whether the citizen qualifies (pass their data as citizen_data)\n- Use the _advance_state tool to transition to the next step (provide current_state and trigger)\n\nService metadata, requirements, and consent model are already loaded above from MCP resources.\n\nIMPORTANT: The citizen's current state is "${currentUcState}". When using _advance_state, pass this as current_state.\nAfter advancing state, tell the citizen what happened and what comes next.\nDo NOT fabricate eligibility results, payment amounts, dates, or reference numbers — use the tools.\n\nThe citizen's data for eligibility checks:\n${JSON.stringify(buildPolicyContext(personaData), null, 2)}`;
+      systemPrompt += `\n\nSERVICE TOOLS (MCP MODE):\nYou have access to tools for the government service the citizen is using.\n\nFor the current service, use these tools to guide the citizen:\n- Use the _check_eligibility tool to evaluate whether the citizen qualifies (pass their data as citizen_data)\n- Use the _advance_state tool to transition to the next step (provide current_state and trigger)\n\nService metadata, requirements, and consent model are already loaded above from MCP resources.\n\nIMPORTANT: The citizen's current state is "${currentUcState || stateMachine?.getState() || "not-started"}". When using _advance_state, pass this as current_state.\nAfter advancing state, tell the citizen what happened and what comes next.\nDo NOT fabricate eligibility results, payment amounts, dates, or reference numbers — use the tools.\n\nThe citizen's data for eligibility checks:\n${JSON.stringify(buildPolicyContext(personaData), null, 2)}`;
 
       systemPrompt += `\n\nLIVE GOV.UK DATA TOOLS:\nYou also have access to tools for real UK government data.\nFor example:\n- search_govuk for official guidance\n- lookup_postcode for local info (citizen postcode: ${userPostcode})\n- find_mp for constituency MP\n- ea_current_floods for flood warnings\n\nPresent all information naturally. Do NOT mention "tools" or "MCP" to the user.`;
     } else {
@@ -752,7 +842,7 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
       tools: hasTools ? (allTools as unknown as Array<Record<string, unknown>>) : undefined,
     };
 
-    const adapterResult = await llmAdapter.execute({
+    const adapterResult = await (await getLLMAdapter()).execute({
       input: adapterInput,
       context: { sessionId: "", traceId: "", userId: "" },
     });
@@ -881,13 +971,14 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     }
 
     // Build ucStateInfo from MCP tool results
+    const mcpCurrentState = currentUcState || "not-started";
     const latestState = stateTransitions.length > 0
       ? stateTransitions[stateTransitions.length - 1].toState
-      : currentUcState;
+      : mcpCurrentState;
 
     const updatedHistory = [...(clientStateHistory || [])];
-    if (!updatedHistory.includes(currentUcState)) {
-      updatedHistory.push(currentUcState);
+    if (!updatedHistory.includes(mcpCurrentState)) {
+      updatedHistory.push(mcpCurrentState);
     }
     for (const t of stateTransitions) {
       if (!updatedHistory.includes(t.toState)) {
@@ -919,123 +1010,111 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
       }
     }
 
-    // ── Deterministic transition fallback ──
-    // Two categories:
-    //  1. FORCED transitions — states where the outcome is deterministic and
-    //     does not depend on user input (eligibility check uses data we already have).
-    //     These fire when the current state (after any LLM transition) is in the map.
-    //     This handles both "LLM forgot" and "LLM used verify-identity instead of
-    //     check-eligibility" by chaining: not-started → identity-verified → eligibility-checked.
-    //  2. PATTERN transitions — states where structured data arrives from task card
-    //     forms. These match the user's message content.
+    // ── UC-specific deterministic transition fallback ──
+    // Only applies to the Universal Credit service — other services let the LLM
+    // drive transitions based on generic state context.
+    if (isUc) {
+      // Two categories:
+      //  1. FORCED transitions — states where the outcome is deterministic and
+      //     does not depend on user input (eligibility check uses data we already have).
+      //  2. PATTERN transitions — states where structured data arrives from task card
+      //     forms. These match the user's message content.
 
-    // Chain of deterministic transitions — each entry maps a state to the
-    // trigger that should fire automatically. We loop so that e.g.
-    // not-started → verify-identity → identity-verified → check-eligibility
-    // all resolve in a single request.
-    // Declared outside blocks so both first-pass and post-pattern pass can use it.
-    const FORCED_TRANSITIONS: Record<string, string> = {
-      "not-started": "verify-identity",
-      "identity-verified": "check-eligibility",
-      // Personal details already on file from persona data — auto-advance
-      "consent-given": "collect-personal-details",
-      // Income/employment data is already on file — auto-confirm and advance
-      // so the bank card appears right after housing is submitted.
-      "housing-details-collected": "collect-income-details",
-    };
-
-    {
-      let forcedTrigger = FORCED_TRANSITIONS[stateMachine.getState()];
-      while (forcedTrigger) {
-        const result = stateMachine.transition(forcedTrigger);
-        if (result.success) {
-          stateTransitions.push({
-            fromState: result.fromState,
-            toState: result.toState,
-            trigger: result.trigger,
-          });
-          console.log(`   Forced transition (deterministic): ${result.fromState} → ${result.toState} (${forcedTrigger})`);
-          // Check if the new state also has a forced transition
-          forcedTrigger = FORCED_TRANSITIONS[stateMachine.getState()];
-        } else {
-          break;
-        }
-      }
-    }
-
-    if (stateTransitions.length === 0) {
-      const lastUserMsg = messages.filter((m: { role: string }) => m.role === "user").pop();
-      const userText = typeof lastUserMsg?.content === "string" ? lastUserMsg.content : "";
-
-      // Pattern transitions — match user message content from card submissions
-      // and natural-language confirmations at each state. These are fallbacks
-      // in case the LLM forgets to set stateTransition in its JSON block.
-      const AUTO_TRANSITIONS: Record<string, { trigger: string; pattern: RegExp }> = {
-        "eligibility-checked": {
-          trigger: "grant-consent",
-          pattern: /I have reviewed all consent|consent.*granted|granted.*consent|please proceed/i,
-        },
-        "consent-given": {
-          trigger: "collect-personal-details",
-          pattern: /everything.*correct|looks correct|details.*correct|yes.*correct|confirm|that's right|all correct/i,
-        },
-        "personal-details-collected": {
-          trigger: "collect-housing-details",
-          pattern: /housing details|private renter|council tenant|homeowner|living with family|tenure/i,
-        },
-        "housing-details-collected": {
-          trigger: "collect-income-details",
-          pattern: /yes|correct|that's right|confirm|looks good|all correct|no changes/i,
-        },
-        "income-details-collected": {
-          trigger: "verify-bank-details",
-          pattern: /sort code|account number|bank.*account|please use my/i,
-        },
-        "bank-details-verified": {
-          trigger: "submit-claim",
-          pattern: /yes|submit|go ahead|confirm|please submit/i,
-        },
+      const FORCED_TRANSITIONS: Record<string, string> = {
+        "not-started": "verify-identity",
+        "identity-verified": "check-eligibility",
+        "consent-given": "collect-personal-details",
+        "housing-details-collected": "collect-income-details",
       };
 
-      const currentStateKey = stateMachine.getState();
-      const autoConfig = AUTO_TRANSITIONS[currentStateKey];
-      if (autoConfig && autoConfig.pattern.test(userText)) {
-        const result = stateMachine.transition(autoConfig.trigger);
-        if (result.success) {
-          stateTransitions.push({
-            fromState: result.fromState,
-            toState: result.toState,
-            trigger: result.trigger,
-          });
-          console.log(`   Auto-transition (LLM fallback): ${result.fromState} → ${result.toState} (${autoConfig.trigger})`);
+      {
+        let forcedTrigger = FORCED_TRANSITIONS[stateMachine.getState()];
+        while (forcedTrigger) {
+          const result = stateMachine.transition(forcedTrigger);
+          if (result.success) {
+            stateTransitions.push({
+              fromState: result.fromState,
+              toState: result.toState,
+              trigger: result.trigger,
+            });
+            console.log(`   Forced transition (deterministic): ${result.fromState} → ${result.toState} (${forcedTrigger})`);
+            forcedTrigger = FORCED_TRANSITIONS[stateMachine.getState()];
+          } else {
+            break;
+          }
         }
       }
-    }
 
-    // Second pass — chain forced transitions after pattern transitions.
-    // If a pattern transition landed on a state with a forced transition,
-    // the chain continues (e.g. pattern → consent-given, forced → personal-details-collected).
-    {
-      let forcedTrigger = FORCED_TRANSITIONS[stateMachine.getState()];
-      while (forcedTrigger) {
-        const result = stateMachine.transition(forcedTrigger);
-        if (result.success) {
-          stateTransitions.push({
-            fromState: result.fromState,
-            toState: result.toState,
-            trigger: result.trigger,
-          });
-          console.log(`   Forced transition (post-pattern): ${result.fromState} → ${result.toState} (${forcedTrigger})`);
-          forcedTrigger = FORCED_TRANSITIONS[stateMachine.getState()];
-        } else {
-          break;
+      if (stateTransitions.length === 0) {
+        const lastUserMsg = messages.filter((m: { role: string }) => m.role === "user").pop();
+        const userText = typeof lastUserMsg?.content === "string" ? lastUserMsg.content : "";
+
+        const AUTO_TRANSITIONS: Record<string, { trigger: string; pattern: RegExp }> = {
+          "eligibility-checked": {
+            trigger: "grant-consent",
+            pattern: /I have reviewed all consent|consent.*granted|granted.*consent|please proceed/i,
+          },
+          "consent-given": {
+            trigger: "collect-personal-details",
+            pattern: /everything.*correct|looks correct|details.*correct|yes.*correct|confirm|that's right|all correct/i,
+          },
+          "personal-details-collected": {
+            trigger: "collect-housing-details",
+            pattern: /housing details|private renter|council tenant|homeowner|living with family|tenure/i,
+          },
+          "housing-details-collected": {
+            trigger: "collect-income-details",
+            pattern: /yes|correct|that's right|confirm|looks good|all correct|no changes/i,
+          },
+          "income-details-collected": {
+            trigger: "verify-bank-details",
+            pattern: /sort code|account number|bank.*account|please use my/i,
+          },
+          "bank-details-verified": {
+            trigger: "submit-claim",
+            pattern: /yes|submit|go ahead|confirm|please submit/i,
+          },
+        };
+
+        const currentStateKey = stateMachine.getState();
+        const autoConfig = AUTO_TRANSITIONS[currentStateKey];
+        if (autoConfig && autoConfig.pattern.test(userText)) {
+          const result = stateMachine.transition(autoConfig.trigger);
+          if (result.success) {
+            stateTransitions.push({
+              fromState: result.fromState,
+              toState: result.toState,
+              trigger: result.trigger,
+            });
+            console.log(`   Auto-transition (LLM fallback): ${result.fromState} → ${result.toState} (${autoConfig.trigger})`);
+          }
         }
       }
-    }
 
+      // Second pass — chain forced transitions after pattern transitions.
+      {
+        let forcedTrigger = FORCED_TRANSITIONS[stateMachine.getState()];
+        while (forcedTrigger) {
+          const result = stateMachine.transition(forcedTrigger);
+          if (result.success) {
+            stateTransitions.push({
+              fromState: result.fromState,
+              toState: result.toState,
+              trigger: result.trigger,
+            });
+            console.log(`   Forced transition (post-pattern): ${result.fromState} → ${result.toState} (${forcedTrigger})`);
+            forcedTrigger = FORCED_TRANSITIONS[stateMachine.getState()];
+          } else {
+            break;
+          }
+        }
+      }
+    } // end if (isUc)
+
+    const currentStateForHistory = currentUcState || stateMachine.getState();
     const updatedHistory = [...(clientStateHistory || [])];
-    if (!updatedHistory.includes(currentUcState)) {
-      updatedHistory.push(currentUcState);
+    if (!updatedHistory.includes(currentStateForHistory)) {
+      updatedHistory.push(currentStateForHistory);
     }
     if (stateTransitions.length > 0) {
       for (const t of stateTransitions) {
@@ -1241,7 +1320,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Emit LLM request trace event
-    const emitter = getTraceEmitter();
+    const emitter = await getTraceEmitter();
     const resolvedServiceId = resolveServiceId(scenario);
     const chatSpan = emitter.startSpan({
       traceId,
@@ -1249,7 +1328,7 @@ export async function POST(request: NextRequest) {
       userId: persona,
       capabilityId: resolvedServiceId || "agent.chat",
     });
-    emitter.emit("llm.request", chatSpan, {
+    await emitter.emit("llm.request", chatSpan, {
       persona,
       agent,
       scenario,
@@ -1264,7 +1343,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (!result.success) {
-      emitter.emit("error.raised", chatSpan, {
+      await emitter.emit("error.raised", chatSpan, {
         error: result.error,
         capabilityId: "agent.chat",
       });
@@ -1276,13 +1355,13 @@ export async function POST(request: NextRequest) {
 
     const output = result.output as ChatOutput;
 
-    // Persist invoker trace events to SQLite
-    emitter.emitBatch(result.traceEvents);
+    // Persist invoker trace events
+    await emitter.emitBatch(result.traceEvents);
 
     // Emit policy evaluation trace event
     const serviceId = resolveServiceId(scenario);
     if (output.policyResult && serviceId) {
-      emitter.emit("policy.evaluated", chatSpan, {
+      await emitter.emit("policy.evaluated", chatSpan, {
         serviceId,
         eligible: output.policyResult.eligible,
         explanation: output.policyResult.explanation,
@@ -1295,7 +1374,7 @@ export async function POST(request: NextRequest) {
     // Emit consent trace events (DOT asks, MAX auto-grants)
     if (serviceId) {
       const consentType = agent === "dot" ? "requested" : "auto-granted";
-      emitter.emit("consent.granted", chatSpan, {
+      await emitter.emit("consent.granted", chatSpan, {
         serviceId,
         consentType,
         agent,
@@ -1306,7 +1385,7 @@ export async function POST(request: NextRequest) {
 
     // Emit state transition trace events
     if (output.ucState?.previousState && output.ucState?.trigger) {
-      emitter.emit("state.transition", chatSpan, {
+      await emitter.emit("state.transition", chatSpan, {
         serviceId,
         fromState: output.ucState.previousState,
         toState: output.ucState.currentState,
@@ -1316,7 +1395,7 @@ export async function POST(request: NextRequest) {
 
     // Emit handoff trace events
     if (output.handoff?.triggered) {
-      emitter.emit("handoff.initiated", chatSpan, {
+      await emitter.emit("handoff.initiated", chatSpan, {
         serviceId,
         reason: output.handoff.reason,
         description: output.handoff.description,
@@ -1326,8 +1405,8 @@ export async function POST(request: NextRequest) {
 
     // Persist receipt
     if (result.receipt) {
-      const receiptGen = getReceiptGenerator();
-      receiptGen.create({
+      const receiptGen = await getReceiptGenerator();
+      await receiptGen.create({
         traceId,
         capabilityId: serviceId || "agent.chat",
         citizen: { id: persona },
@@ -1342,7 +1421,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Emit LLM response trace event
-    emitter.emit("llm.response", chatSpan, {
+    await emitter.emit("llm.response", chatSpan, {
       toolsUsed: output.toolsUsed,
       tasksGenerated: output.tasks.length,
       hasTitle: !!output.conversationTitle,

@@ -65,21 +65,21 @@ function HousingForm({ onSubmit, disabled }: { onSubmit: (message: string) => vo
   };
 
   return (
-    <div className="mt-3 space-y-3 border border-govuk-mid-grey rounded-lg p-3 bg-gray-50">
+    <div className="mt-4 space-y-3 border border-gray-200 rounded-xl p-4 bg-gray-50">
       <div>
-        <label className="block text-xs font-semibold text-govuk-black mb-1">
+        <label className="block text-sm font-semibold text-govuk-black mb-1.5">
           What is your housing situation?
         </label>
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {TENURE_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => setTenure(opt.value)}
               disabled={disabled}
-              className={`w-full text-left text-sm rounded border px-3 py-2 transition-colors disabled:opacity-50 ${
+              className={`w-full text-left text-sm rounded-xl border px-4 py-3 transition-colors disabled:opacity-50 ${
                 tenure === opt.value
                   ? "border-green-600 bg-green-50 ring-2 ring-green-200 font-medium"
-                  : "border-govuk-mid-grey bg-white hover:bg-gray-50"
+                  : "border-gray-200 bg-white hover:bg-gray-50"
               }`}
             >
               {opt.label}
@@ -90,7 +90,7 @@ function HousingForm({ onSubmit, disabled }: { onSubmit: (message: string) => vo
 
       {showRent && (
         <div>
-          <label className="block text-xs font-semibold text-govuk-black mb-1">
+          <label className="block text-sm font-semibold text-govuk-black mb-1.5">
             Monthly rent (£)
           </label>
           <input
@@ -100,7 +100,7 @@ function HousingForm({ onSubmit, disabled }: { onSubmit: (message: string) => vo
             placeholder="e.g. 650"
             min="0"
             disabled={disabled}
-            className="w-full text-sm border border-govuk-mid-grey rounded px-3 py-2 text-govuk-black focus:outline-none focus:ring-2 focus:ring-govuk-yellow disabled:opacity-50"
+            className="w-full text-sm border border-gray-200 rounded-xl px-4 py-3 text-govuk-black focus:outline-none focus:ring-2 focus:ring-govuk-yellow disabled:opacity-50"
           />
         </div>
       )}
@@ -108,7 +108,7 @@ function HousingForm({ onSubmit, disabled }: { onSubmit: (message: string) => vo
       <button
         onClick={handleSubmit}
         disabled={!canSubmit || disabled}
-        className="w-full text-sm font-bold text-white py-2 rounded transition-opacity disabled:opacity-40"
+        className="w-full text-sm font-bold text-white py-3 rounded-xl transition-opacity disabled:opacity-40"
         style={{ backgroundColor: "#00703c" }}
       >
         Confirm housing details
@@ -159,8 +159,8 @@ function BankForm({ onSubmit, disabled }: { onSubmit: (message: string) => void;
   };
 
   return (
-    <div className="mt-3 space-y-3 border border-govuk-mid-grey rounded-lg p-3 bg-gray-50">
-      <label className="block text-xs font-semibold text-govuk-black">
+    <div className="mt-4 space-y-3 border border-gray-200 rounded-xl p-4 bg-gray-50">
+      <label className="block text-sm font-semibold text-govuk-black">
         Which account should payments go to?
       </label>
 
@@ -254,7 +254,7 @@ function BankForm({ onSubmit, disabled }: { onSubmit: (message: string) => void;
       <button
         onClick={handleSubmit}
         disabled={!canSubmit || disabled}
-        className="w-full text-sm font-bold text-white py-2 rounded-lg transition-opacity disabled:opacity-40"
+        className="w-full text-sm font-bold text-white py-3 rounded-xl transition-opacity disabled:opacity-40"
         style={{ backgroundColor: "#00703c" }}
       >
         Confirm bank account
@@ -267,12 +267,21 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
   const isAgent = task.type === "agent";
   const isCompleted = !!completion;
 
-  const borderColor = isCompleted
+  const borderClass = isCompleted
+    ? "border-green-200"
+    : isAgent ? "border-blue-200" : "border-green-200";
+  const shadowStyle = isCompleted
+    ? "0 2px 8px rgba(0,112,60,0.08)"
+    : isAgent ? "0 2px 8px rgba(29,112,184,0.08)" : "0 2px 8px rgba(0,112,60,0.08)";
+  const iconBg = isCompleted
+    ? "bg-green-100"
+    : isAgent ? "bg-blue-100" : "bg-green-100";
+  const iconColor = isCompleted
     ? "#00703c"
     : isAgent ? "#1d70b8" : "#00703c";
-  const badgeBg = isCompleted
-    ? "bg-green-100 text-green-800"
-    : isAgent ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800";
+  const titleColor = isCompleted
+    ? "text-green-700"
+    : isAgent ? "text-blue-700" : "text-green-700";
   const badgeLabel = isCompleted
     ? "Done"
     : isAgent ? "Agent" : "You";
@@ -292,38 +301,44 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
 
   return (
     <div
-      className={`my-2 rounded-lg border bg-white transition-opacity ${isCompleted ? "opacity-80" : ""}`}
-      style={{ borderLeft: `4px solid ${borderColor}` }}
+      className={`my-3 rounded-2xl ${borderClass} border bg-white transition-opacity ${isCompleted ? "opacity-80" : ""}`}
+      style={{ boxShadow: shadowStyle }}
     >
-      <div className="px-3 py-2.5">
+      <div className="px-5 py-5">
         {/* Header */}
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${badgeBg}`}>
+        <div className="flex items-center gap-2.5 mb-3">
+          <span className={`w-7 h-7 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
+            {isCompleted ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {isAgent ? <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /> : <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />}
+              </svg>
+            )}
+          </span>
+          <span className={`text-sm font-bold ${titleColor}`}>
             {badgeLabel}
           </span>
-          {isCompleted && (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00703c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          )}
           {!isCompleted && task.dueDate && (
-            <span className="text-[10px] font-medium text-orange-600">
+            <span className="text-xs font-medium text-orange-600 ml-auto">
               Due {new Date(task.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
             </span>
           )}
         </div>
 
         {/* Content */}
-        <p className={`text-sm font-medium ${isCompleted ? "text-govuk-dark-grey" : "text-govuk-black"}`}>
+        <p className={`text-base font-medium ${isCompleted ? "text-govuk-dark-grey" : "text-govuk-black"}`}>
           {task.description}
         </p>
-        <p className="text-xs text-govuk-dark-grey mt-0.5">{task.detail}</p>
+        <p className="text-sm text-govuk-dark-grey mt-1">{task.detail}</p>
 
         {/* Data needed tags — hide when showing a form or completed */}
         {!isCompleted && !formType && task.dataNeeded && task.dataNeeded.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1.5">
+          <div className="flex flex-wrap gap-1.5 mt-2">
             {task.dataNeeded.map((d) => (
-              <span key={d} className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+              <span key={d} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-lg">
                 {d}
               </span>
             ))}
@@ -332,14 +347,14 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
 
         {/* Completed state — show what was captured + Change link */}
         {isCompleted && (
-          <div className="mt-2 flex items-center justify-between">
-            <span className="text-xs font-medium text-green-700 truncate mr-2">
+          <div className="mt-3 flex items-center justify-between border-t border-gray-200 pt-3">
+            <span className="text-sm font-medium text-green-700 truncate mr-2">
               {completion}
             </span>
             {!disabled && (
               <button
                 onClick={() => onReset?.(task.id)}
-                className="text-xs text-govuk-blue underline hover:no-underline shrink-0"
+                className="text-sm text-govuk-blue underline hover:no-underline shrink-0"
               >
                 Change
               </button>
@@ -359,11 +374,11 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
             )}
 
             {!formType && (
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 mt-3">
                 <button
                   onClick={handleAccept}
                   disabled={disabled}
-                  className="text-xs font-bold text-white px-3 py-1 rounded disabled:opacity-50"
+                  className="text-sm font-bold text-white px-4 py-2.5 rounded-xl disabled:opacity-50"
                   style={{ backgroundColor: isAgent ? "#1d70b8" : "#00703c" }}
                 >
                   {isAgent ? "Do this" : "Got it"}

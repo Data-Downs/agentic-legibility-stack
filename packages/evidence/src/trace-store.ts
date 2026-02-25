@@ -1,25 +1,24 @@
 /**
- * TraceStore — Append-only SQLite store for trace events and receipts.
+ * TraceStore — Append-only store for trace events and receipts.
  *
  * All evidence is immutable once written. This is the foundation of
  * the Evidence Plane — every action taken by the system is recorded here.
+ *
+ * Backend-agnostic: works with SqliteAdapter (local) or D1Adapter (Cloudflare).
  */
 
-import Database from "better-sqlite3";
 import type { TraceEvent, Receipt } from "@als/schemas";
+import type { DatabaseAdapter } from "./db-adapter";
 
 export class TraceStore {
-  private db: Database.Database;
+  private db: DatabaseAdapter;
 
-  constructor(dbPath: string) {
-    this.db = new Database(dbPath);
-    this.db.pragma("journal_mode = WAL");
-    this.db.pragma("foreign_keys = ON");
-    this.init();
+  constructor(adapter: DatabaseAdapter) {
+    this.db = adapter;
   }
 
-  private init(): void {
-    this.db.exec(`
+  async init(): Promise<void> {
+    await this.db.exec(`
       CREATE TABLE IF NOT EXISTS trace_events (
         id TEXT PRIMARY KEY,
         trace_id TEXT NOT NULL,
@@ -59,12 +58,10 @@ export class TraceStore {
   }
 
   /** Append a trace event (immutable — never updated) */
-  append(event: TraceEvent): void {
-    const stmt = this.db.prepare(`
-      INSERT INTO trace_events (id, trace_id, span_id, parent_span_id, timestamp, type, payload, metadata)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(
+  async append(event: TraceEvent): Promise<void> {
+    await this.db.run(
+      `INSERT INTO trace_events (id, trace_id, span_id, parent_span_id, timestamp, type, payload, metadata)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       event.id,
       event.traceId,
       event.spanId,
@@ -72,19 +69,17 @@ export class TraceStore {
       event.timestamp,
       event.type,
       JSON.stringify(event.payload),
-      JSON.stringify(event.metadata)
+      JSON.stringify(event.metadata),
     );
   }
 
-  /** Append multiple trace events in a transaction */
-  appendBatch(events: TraceEvent[]): void {
-    const insert = this.db.prepare(`
-      INSERT INTO trace_events (id, trace_id, span_id, parent_span_id, timestamp, type, payload, metadata)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    const tx = this.db.transaction((evts: TraceEvent[]) => {
-      for (const event of evts) {
-        insert.run(
+  /** Append multiple trace events atomically */
+  async appendBatch(events: TraceEvent[]): Promise<void> {
+    await this.db.batch(
+      events.map((event) => ({
+        sql: `INSERT INTO trace_events (id, trace_id, span_id, parent_span_id, timestamp, type, payload, metadata)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: [
           event.id,
           event.traceId,
           event.spanId,
@@ -92,20 +87,17 @@ export class TraceStore {
           event.timestamp,
           event.type,
           JSON.stringify(event.payload),
-          JSON.stringify(event.metadata)
-        );
-      }
-    });
-    tx(events);
+          JSON.stringify(event.metadata),
+        ],
+      })),
+    );
   }
 
   /** Store a receipt */
-  storeReceipt(receipt: Receipt): void {
-    const stmt = this.db.prepare(`
-      INSERT INTO receipts (id, trace_id, capability_id, timestamp, citizen_id, citizen_name, action, outcome, details, data_shared, state_from, state_to)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(
+  async storeReceipt(receipt: Receipt): Promise<void> {
+    await this.db.run(
+      `INSERT INTO receipts (id, trace_id, capability_id, timestamp, citizen_id, citizen_name, action, outcome, details, data_shared, state_from, state_to)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       receipt.id,
       receipt.traceId,
       receipt.capabilityId,
@@ -117,84 +109,85 @@ export class TraceStore {
       JSON.stringify(receipt.details),
       receipt.dataShared ? JSON.stringify(receipt.dataShared) : null,
       receipt.stateTransition?.from || null,
-      receipt.stateTransition?.to || null
+      receipt.stateTransition?.to || null,
     );
   }
 
   /** Delete traces for a specific user+service combination */
-  deleteTracesByUser(userId: string, serviceId: string): void {
-    this.db.prepare(
-      "DELETE FROM trace_events WHERE json_extract(metadata, '$.userId') = ? AND (json_extract(metadata, '$.capabilityId') = ? OR json_extract(payload, '$.serviceId') = ?)"
-    ).run(userId, serviceId, serviceId);
+  async deleteTracesByUser(userId: string, serviceId: string): Promise<void> {
+    await this.db.run(
+      "DELETE FROM trace_events WHERE json_extract(metadata, '$.userId') = ? AND (json_extract(metadata, '$.capabilityId') = ? OR json_extract(payload, '$.serviceId') = ?)",
+      userId,
+      serviceId,
+      serviceId,
+    );
   }
 
   /** Query events by trace ID */
-  queryByTraceId(traceId: string): TraceEvent[] {
-    const rows = this.db
-      .prepare("SELECT * FROM trace_events WHERE trace_id = ? ORDER BY timestamp ASC")
-      .all(traceId) as Array<Record<string, string>>;
+  async queryByTraceId(traceId: string): Promise<TraceEvent[]> {
+    const rows = await this.db.all<Record<string, string>>(
+      "SELECT * FROM trace_events WHERE trace_id = ? ORDER BY timestamp ASC",
+      traceId,
+    );
     return rows.map(this.rowToTraceEvent);
   }
 
   /** Query events by session ID (from metadata) */
-  queryBySession(sessionId: string): TraceEvent[] {
-    const rows = this.db
-      .prepare(
-        "SELECT * FROM trace_events WHERE json_extract(metadata, '$.sessionId') = ? ORDER BY timestamp ASC"
-      )
-      .all(sessionId) as Array<Record<string, string>>;
+  async queryBySession(sessionId: string): Promise<TraceEvent[]> {
+    const rows = await this.db.all<Record<string, string>>(
+      "SELECT * FROM trace_events WHERE json_extract(metadata, '$.sessionId') = ? ORDER BY timestamp ASC",
+      sessionId,
+    );
     return rows.map(this.rowToTraceEvent);
   }
 
   /** Query events by type */
-  queryByType(type: string, limit = 100): TraceEvent[] {
-    const rows = this.db
-      .prepare("SELECT * FROM trace_events WHERE type = ? ORDER BY timestamp DESC LIMIT ?")
-      .all(type, limit) as Array<Record<string, string>>;
+  async queryByType(type: string, limit = 100): Promise<TraceEvent[]> {
+    const rows = await this.db.all<Record<string, string>>(
+      "SELECT * FROM trace_events WHERE type = ? ORDER BY timestamp DESC LIMIT ?",
+      type,
+      limit,
+    );
     return rows.map(this.rowToTraceEvent);
   }
 
   /** Get all unique trace IDs, most recent first */
-  listTraces(limit = 50): Array<{ traceId: string; firstEvent: string; eventCount: number }> {
-    return this.db
-      .prepare(
-        `SELECT trace_id as traceId, MIN(timestamp) as firstEvent, COUNT(*) as eventCount
-         FROM trace_events
-         GROUP BY trace_id
-         ORDER BY firstEvent DESC
-         LIMIT ?`
-      )
-      .all(limit) as Array<{ traceId: string; firstEvent: string; eventCount: number }>;
+  async listTraces(limit = 50): Promise<Array<{ traceId: string; firstEvent: string; eventCount: number }>> {
+    return this.db.all<{ traceId: string; firstEvent: string; eventCount: number }>(
+      `SELECT trace_id as traceId, MIN(timestamp) as firstEvent, COUNT(*) as eventCount
+       FROM trace_events
+       GROUP BY trace_id
+       ORDER BY firstEvent DESC
+       LIMIT ?`,
+      limit,
+    );
   }
 
   /** Get receipt by ID */
-  getReceipt(receiptId: string): Receipt | undefined {
-    const row = this.db
-      .prepare("SELECT * FROM receipts WHERE id = ?")
-      .get(receiptId) as Record<string, string> | undefined;
+  async getReceipt(receiptId: string): Promise<Receipt | undefined> {
+    const row = await this.db.get<Record<string, string>>(
+      "SELECT * FROM receipts WHERE id = ?",
+      receiptId,
+    );
     if (!row) return undefined;
     return this.rowToReceipt(row);
   }
 
   /** Get receipts for a trace */
-  getReceiptsByTrace(traceId: string): Receipt[] {
-    const rows = this.db
-      .prepare("SELECT * FROM receipts WHERE trace_id = ? ORDER BY timestamp ASC")
-      .all(traceId) as Array<Record<string, string>>;
+  async getReceiptsByTrace(traceId: string): Promise<Receipt[]> {
+    const rows = await this.db.all<Record<string, string>>(
+      "SELECT * FROM receipts WHERE trace_id = ? ORDER BY timestamp ASC",
+      traceId,
+    );
     return rows.map(this.rowToReceipt);
   }
 
   /** Get total event count */
-  get eventCount(): number {
-    const row = this.db
-      .prepare("SELECT COUNT(*) as count FROM trace_events")
-      .get() as { count: number };
-    return row.count;
-  }
-
-  /** Get the underlying database instance (for sharing with CaseStore) */
-  getDatabase(): Database.Database {
-    return this.db;
+  async getEventCount(): Promise<number> {
+    const row = await this.db.get<{ count: number }>(
+      "SELECT COUNT(*) as count FROM trace_events",
+    );
+    return row?.count ?? 0;
   }
 
   /** Close the database connection */

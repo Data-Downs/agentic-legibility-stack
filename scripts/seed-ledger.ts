@@ -13,6 +13,7 @@
  */
 
 import Database from "better-sqlite3";
+import { SqliteAdapter } from "../packages/evidence/src/adapters/sqlite-adapter";
 import { CaseStore } from "../packages/evidence/src/case-store";
 import type { TraceEvent, TraceEventType } from "../packages/schemas/src/index";
 import path from "path";
@@ -394,7 +395,7 @@ function generateCase(
 
 // ── Main seed function ──
 
-function seed(dbPath: string) {
+async function seed(dbPath: string) {
   console.log(`\nSeeding: ${dbPath}`);
   eventCounter = 0;
   rngState = 42; // Reset RNG for deterministic output across both DBs
@@ -421,7 +422,9 @@ function seed(dbPath: string) {
     CREATE INDEX IF NOT EXISTS idx_trace_events_timestamp ON trace_events(timestamp);
   `);
 
-  const caseStore = new CaseStore(db);
+  const adapter = await SqliteAdapter.create(dbPath);
+  const caseStore = new CaseStore(adapter);
+  await caseStore.init();
 
   // Clear existing ledger data
   db.exec("DELETE FROM case_events");
@@ -433,12 +436,12 @@ function seed(dbPath: string) {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
-  function emitEvent(event: TraceEvent, totalStates: number) {
+  async function emitEvent(event: TraceEvent, totalStates: number) {
     insertEvent.run(
       event.id, event.traceId, event.spanId, event.parentSpanId || null,
       event.timestamp, event.type, JSON.stringify(event.payload), JSON.stringify(event.metadata),
     );
-    caseStore.upsertCase(event, totalStates);
+    await caseStore.upsertCase(event, totalStates);
   }
 
   // Distribute cases across services
@@ -477,37 +480,33 @@ function seed(dbPath: string) {
   let totalCases = 0;
   let totalEvents = 0;
 
-  const tx = db.transaction(() => {
-    for (const svc of SERVICES) {
-      const count = caseCounts[svc.id] || 10;
-      console.log(`  Generating ${count} cases for ${svc.id}...`);
+  for (const svc of SERVICES) {
+    const count = caseCounts[svc.id] || 10;
+    console.log(`  Generating ${count} cases for ${svc.id}...`);
 
-      for (let i = 0; i < count; i++) {
-        const userId = generateUserId();
-        const outcome = pickOutcome(svc.id);
+    for (let i = 0; i < count; i++) {
+      const userId = generateUserId();
+      const outcome = pickOutcome(svc.id);
 
-        // Spread start dates across 30 days, with some clustering
-        const dayOffset = rng() * 30;
-        const hourOffset = rng() * 16 + 7; // 7am to 11pm
-        const baseDate = new Date(
-          thirtyDaysAgo.getTime() +
-          dayOffset * 24 * 60 * 60 * 1000 +
-          hourOffset * 60 * 60 * 1000,
-        );
+      // Spread start dates across 30 days, with some clustering
+      const dayOffset = rng() * 30;
+      const hourOffset = rng() * 16 + 7; // 7am to 11pm
+      const baseDate = new Date(
+        thirtyDaysAgo.getTime() +
+        dayOffset * 24 * 60 * 60 * 1000 +
+        hourOffset * 60 * 60 * 1000,
+      );
 
-        const events = generateCase(svc, userId, baseDate, outcome);
+      const events = generateCase(svc, userId, baseDate, outcome);
 
-        for (const event of events) {
-          emitEvent(event, svc.totalStates);
-        }
-
-        totalCases++;
-        totalEvents += events.length;
+      for (const event of events) {
+        await emitEvent(event, svc.totalStates);
       }
-    }
-  });
 
-  tx();
+      totalCases++;
+      totalEvents += events.length;
+    }
+  }
 
   // Print summary
   const caseCount = (db.prepare("SELECT COUNT(*) as count FROM cases").get() as { count: number }).count;
@@ -533,11 +532,15 @@ function seed(dbPath: string) {
     console.log(`      ${s.cases} cases (${s.completed} completed, ${s.active} active, ${s.handed_off} handed off, ${s.rejected} rejected)`);
   }
 
+  adapter.close();
   db.close();
 }
 
 // Seed both database locations
-seed(ROOT_DB_PATH);
-seed(APP_DB_PATH);
+async function main() {
+  await seed(ROOT_DB_PATH);
+  await seed(APP_DB_PATH);
+  console.log("\nDone.");
+}
 
-console.log("\nDone.");
+main();

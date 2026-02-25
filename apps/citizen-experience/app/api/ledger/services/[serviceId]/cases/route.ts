@@ -22,8 +22,8 @@ export async function GET(
     const page = parseInt(url.searchParams.get("page") || "1", 10);
     const limit = parseInt(url.searchParams.get("limit") || "20", 10);
 
-    const store = getLedgerStore();
-    const result = store.listCases(decodeURIComponent(serviceId), {
+    const store = await getLedgerStore();
+    const result = await store.listCases(decodeURIComponent(serviceId), {
       status,
       page,
       limit,

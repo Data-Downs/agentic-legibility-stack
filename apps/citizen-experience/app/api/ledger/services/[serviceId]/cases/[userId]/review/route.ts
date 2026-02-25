@@ -31,9 +31,9 @@ export async function POST(
       );
     }
 
-    const store = getLedgerStore();
+    const store = await getLedgerStore();
     const caseId = CaseStore.caseId(decodedUser, decodedService);
-    const ledgerCase = store.getCase(caseId);
+    const ledgerCase = await store.getCase(caseId);
 
     if (!ledgerCase) {
       return NextResponse.json(
@@ -43,14 +43,14 @@ export async function POST(
     }
 
     // Create a handoff.initiated trace event for the audit trail
-    const emitter = getTraceEmitter();
+    const emitter = await getTraceEmitter();
     const span = emitter.startSpan({
       traceId: `trace_review_${Date.now()}`,
       sessionId: `review_${caseId}`,
       userId: decodedUser,
       capabilityId: decodedService,
     });
-    emitter.emit("handoff.initiated", span, {
+    await emitter.emit("handoff.initiated", span, {
       serviceId: decodedService,
       source: "studio-review",
       reason,
@@ -60,7 +60,7 @@ export async function POST(
     });
 
     // Update the case review status
-    store.submitReview(caseId, reason, priority || "routine");
+    await store.submitReview(caseId, reason, priority || "routine");
 
     return NextResponse.json({
       success: true,

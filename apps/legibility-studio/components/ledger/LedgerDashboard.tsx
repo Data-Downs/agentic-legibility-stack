@@ -29,10 +29,11 @@ export default function LedgerDashboard({
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [metricsOpen, setMetricsOpen] = useState(true);
 
   useEffect(() => {
     fetch(
-      `http://localhost:3100/api/ledger/services/${encodeURIComponent(serviceId)}/dashboard`,
+      `${process.env.NEXT_PUBLIC_CITIZEN_API || "http://localhost:3100"}/api/ledger/services/${encodeURIComponent(serviceId)}/dashboard`,
     )
       .then((r) => r.json())
       .then((data) => {
@@ -92,108 +93,124 @@ export default function LedgerDashboard({
 
   return (
     <div className="space-y-8">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KPICard label="Total Cases" value={dashboard.totalCases} />
-        <KPICard label="Active Cases" value={dashboard.activeCases} />
-        <KPICard
-          label="Completion Rate"
-          value={`${dashboard.completionRate}%`}
-          sub={`${dashboard.completedCases} completed`}
-        />
-        <KPICard
-          label="Handoff Rate"
-          value={`${dashboard.handoffRate}%`}
-          sub={`${dashboard.handedOffCases} handed off`}
-        />
-      </div>
-
-      {/* Status bar */}
+      {/* Collapsible metrics panel */}
       <div>
-        <h3 className="text-sm font-bold mb-2">Status Breakdown</h3>
-        <div className="flex h-4 rounded-full overflow-hidden">
-          {dashboard.completedCases > 0 && (
-            <div
-              className="bg-green-500"
-              style={{ width: `${(dashboard.completedCases / dashboard.totalCases) * 100}%` }}
-              title={`${dashboard.completedCases} completed`}
-            />
-          )}
-          {dashboard.activeCases > 0 && (
-            <div
-              className="bg-blue-500"
-              style={{ width: `${(dashboard.activeCases / dashboard.totalCases) * 100}%` }}
-              title={`${dashboard.activeCases} active`}
-            />
-          )}
-          {dashboard.handedOffCases > 0 && (
-            <div
-              className="bg-yellow-500"
-              style={{ width: `${(dashboard.handedOffCases / dashboard.totalCases) * 100}%` }}
-              title={`${dashboard.handedOffCases} handed off`}
-            />
-          )}
-          {dashboard.rejectedCases > 0 && (
-            <div
-              className="bg-red-500"
-              style={{ width: `${(dashboard.rejectedCases / dashboard.totalCases) * 100}%` }}
-              title={`${dashboard.rejectedCases} rejected`}
-            />
-          )}
-        </div>
-        <div className="flex gap-4 mt-2 text-xs text-gray-500">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full inline-block" /> Completed</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-500 rounded-full inline-block" /> Active</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-yellow-500 rounded-full inline-block" /> Handed off</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-500 rounded-full inline-block" /> Rejected</span>
-        </div>
-      </div>
-
-      {/* Second row: Agent vs Human + Avg Progress */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="border border-studio-border rounded-xl bg-white p-4">
-          <h3 className="text-sm font-bold mb-2">Agent vs Human Actions</h3>
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <div className="flex h-3 rounded-full overflow-hidden bg-gray-100">
-                <div className="bg-blue-500 rounded-l-full" style={{ width: `${agentPct}%` }} />
-                <div className="bg-green-500 rounded-r-full" style={{ width: `${100 - agentPct}%` }} />
-              </div>
-              <div className="flex justify-between text-xs mt-1 text-gray-500">
-                <span>Agent: {dashboard.agentActionTotal}</span>
-                <span>Human: {dashboard.humanActionTotal}</span>
-              </div>
-            </div>
-            <div className="text-3xl font-bold">{agentPct}%</div>
-          </div>
-          <p className="text-xs text-gray-400 mt-1">of actions performed by agent</p>
-        </div>
-
-        <div className="border border-studio-border rounded-xl bg-white p-4">
-          <h3 className="text-sm font-bold mb-2">Average Progress</h3>
-          <div className="flex items-center gap-4">
-            <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-govuk-green rounded-full"
-                style={{ width: `${dashboard.avgProgress}%` }}
+        <button
+          onClick={() => setMetricsOpen((o) => !o)}
+          className="w-full text-left cursor-pointer"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
+              <KPICard label="Total Cases" value={dashboard.totalCases} />
+              <KPICard label="Active Cases" value={dashboard.activeCases} />
+              <KPICard
+                label="Completion Rate"
+                value={`${dashboard.completionRate}%`}
+                sub={`${dashboard.completedCases} completed`}
+              />
+              <KPICard
+                label="Handoff Rate"
+                value={`${dashboard.handoffRate}%`}
+                sub={`${dashboard.handedOffCases} handed off`}
               />
             </div>
-            <div className="text-3xl font-bold">{dashboard.avgProgress}%</div>
+            <span className={`ml-4 text-gray-400 transition-transform ${metricsOpen ? "rotate-180" : ""}`}>
+              &#9662;
+            </span>
           </div>
-          <p className="text-xs text-gray-400 mt-1">of active cases through their journey</p>
-        </div>
-      </div>
+        </button>
 
-      {/* Bottlenecks */}
-      {dashboard.bottlenecks.length > 0 && (
-        <div>
-          <h3 className="text-sm font-bold mb-3">Bottleneck States</h3>
-          <p className="text-xs text-gray-500 mb-3">
-            States where active cases are currently stuck.
-          </p>
-          <BottleneckChart bottlenecks={dashboard.bottlenecks} />
-        </div>
-      )}
+        {metricsOpen && (
+          <div className="space-y-8 mt-4">
+            {/* Status bar */}
+            <div>
+              <h3 className="text-sm font-bold mb-2">Status Breakdown</h3>
+              <div className="flex h-4 rounded-full overflow-hidden">
+                {dashboard.completedCases > 0 && (
+                  <div
+                    className="bg-govuk-blue"
+                    style={{ width: `${(dashboard.completedCases / dashboard.totalCases) * 100}%` }}
+                    title={`${dashboard.completedCases} completed`}
+                  />
+                )}
+                {dashboard.activeCases > 0 && (
+                  <div
+                    className="bg-govuk-blue/70"
+                    style={{ width: `${(dashboard.activeCases / dashboard.totalCases) * 100}%` }}
+                    title={`${dashboard.activeCases} active`}
+                  />
+                )}
+                {dashboard.handedOffCases > 0 && (
+                  <div
+                    className="bg-govuk-blue/45"
+                    style={{ width: `${(dashboard.handedOffCases / dashboard.totalCases) * 100}%` }}
+                    title={`${dashboard.handedOffCases} handed off`}
+                  />
+                )}
+                {dashboard.rejectedCases > 0 && (
+                  <div
+                    className="bg-govuk-blue/25"
+                    style={{ width: `${(dashboard.rejectedCases / dashboard.totalCases) * 100}%` }}
+                    title={`${dashboard.rejectedCases} rejected`}
+                  />
+                )}
+              </div>
+              <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-govuk-blue rounded-full inline-block" /> Completed</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-govuk-blue/70 rounded-full inline-block" /> Active</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-govuk-blue/45 rounded-full inline-block" /> Handed off</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-govuk-blue/25 rounded-full inline-block" /> Rejected</span>
+              </div>
+            </div>
+
+            {/* Second row: Agent vs Human + Avg Progress */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="border border-studio-border rounded-xl bg-white p-4">
+                <h3 className="text-sm font-bold mb-2">Agent vs Human Actions</h3>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className="flex h-3 rounded-full overflow-hidden bg-gray-100">
+                      <div className="bg-govuk-blue rounded-l-full" style={{ width: `${agentPct}%` }} />
+                      <div className="bg-govuk-blue/25 rounded-r-full" style={{ width: `${100 - agentPct}%` }} />
+                    </div>
+                    <div className="flex justify-between text-xs mt-1 text-gray-500">
+                      <span>Agent: {dashboard.agentActionTotal}</span>
+                      <span>Human: {dashboard.humanActionTotal}</span>
+                    </div>
+                  </div>
+                  <div className="text-3xl font-light tracking-tight">{agentPct}%</div>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">of actions performed by agent</p>
+              </div>
+
+              <div className="border border-studio-border rounded-xl bg-white p-4">
+                <h3 className="text-sm font-bold mb-2">Average Progress</h3>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-govuk-blue/70 rounded-full"
+                      style={{ width: `${dashboard.avgProgress}%` }}
+                    />
+                  </div>
+                  <div className="text-3xl font-light tracking-tight">{dashboard.avgProgress}%</div>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">of active cases through their journey</p>
+              </div>
+            </div>
+
+            {/* Bottlenecks */}
+            {dashboard.bottlenecks.length > 0 && (
+              <div>
+                <h3 className="text-sm font-bold mb-3">Bottleneck States</h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  States where active cases are currently stuck.
+                </p>
+                <BottleneckChart bottlenecks={dashboard.bottlenecks} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Cases List */}
       <div>

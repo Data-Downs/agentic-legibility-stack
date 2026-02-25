@@ -23,10 +23,10 @@ export async function GET(
 ) {
   try {
     const { traceId } = await params;
-    const store = getTraceStore();
+    const store = await getTraceStore();
 
-    const events = store.queryByTraceId(traceId);
-    const receipts = store.getReceiptsByTrace(traceId);
+    const events = await store.queryByTraceId(traceId);
+    const receipts = await store.getReceiptsByTrace(traceId);
 
     if (events.length === 0 && receipts.length === 0) {
       return NextResponse.json(

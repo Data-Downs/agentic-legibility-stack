@@ -81,7 +81,7 @@ export default function CaseDetail({
   const fetchData = () => {
     setLoading(true);
     fetch(
-      `http://localhost:3100/api/ledger/services/${encodeURIComponent(serviceId)}/cases/${encodeURIComponent(userId)}`,
+      `${process.env.NEXT_PUBLIC_CITIZEN_API || "http://localhost:3100"}/api/ledger/services/${encodeURIComponent(serviceId)}/cases/${encodeURIComponent(userId)}`,
     )
       .then((r) => r.json())
       .then((data) => {
@@ -107,7 +107,7 @@ export default function CaseDetail({
     setResetting(true);
     try {
       const res = await fetch(
-        `http://localhost:3100/api/ledger/services/${encodeURIComponent(serviceId)}/cases/${encodeURIComponent(userId)}/reset`,
+        `${process.env.NEXT_PUBLIC_CITIZEN_API || "http://localhost:3100"}/api/ledger/services/${encodeURIComponent(serviceId)}/cases/${encodeURIComponent(userId)}/reset`,
         { method: "DELETE" },
       );
       const data = await res.json();
@@ -189,11 +189,11 @@ export default function CaseDetail({
       <div className="border border-studio-border rounded-xl bg-white p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold">Journey Progress</h3>
-          <span className="text-lg font-bold">{caseData.progressPercent}%</span>
+          <span className="text-2xl font-light tracking-tight">{caseData.progressPercent}%</span>
         </div>
         <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mb-4">
           <div
-            className="h-full bg-govuk-green rounded-full transition-all"
+            className="h-full bg-govuk-blue/70 rounded-full transition-all"
             style={{ width: `${caseData.progressPercent}%` }}
           />
         </div>

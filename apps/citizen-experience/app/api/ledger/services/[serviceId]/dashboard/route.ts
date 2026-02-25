@@ -17,8 +17,8 @@ export async function GET(
 ) {
   try {
     const { serviceId } = await params;
-    const store = getLedgerStore();
-    const dashboard = store.getDashboard(decodeURIComponent(serviceId));
+    const store = await getLedgerStore();
+    const dashboard = await store.getDashboard(decodeURIComponent(serviceId));
 
     // Attach the state model so Studio can render the progress flow
     const stateModel = loadStateModel(decodeURIComponent(serviceId));

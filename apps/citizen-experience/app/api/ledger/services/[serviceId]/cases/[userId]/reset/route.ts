@@ -22,11 +22,11 @@ export async function DELETE(
     const decodedUser = decodeURIComponent(userId);
 
     const caseId = CaseStore.caseId(decodedUser, decodedService);
-    const caseStore = getCaseStore();
-    const traceStore = getTraceStore();
+    const caseStore = await getCaseStore();
+    const traceStore = await getTraceStore();
 
-    caseStore.deleteCase(caseId);
-    traceStore.deleteTracesByUser(decodedUser, decodedService);
+    await caseStore.deleteCase(caseId);
+    await traceStore.deleteTracesByUser(decodedUser, decodedService);
 
     return NextResponse.json({ success: true }, { headers: corsHeaders });
   } catch (error) {

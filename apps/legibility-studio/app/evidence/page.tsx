@@ -46,7 +46,7 @@ export default function EvidencePage() {
   const [tab, setTab] = useState<Tab>("explorer");
 
   useEffect(() => {
-    fetch("http://localhost:3100/api/traces")
+    fetch(`${process.env.NEXT_PUBLIC_CITIZEN_API || "http://localhost:3100"}/api/traces`)
       .then((r) => r.json())
       .then((data) => {
         setTraces(data.traces || []);
@@ -54,7 +54,7 @@ export default function EvidencePage() {
         setLoading(false);
       })
       .catch(() => {
-        setError("Could not connect to citizen-experience (port 3100). Is it running?");
+        setError("Could not connect to citizen-experience API. Is it running?");
         setLoading(false);
       });
   }, []);
@@ -63,7 +63,7 @@ export default function EvidencePage() {
     setSelectedTraceId(traceId);
     setDetailLoading(true);
     try {
-      const resp = await fetch(`http://localhost:3100/api/traces/${traceId}`);
+      const resp = await fetch(`${process.env.NEXT_PUBLIC_CITIZEN_API || "http://localhost:3100"}/api/traces/${traceId}`);
       const data = await resp.json();
       setTraceEvents(data.events || []);
       setTraceReceipts(data.receipts || []);

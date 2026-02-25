@@ -6,7 +6,7 @@
       "id": "rule-1",
       "description": "Over 4",
       "condition": {
-        "field": "Age",
+        "field": "age",
         "operator": ">=",
         "value": 4
       },
