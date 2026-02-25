@@ -171,6 +171,21 @@ async function loadPolicyRuleset(serviceId: string): Promise<PolicyRuleset | nul
   return null;
 }
 
+/** Extract employment status from potentially nested employment data.
+ *  Handles both flat ({status: "Self-employed"}) and nested-by-person ({priya: {status: "Unemployed"}}) */
+function extractEmploymentStatus(employment: Record<string, unknown> | undefined): string {
+  if (!employment) return "unknown";
+  // Flat: {status: "Self-employed", ...}
+  if (typeof employment.status === "string") return employment.status;
+  // Nested: {priya: {status: "Unemployed"}, liam: {status: "Employed"}}
+  for (const val of Object.values(employment)) {
+    if (typeof val === "object" && val !== null && "status" in (val as Record<string, unknown>)) {
+      return (val as Record<string, unknown>).status as string;
+    }
+  }
+  return "unknown";
+}
+
 /** Build a policy context object for evaluation from persona data + test users */
 function buildPolicyContext(personaData: Record<string, unknown>): Record<string, unknown> {
   const contact = personaData.primaryContact as Record<string, unknown> | undefined;
@@ -196,6 +211,10 @@ function buildPolicyContext(personaData: Record<string, unknown>): Record<string
     savings = (financials.savingsAccount as Record<string, unknown>)?.balance as number || 0;
   }
 
+  // Extract employment status (handles nested-by-person structure)
+  const employment = personaData.employment as Record<string, unknown> | undefined;
+  const empStatus = extractEmploymentStatus(employment);
+
   // Derive health/mobility fields for services like Blue Badge
   const healthInfo = personaData.healthInfo as Record<string, unknown> | undefined;
   const conditions = (healthInfo?.conditions || []) as Array<Record<string, unknown>>;
@@ -216,7 +235,8 @@ function buildPolicyContext(personaData: Record<string, unknown>): Record<string
     driving_licence_number: personaData.vehicles ? "exists" : undefined,
     savings,
     bank_account: true,
-    self_employed: (personaData.employment as Record<string, unknown>)?.status === "Self-employed",
+    self_employed: empStatus === "Self-employed",
+    employment_status: empStatus,
     over_70: age >= 70,
     no_fixed_address: false,
     licence_status: "valid",
@@ -340,28 +360,47 @@ async function loadConsentModel(serviceId: string): Promise<Record<string, unkno
  *    the server injects them deterministically.
  */
 const UC_STATE_INSTRUCTIONS: Record<string, string> = {
-  "not-started": `The citizen has just started. They are already authenticated via GOV.UK One Login — identity verification is complete.
-Welcome them and explain briefly what Universal Credit is.
-The system will automatically check their eligibility — present the eligibility results in this same response.
-Use the POLICY EVALUATION section above to explain whether they are eligible and why.
-If eligible, explain that you need their consent to share certain data with DWP before proceeding.
-Interactive consent cards will appear automatically below your message for the citizen to review.
+  "not-started": `The citizen has just started their Universal Credit application.
+
+CRITICAL — IDENTITY IS ALREADY VERIFIED:
+The citizen is already authenticated via GOV.UK One Login. Identity verification is COMPLETE.
+Do NOT mention identity verification, One Login, or "verifying who you are" — it is DONE.
+Do NOT ask the citizen to verify their identity. Do NOT say "first I need to verify your identity."
+
+WHAT TO DO IN THIS RESPONSE:
+1. Welcome them warmly
+2. Briefly explain what Universal Credit is (1-2 sentences)
+3. Present the eligibility results from the POLICY EVALUATION section above — explain whether they are eligible and why
+4. If eligible, explain that you need their consent to share certain data with DWP before proceeding
+5. Tell them that interactive consent cards will appear below for them to review and approve
+
 Set "stateTransition" to "check-eligibility" in the JSON block.
 Do NOT skip ahead — do not mention housing, bank details, or submission yet.
 Do NOT include any tasks in the JSON block — the eligibility check is automatic, not a task.`,
 
-  "identity-verified": `Identity has been verified. Check eligibility and present the results.
-Use the POLICY EVALUATION section above. If eligible, explain consent is needed next.
+  "identity-verified": `Identity has already been verified via GOV.UK One Login — do NOT mention identity verification again.
+Check eligibility and present the results using the POLICY EVALUATION section above.
+If eligible, explain that consent is needed next — interactive consent cards will appear below.
 Set "stateTransition" to "check-eligibility" in the JSON block.
 Do NOT include any tasks in the JSON block.
-Do NOT discuss any later steps yet.`,
+Do NOT discuss housing, bank details, or any later steps yet.`,
 
   "eligibility-checked": `Eligibility has already been checked and results were presented.
 The citizen is now reviewing consent cards that appeared below your previous message.
-If the citizen's message contains consent decisions (granted/denied), acknowledge them, thank the citizen, and then present their personal details for confirmation (name, DOB, NI number, address). Ask "Does everything look correct?"
-Set "stateTransition" to "grant-consent" in the JSON block so the system records consent.
-If the citizen asks a question, answer it — but remind them to review the consent cards below. Do NOT set a transition.
+
+If the citizen's message contains consent decisions (granted/denied) OR indicates agreement to proceed (e.g. "yes", "go ahead", "I consent", "proceed"):
+  - Acknowledge their consent, thank them
+  - Present their personal details for confirmation using ACTUAL data from the DATA ON FILE section: full name, DOB, NI number, address
+  - Ask "Does everything look correct?"
+  - Set "stateTransition" to "grant-consent" in the JSON block
+
+If the citizen asks a question or provides other information:
+  - Answer their question helpfully
+  - Gently remind them to review and approve the consent cards below before proceeding
+  - Do NOT set a stateTransition
+
 Do NOT re-explain eligibility — it's already done.
+Do NOT mention identity verification — it's already done.
 Do NOT discuss housing, bank details, income, or any later steps yet.
 Do NOT include any tasks in the JSON block.`,
 
@@ -371,13 +410,22 @@ Explain that a housing details form will appear below for them to fill in.
 Do NOT include any tasks in the JSON block — the system provides the housing card automatically.
 Do NOT discuss bank details, income, or submission yet.`,
 
-  "personal-details-collected": `Personal details are confirmed.
-Now explain that you need their housing details to calculate any housing support.
-An interactive card will appear below for them to fill in their housing situation — tell them to use it.
-Do NOT include any tasks in the JSON block — the system provides the card automatically.
-If the user's message already contains housing details (e.g. "I am a private renter and pay £400"), acknowledge the housing data, then confirm the employment data on file (status, previous employer, end date) is correct, and mention that a bank account card will appear next.
-Set "stateTransition" to "collect-housing-details" in the JSON block.
-Otherwise, briefly explain what's needed and STOP. Do not transition until their housing data arrives.
+  "personal-details-collected": `Personal details are confirmed from records.
+Now you need their housing details to calculate any housing support.
+
+CHECK THE USER'S MESSAGE FIRST:
+If the user's message already contains housing details (e.g. "I am a private renter", "I pay £400 rent", "council tenant", "homeowner"):
+  - Acknowledge the housing data they provided
+  - Confirm the employment data on file from the DATA ON FILE section above (status, previous employer, end date)
+  - Mention that a bank account selection will come next
+  - Set "stateTransition" to "collect-housing-details" in the JSON block
+
+If the user's message does NOT contain housing details:
+  - Explain you need their housing situation (tenure type and rent amount)
+  - An interactive card will appear below for them to fill in
+  - Do NOT set a stateTransition — wait for their housing data
+
+Do NOT include any tasks in the JSON block.
 Do NOT discuss submission yet.`,
 
   "housing-details-collected": `Housing details have been collected.
@@ -511,22 +559,39 @@ function buildStateContext(
     ctx += `\nINSTRUCTIONS FOR THIS STATE:\n${stateInstruction}\n`;
   }
 
-  // Data availability analysis
+  // Data availability analysis — show ACTUAL values so the LLM can present them
   const contact = personaData.primaryContact as Record<string, unknown> | undefined;
   const financials = personaData.financials as Record<string, unknown> | undefined;
   const employment = personaData.employment as Record<string, unknown> | undefined;
   const address = personaData.address as Record<string, unknown> | undefined;
+  const empStatus = extractEmploymentStatus(employment);
 
-  ctx += `\nDATA AVAILABILITY:\n`;
-  ctx += `- Name: ${contact?.firstName ? "AVAILABLE" : "NEED TO ASK"}\n`;
-  ctx += `- DOB: ${contact?.dateOfBirth ? "AVAILABLE" : "NEED TO ASK"}\n`;
-  ctx += `- NI Number: ${contact?.nationalInsuranceNumber ? "AVAILABLE" : "NEED TO ASK"}\n`;
-  ctx += `- Address: ${address?.postcode ? "AVAILABLE" : "NEED TO ASK"}\n`;
-  ctx += `- Employment: ${employment ? "AVAILABLE" : "NEED TO ASK"}\n`;
-  ctx += `- Income: ${financials ? "PARTIALLY AVAILABLE" : "NEED TO ASK"}\n`;
-  ctx += `- Housing tenure: ${address?.housingStatus ? "AVAILABLE" : "NEED TO ASK"}\n`;
+  ctx += `\nDATA ON FILE (from citizen's records — use these values, do not make up others):\n`;
+  ctx += `- Name: ${contact?.firstName ? `${contact.firstName} ${contact.lastName}` : "NEED TO ASK"}\n`;
+  ctx += `- DOB: ${contact?.dateOfBirth || "NEED TO ASK"}\n`;
+  ctx += `- NI Number: ${contact?.nationalInsuranceNumber || "NEED TO ASK"}\n`;
+  ctx += `- Address: ${address ? [address.line1, address.city, address.postcode].filter(Boolean).join(", ") : "NEED TO ASK"}\n`;
+  ctx += `- Employment status: ${empStatus !== "unknown" ? empStatus : "NEED TO ASK"}`;
+  // Add employment details if available
+  if (employment) {
+    // Handle nested-by-person: {priya: {previousEmployer: ...}}
+    for (const val of Object.values(employment)) {
+      if (typeof val === "object" && val !== null) {
+        const emp = val as Record<string, unknown>;
+        if (emp.previousEmployer) ctx += ` (previously: ${emp.previousEmployer}, ended: ${emp.employmentEndDate || "unknown"}, reason: ${emp.endReason || "unknown"})`;
+        else if (emp.employer) ctx += ` (employer: ${emp.employer})`;
+        break;
+      }
+    }
+    // Handle flat: {status: "Self-employed", businessName: ...}
+    if (employment.previousEmployer) ctx += ` (previously: ${employment.previousEmployer})`;
+    if (employment.businessName) ctx += ` (business: ${employment.businessName})`;
+  }
+  ctx += `\n`;
+  ctx += `- Savings: ${financials?.savingsAccount ? `£${((financials.savingsAccount as Record<string, unknown>).balance as number) || 0}` : "NEED TO ASK"}\n`;
+  ctx += `- Housing tenure: ${address?.housingStatus || "NEED TO ASK — citizen must provide"}\n`;
   const bankAccounts = (financials?.bankAccounts as Array<Record<string, unknown>>) || [];
-  ctx += `- Bank accounts: ${bankAccounts.length > 0 ? `${bankAccounts.length} ON FILE — citizen selects which one (or enters a different one)` : "NOT AVAILABLE — MUST ASK CITIZEN"}\n`;
+  ctx += `- Bank accounts: ${bankAccounts.length > 0 ? bankAccounts.map(a => `${a.bank || a.label} (****${(a.accountNumber as string || "").slice(-4)})`).join(", ") : "NEED TO ASK — citizen must provide"}\n`;
 
   // Consent grants needed
   if (consentModel) {
@@ -1102,7 +1167,7 @@ Example:
         const AUTO_TRANSITIONS: Record<string, { trigger: string; pattern: RegExp }> = {
           "eligibility-checked": {
             trigger: "grant-consent",
-            pattern: /I have reviewed all consent|consent.*granted|granted.*consent|please proceed/i,
+            pattern: /I have reviewed all consent|consent.*granted|granted.*consent|please proceed|I consent|go ahead|yes.*proceed|agree|I've done it|done|let's go|ready|start|apply/i,
           },
           "consent-given": {
             trigger: "collect-personal-details",
