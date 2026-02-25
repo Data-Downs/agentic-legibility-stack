@@ -7,6 +7,7 @@ import HandoffNotice from "./handoff/HandoffNotice";
 import { TaskCard } from "./TaskCard";
 import { TaskSummaryCard } from "./TaskSummaryCard";
 import { ConsentPanel } from "./ConsentCard";
+import { ConsentSummaryCard } from "./ConsentSummaryCard";
 import { StateProgressTracker } from "./StateProgressTracker";
 import { JourneyCompleteCard } from "./JourneyCompleteCard";
 
@@ -40,6 +41,7 @@ export function ChatView() {
   const lastResponseTasks = useAppStore((s) => s.lastResponseTasks);
   const taskCompletions = useAppStore((s) => s.taskCompletions);
   const tasksSubmitted = useAppStore((s) => s.tasksSubmitted);
+  const currentService = useAppStore((s) => s.currentService);
   const lastAssistantRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -51,6 +53,10 @@ export function ChatView() {
   // Derived task state
   const allTasksCompleted = lastResponseTasks.length > 0 &&
     lastResponseTasks.every((t) => taskCompletions[t.id] !== undefined);
+
+  // Derived consent state — all grants have a decision
+  const allConsentsDecided = pendingConsent.length > 0 &&
+    pendingConsent.every((g) => consentDecisions[g.id] !== undefined);
 
   // Whether to show task cards (after the last assistant message)
   const showTasks = !isLoading && lastResponseTasks.length > 0 && !tasksSubmitted;
@@ -82,6 +88,12 @@ export function ChatView() {
     }
   }, [allTasksCompleted, tasksSubmitted]);
 
+  useEffect(() => {
+    if (allConsentsDecided && !consentSubmitted) {
+      scrollToEnd();
+    }
+  }, [allConsentsDecided, consentSubmitted]);
+
   // Find the index of the last assistant message (for scroll ref)
   const lastAssistantIdx = conversationHistory.reduce(
     (acc, msg, idx) => (msg.role === "assistant" ? idx : acc),
@@ -95,6 +107,7 @@ export function ChatView() {
         <StateProgressTracker
           currentState={ucState}
           stateHistory={ucStateHistory}
+          service={currentService}
         />
       )}
 
@@ -188,11 +201,22 @@ export function ChatView() {
               onDecision={(id, decision) => {
                 useAppStore.getState().setConsentDecision(id, decision);
               }}
-              onSubmit={() => useAppStore.getState().submitConsent()}
-              hasRequiredDenials={hasRequiredDenials}
-              isSubmitting={isLoading}
               disabled={isLoading}
             />
+
+            {/* Summary card appears when all consents are decided */}
+            {allConsentsDecided && (
+              <ConsentSummaryCard
+                grants={pendingConsent}
+                decisions={consentDecisions}
+                onSubmit={() => useAppStore.getState().submitConsent()}
+                onChangeDecision={(id) => {
+                  useAppStore.getState().clearConsentDecision(id);
+                }}
+                hasRequiredDenials={hasRequiredDenials}
+                isSubmitting={isLoading}
+              />
+            )}
           </div>
         )}
 

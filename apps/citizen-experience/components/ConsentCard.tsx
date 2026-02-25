@@ -6,9 +6,6 @@ interface ConsentPanelProps {
   grants: ConsentGrant[];
   decisions: Record<string, "granted" | "denied">;
   onDecision: (grantId: string, decision: "granted" | "denied") => void;
-  onSubmit: () => void;
-  hasRequiredDenials: boolean;
-  isSubmitting: boolean;
   disabled?: boolean;
 }
 
@@ -101,13 +98,9 @@ export function ConsentPanel({
   grants,
   decisions,
   onDecision,
-  onSubmit,
-  hasRequiredDenials,
-  isSubmitting,
   disabled,
 }: ConsentPanelProps) {
   const allDecided = grants.length > 0 && grants.every((g) => decisions[g.id] !== undefined);
-  const canSubmit = allDecided && !hasRequiredDenials && !isSubmitting && !disabled;
 
   return (
     <div
@@ -132,46 +125,19 @@ export function ConsentPanel({
             grant={grant}
             decision={decisions[grant.id]}
             onDecision={onDecision}
-            disabled={disabled || isSubmitting}
+            disabled={disabled}
           />
         ))}
       </div>
 
-      {/* Required denials warning */}
-      {hasRequiredDenials && (
-        <div className="mx-3 mb-2 bg-yellow-50 border-l-4 border-yellow-400 p-2.5 rounded-r">
-          <p className="text-xs font-bold text-yellow-800">
-            Required consents declined
-          </p>
-          <p className="text-[10px] text-yellow-700 mt-0.5">
-            You have declined one or more required consents. Your application
-            cannot proceed without these. Please change your decisions above to
-            continue.
+      {/* All reviewed hint */}
+      {allDecided && (
+        <div className="px-3 pb-3 pt-1">
+          <p className="text-xs text-govuk-dark-grey text-center">
+            All consents reviewed — check the summary below.
           </p>
         </div>
       )}
-
-      {/* Submit button */}
-      <div className="px-3 pb-3 pt-1">
-        <button
-          onClick={onSubmit}
-          disabled={!canSubmit}
-          className={`w-full py-2 rounded font-bold text-sm transition-colors ${
-            canSubmit
-              ? "bg-[#00703c] text-white hover:bg-[#005a30]"
-              : "bg-govuk-mid-grey text-white cursor-not-allowed"
-          }`}
-        >
-          {isSubmitting ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Submitting...
-            </span>
-          ) : (
-            "Submit and continue"
-          )}
-        </button>
-      </div>
     </div>
   );
 }
