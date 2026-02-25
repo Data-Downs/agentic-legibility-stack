@@ -1,3 +1,10 @@
+export interface ExtractedFact {
+  key: string;
+  value: unknown;
+  confidence: "high" | "medium" | "low";
+  source_snippet: string;
+}
+
 export interface LLMStructuredOutput {
   title?: string;
   tasks?: Array<{
@@ -8,6 +15,7 @@ export interface LLMStructuredOutput {
     dataNeeded?: string[];
   }>;
   stateTransition?: string;
+  extractedFacts?: ExtractedFact[];
 }
 
 interface ExtractionResult {
@@ -103,6 +111,25 @@ export function extractStructuredOutput(responseText: string): ExtractionResult 
     }
     if (validated.length > 0) {
       output.tasks = validated;
+    }
+  }
+
+  // Extracted facts
+  if (Array.isArray(raw.extractedFacts)) {
+    const validFacts: ExtractedFact[] = [];
+    for (const f of raw.extractedFacts.slice(0, 5)) {
+      if (typeof f !== "object" || f === null) continue;
+      const fact = f as Record<string, unknown>;
+      const key = typeof fact.key === "string" ? fact.key.trim() : "";
+      const confidence = (fact.confidence === "high" || fact.confidence === "medium" || fact.confidence === "low")
+        ? fact.confidence
+        : "medium";
+      const sourceSnippet = typeof fact.source_snippet === "string" ? fact.source_snippet.trim().slice(0, 200) : "";
+      if (!key || fact.value === undefined) continue;
+      validFacts.push({ key, value: fact.value, confidence, source_snippet: sourceSnippet });
+    }
+    if (validFacts.length > 0) {
+      output.extractedFacts = validFacts;
     }
   }
 

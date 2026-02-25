@@ -1,48 +1,48 @@
 /**
- * ConsentLedger — Append-only SQLite store for consent records
+ * ConsentLedger — Append-only store for consent records
  *
  * Every consent decision (grant or deny) is recorded permanently.
  * Citizens can review their full consent history.
+ *
+ * Supports both DatabaseAdapter (async, portable) and direct better-sqlite3 (legacy).
  */
 
-import Database from "better-sqlite3";
+import type { DatabaseAdapter } from "@als/evidence";
 import type { ConsentRecord } from "./data-model";
 
-export class ConsentLedger {
-  private db: Database.Database;
+const CREATE_SQL = `
+  CREATE TABLE IF NOT EXISTS consent_records (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    grant_id TEXT NOT NULL,
+    service_id TEXT NOT NULL,
+    granted INTEGER NOT NULL,
+    data_fields TEXT NOT NULL,
+    purpose TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    revoked_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_consent_user ON consent_records(user_id);
+  CREATE INDEX IF NOT EXISTS idx_consent_service ON consent_records(service_id);
+`;
 
-  constructor(dbPath: string) {
-    this.db = new Database(dbPath);
-    this.db.pragma("journal_mode = WAL");
-    this.init();
+export class ConsentLedger {
+  private db: DatabaseAdapter;
+
+  constructor(db: DatabaseAdapter) {
+    this.db = db;
   }
 
-  private init(): void {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS consent_records (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        grant_id TEXT NOT NULL,
-        service_id TEXT NOT NULL,
-        granted INTEGER NOT NULL,
-        data_fields TEXT NOT NULL,
-        purpose TEXT NOT NULL,
-        timestamp TEXT NOT NULL,
-        session_id TEXT NOT NULL,
-        revoked_at TEXT
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_consent_user ON consent_records(user_id);
-      CREATE INDEX IF NOT EXISTS idx_consent_service ON consent_records(service_id);
-    `);
+  async init(): Promise<void> {
+    await this.db.exec(CREATE_SQL);
   }
 
   /** Record a consent decision */
-  record(consent: ConsentRecord): void {
-    this.db.prepare(`
-      INSERT INTO consent_records (id, user_id, grant_id, service_id, granted, data_fields, purpose, timestamp, session_id, revoked_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
+  async record(consent: ConsentRecord): Promise<void> {
+    await this.db.run(
+      `INSERT INTO consent_records (id, user_id, grant_id, service_id, granted, data_fields, purpose, timestamp, session_id, revoked_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       consent.id,
       consent.userId,
       consent.grantId,
@@ -57,39 +57,40 @@ export class ConsentLedger {
   }
 
   /** Revoke a consent grant */
-  revoke(consentId: string): void {
-    this.db.prepare(
-      "UPDATE consent_records SET revoked_at = ? WHERE id = ?"
-    ).run(new Date().toISOString(), consentId);
+  async revoke(consentId: string): Promise<void> {
+    await this.db.run(
+      "UPDATE consent_records SET revoked_at = ? WHERE id = ?",
+      new Date().toISOString(), consentId
+    );
   }
 
   /** Get all consent records for a user */
-  getByUser(userId: string): ConsentRecord[] {
-    const rows = this.db
-      .prepare("SELECT * FROM consent_records WHERE user_id = ? ORDER BY timestamp DESC")
-      .all(userId) as Array<Record<string, unknown>>;
+  async getByUser(userId: string): Promise<ConsentRecord[]> {
+    const rows = await this.db.all<Record<string, unknown>>(
+      "SELECT * FROM consent_records WHERE user_id = ? ORDER BY timestamp DESC",
+      userId
+    );
     return rows.map(this.rowToRecord);
   }
 
   /** Get consent records for a specific service */
-  getByService(userId: string, serviceId: string): ConsentRecord[] {
-    const rows = this.db
-      .prepare("SELECT * FROM consent_records WHERE user_id = ? AND service_id = ? ORDER BY timestamp DESC")
-      .all(userId, serviceId) as Array<Record<string, unknown>>;
+  async getByService(userId: string, serviceId: string): Promise<ConsentRecord[]> {
+    const rows = await this.db.all<Record<string, unknown>>(
+      "SELECT * FROM consent_records WHERE user_id = ? AND service_id = ? ORDER BY timestamp DESC",
+      userId, serviceId
+    );
     return rows.map(this.rowToRecord);
   }
 
   /** Check if a specific consent is currently active (granted and not revoked) */
-  isActive(userId: string, grantId: string, serviceId: string): boolean {
-    const row = this.db
-      .prepare(
-        "SELECT * FROM consent_records WHERE user_id = ? AND grant_id = ? AND service_id = ? AND granted = 1 AND revoked_at IS NULL ORDER BY timestamp DESC LIMIT 1"
-      )
-      .get(userId, grantId, serviceId) as Record<string, unknown> | undefined;
+  async isActive(userId: string, grantId: string, serviceId: string): Promise<boolean> {
+    const row = await this.db.get<Record<string, unknown>>(
+      "SELECT * FROM consent_records WHERE user_id = ? AND grant_id = ? AND service_id = ? AND granted = 1 AND revoked_at IS NULL ORDER BY timestamp DESC LIMIT 1",
+      userId, grantId, serviceId
+    );
     return !!row;
   }
 
-  /** Close the database */
   close(): void {
     this.db.close();
   }

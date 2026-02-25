@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import * as mcpClient from "@/lib/mcp-client";
+import { getSubmittedStore } from "@/lib/personal-data-store";
+import { getPersonaData } from "@/lib/service-data";
 
 async function getLocalFloodData(city: string): Promise<string> {
   try {
@@ -60,16 +60,24 @@ export async function GET(
       return NextResponse.json({ enriched: false });
     }
 
-    const filePath = path.join(process.cwd(), "data", `${personaId}.json`);
-    const raw = await fs.readFile(filePath, "utf-8");
-    const personaData = JSON.parse(raw);
-    const postcode = personaData.address?.postcode;
+    // Load persona data from DB (single source of truth)
+    const submittedStore = await getSubmittedStore();
+    const bundled = getPersonaData(personaId);
+    if (bundled) {
+      await submittedStore.seedFromPersona(personaId, bundled);
+    }
+    const personaData = await submittedStore.reconstructPersonaData(personaId) || bundled;
+    if (!personaData) {
+      return NextResponse.json({ enriched: false, reason: "Persona not found" });
+    }
+    const address = personaData.address as Record<string, unknown> | undefined;
+    const postcode = address?.postcode as string | undefined;
 
     if (!postcode) {
       return NextResponse.json({ enriched: false, reason: "No postcode" });
     }
 
-    const city = personaData.address?.city || "";
+    const city = (address?.city as string) || "";
     const [postcodeResult, mpResult, floodsResult, holidaysResult] =
       await Promise.allSettled([
         mcpClient.callToolCached("lookup_postcode", { postcode }),

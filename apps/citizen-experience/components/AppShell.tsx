@@ -8,6 +8,8 @@ import { ChatView } from "./ChatView";
 import { MessageInput } from "./MessageInput";
 import { ReasoningFab } from "./ReasoningPanel";
 import { AppHeader } from "./AppHeader";
+import { PersonaSelectorOverlay } from "./PersonaSelectorOverlay";
+import { PersonalDataDashboard } from "./personal-data/PersonalDataDashboard";
 
 const TERMINAL_STATES = new Set(["claim-active", "rejected", "handed-off"]);
 
@@ -17,6 +19,8 @@ export function AppShell() {
   const ucState = useAppStore((s) => s.ucState);
   const setPersona = useAppStore((s) => s.setPersona);
   const setAgent = useAppStore((s) => s.setAgent);
+  const settingsPaneOpen = useAppStore((s) => s.settingsPaneOpen);
+  const personaSelectorOpen = useAppStore((s) => s.personaSelectorOpen);
 
   const journeyComplete = !!(ucState && TERMINAL_STATES.has(ucState));
 
@@ -67,6 +71,12 @@ export function AppShell() {
 
       {/* Reasoning FAB */}
       <ReasoningFab />
+
+      {/* Persona selector overlay */}
+      {personaSelectorOpen && <PersonaSelectorOverlay />}
+
+      {/* Personal data dashboard slide-in */}
+      {settingsPaneOpen && <PersonalDataDashboard />}
     </div>
   );
 }

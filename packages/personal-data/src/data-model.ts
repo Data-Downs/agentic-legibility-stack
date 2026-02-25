@@ -66,3 +66,65 @@ export interface ConsentRecord {
   sessionId: string;
   revokedAt?: string;
 }
+
+// ── Three-Tier Profile ──
+
+export interface ThreeTierProfile {
+  userId: string;
+  tier1: VerifiedData;
+  tier2: SubmittedData;
+  tier3: InferredData;
+  accessMap: ServiceAccessMap;
+  lastUpdated: string;
+}
+
+// Tier 2: Submitted data
+
+export interface SubmittedField {
+  id: string;
+  fieldKey: string;
+  fieldValue: unknown;
+  category: string;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubmittedData {
+  fields: SubmittedField[];
+}
+
+// Tier 3: Inferred data
+
+export interface InferredFact {
+  id: string;
+  fieldKey: string;
+  fieldValue: unknown;
+  confidence: string;
+  source: string;
+  sessionId?: string;
+  extractedFrom?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InferredData {
+  facts: InferredFact[];
+}
+
+// Service Access
+
+export interface ServiceAccessGrant {
+  id: string;
+  serviceId: string;
+  fieldKey: string;
+  dataTier: string;
+  purpose?: string;
+  grantedAt: string;
+  revokedAt?: string;
+  consentRecordId?: string;
+}
+
+export interface ServiceAccessMap {
+  [serviceId: string]: ServiceAccessGrant[];
+}

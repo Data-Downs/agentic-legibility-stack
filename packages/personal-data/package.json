@@ -11,6 +11,9 @@
   "dependencies": {
     "@als/schemas": "*",
     "@als/identity": "*",
+    "@als/evidence": "*"
+  },
+  "optionalDependencies": {
     "better-sqlite3": "^11.0.0"
   },
   "devDependencies": {

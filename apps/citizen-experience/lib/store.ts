@@ -62,6 +62,10 @@ interface AppStore {
   taskCompletions: Record<string, string>;
   tasksSubmitted: boolean;
 
+  // Personal Data Dashboard
+  settingsPaneOpen: boolean;
+  personaSelectorOpen: boolean;
+
   // Actions
   setPersona: (id: string) => Promise<void>;
   setAgent: (agent: AgentType) => void;
@@ -79,6 +83,8 @@ interface AppStore {
   setTaskCompletion: (taskId: string, message: string) => void;
   clearTaskCompletion: (taskId: string) => void;
   submitTasks: () => Promise<void>;
+  setSettingsPaneOpen: (open: boolean) => void;
+  setPersonaSelectorOpen: (open: boolean) => void;
 }
 
 // localStorage-backed conversation store
@@ -162,6 +168,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   lastResponseTasks: [],
   taskCompletions: {},
   tasksSubmitted: false,
+  settingsPaneOpen: false,
+  personaSelectorOpen: false,
+
+  setSettingsPaneOpen: (open: boolean) => set({ settingsPaneOpen: open }),
+  setPersonaSelectorOpen: (open: boolean) => set({ personaSelectorOpen: open }),
 
   setPersona: async (id: string) => {
     set({
@@ -181,7 +192,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     try {
-      const response = await fetch(`/api/persona/${id}`);
+      const response = await fetch(`/api/personal-data/${id}/full`);
       if (response.ok) {
         const data = await response.json();
         set({ personaData: data });

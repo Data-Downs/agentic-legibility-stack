@@ -15,3 +15,8 @@ assets = { directory = ".open-next/assets", binding = "ASSETS" }
 binding = "DB"
 database_name = "als-evidence"
 database_id = "41c89a7c-c2d9-457e-b3ae-506046e8645c"
+
+[[d1_databases]]
+binding = "PERSONAL_DATA_DB"
+database_name = "als-personal-data"
+database_id = "placeholder-create-via-wrangler"

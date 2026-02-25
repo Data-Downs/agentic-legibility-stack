@@ -12,6 +12,7 @@ import { getTraceEmitter, getReceiptGenerator } from "@/lib/evidence";
 import { getRegistry } from "@/lib/registry";
 import { extractStructuredOutput } from "@/lib/extract-structured-output";
 import { getServiceArtefact, getPersonaData, getPromptFile } from "@/lib/service-data";
+import { getInferredStore, getServiceAccessStore, getSubmittedStore } from "@/lib/personal-data-store";
 
 // ── AnthropicAdapter — the ONLY Anthropic SDK usage ──
 // Lazy-initialized at request time so Cloudflare Worker secrets are available
@@ -123,7 +124,19 @@ async function loadFile(filePath: string): Promise<string> {
 }
 
 async function loadPersonaData(personaId: string) {
-  // Try bundled data first (works on Cloudflare + local)
+  // Try DB first (single source of truth)
+  try {
+    const submittedStore = await getSubmittedStore();
+    const bundled = getPersonaData(personaId);
+    if (bundled) {
+      await submittedStore.seedFromPersona(personaId, bundled);
+    }
+    const data = await submittedStore.reconstructPersonaData(personaId);
+    if (data) return data;
+  } catch {
+    // Fall through to bundled/filesystem
+  }
+  // Fallback to bundled data (works on Cloudflare + local)
   const bundled = getPersonaData(personaId);
   if (bundled) return bundled;
   // Fallback to filesystem
@@ -739,6 +752,22 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     systemPrompt += policyContext;
   }
 
+  // Personal data extraction prompt
+  systemPrompt += `\n\n---\n\nPERSONAL DATA EXTRACTION:
+When the user reveals personal facts in conversation, include an "extractedFacts" array in your JSON block.
+Rules:
+- Only extract NEW facts not already known from persona data
+- Max 5 facts per response
+- Use snake_case keys (e.g. "number_of_children", "lives_in", "marital_status")
+- Confidence levels: "high" (user stated directly), "medium" (strongly implied), "low" (loosely inferred)
+- Include a short source_snippet from their message
+
+Example:
+"extractedFacts": [
+  { "key": "number_of_daughters", "value": 2, "confidence": "high", "source_snippet": "I have 2 daughters" }
+]`;
+
+
   // ── State Model Journey (JSON mode: inline, MCP mode: via tools) ──
   let stateMachine: StateMachine | null = null;
   let consentModel: Record<string, unknown> | null = null;
@@ -916,6 +945,27 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   let conversationTitle: string | null = null;
   if (generateTitle && structuredOutput?.title) {
     conversationTitle = structuredOutput.title;
+  }
+
+  // ── Store extracted facts (Tier 3) ──
+  if (structuredOutput?.extractedFacts && structuredOutput.extractedFacts.length > 0) {
+    try {
+      const inferredStoreInstance = await getInferredStore();
+      const sessionId = `session_${Date.now()}`;
+      for (const fact of structuredOutput.extractedFacts) {
+        await inferredStoreInstance.store(persona, {
+          fieldKey: fact.key,
+          fieldValue: fact.value,
+          confidence: fact.confidence,
+          source: "conversation",
+          sessionId,
+          extractedFrom: fact.source_snippet,
+        });
+      }
+      console.log(`   Extracted ${structuredOutput.extractedFacts.length} personal fact(s)`);
+    } catch (err) {
+      console.warn("Failed to store extracted facts:", err);
+    }
   }
 
   // Tasks — from structured output
@@ -1148,6 +1198,33 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
         source: g.source as string,
         purpose: g.purpose as string,
       }));
+    }
+  }
+
+  // ── Wire consent grants to service access records ──
+  // When the state transitions through consent (eligibility-checked → consent-given),
+  // create service access records for the data fields granted.
+  if (stateTransitions.some(t => t.trigger === "grant-consent") && consentModel) {
+    try {
+      const accessStoreInstance = await getServiceAccessStore();
+      const TIER1_FIELDS = new Set(["national_insurance_number", "full_name", "date_of_birth", "name", "ni_number", "nino"]);
+      const grants = (consentModel.grants || []) as Array<Record<string, unknown>>;
+      for (const g of grants) {
+        const dataShared = (g.data_shared || []) as string[];
+        for (const field of dataShared) {
+          const tier = TIER1_FIELDS.has(field.toLowerCase()) ? "tier1" : "tier2";
+          await accessStoreInstance.grant(persona, {
+            serviceId: serviceId || scenario,
+            fieldKey: field,
+            dataTier: tier,
+            purpose: g.purpose as string || "service access",
+            consentRecordId: g.id as string,
+          });
+        }
+      }
+      console.log(`   Created ${grants.reduce((sum, g) => sum + ((g.data_shared as string[]) || []).length, 0)} service access record(s)`);
+    } catch (err) {
+      console.warn("Failed to create service access records:", err);
     }
   }
 
