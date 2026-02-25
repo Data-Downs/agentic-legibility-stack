@@ -21,28 +21,28 @@ function GrantRow({
   disabled?: boolean;
 }) {
   return (
-    <div className={`px-3 py-3 ${decision === "denied" ? "opacity-60" : ""}`}>
+    <div className={`px-5 py-4 ${decision === "denied" ? "opacity-60" : ""}`}>
       {/* Description + required badge */}
       <div className="flex items-start justify-between gap-2">
-        <p className={`text-sm font-medium ${decision === "denied" ? "text-govuk-dark-grey" : "text-govuk-black"}`}>
+        <p className={`text-base font-medium ${decision === "denied" ? "text-govuk-dark-grey" : "text-govuk-black"}`}>
           {grant.description}
         </p>
         {grant.required && (
-          <span className="text-[10px] text-red-600 font-medium whitespace-nowrap shrink-0 mt-0.5">
+          <span className="text-xs text-red-600 font-medium whitespace-nowrap shrink-0 mt-0.5">
             Required
           </span>
         )}
       </div>
-      <p className="text-xs text-govuk-dark-grey mt-0.5">{grant.purpose}</p>
+      <p className="text-sm text-govuk-dark-grey mt-1">{grant.purpose}</p>
 
       {/* Data tags */}
-      <div className="mt-2">
-        <p className="text-[10px] font-bold uppercase text-govuk-dark-grey mb-1">Data to be shared:</p>
-        <div className="flex flex-wrap gap-1">
+      <div className="mt-3">
+        <p className="text-xs font-bold uppercase text-govuk-dark-grey mb-1.5">Data to be shared:</p>
+        <div className="flex flex-wrap gap-1.5">
           {grant.data_shared.map((d) => (
             <span
               key={d}
-              className={`text-[10px] px-1.5 py-0.5 rounded ${
+              className={`text-xs px-2 py-0.5 rounded-lg ${
                 decision === "denied"
                   ? "bg-gray-100 text-gray-500"
                   : "bg-purple-50 text-purple-700"
@@ -55,17 +55,17 @@ function GrantRow({
       </div>
 
       {/* Source + duration */}
-      <p className="text-[10px] text-govuk-dark-grey mt-1.5">
+      <p className="text-xs text-govuk-dark-grey mt-2">
         Source: <span className="font-medium">{grant.source.replace(/-/g, " ")}</span>
         {grant.duration && <> &middot; Duration: {grant.duration.replace(/-/g, " ")}</>}
       </p>
 
       {/* Decision controls */}
-      <div className="flex items-center gap-2 mt-2">
+      <div className="flex items-center gap-2.5 mt-3">
         <button
           onClick={() => onDecision(grant.id, "granted")}
           disabled={disabled}
-          className={`text-xs font-bold px-3 py-1 rounded transition-colors disabled:opacity-50 ${
+          className={`text-sm font-bold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50 ${
             decision === "granted"
               ? "bg-[#912b88] text-white"
               : "border border-govuk-mid-grey text-govuk-dark-grey hover:bg-purple-50"
@@ -81,7 +81,7 @@ function GrantRow({
         <button
           onClick={() => onDecision(grant.id, "denied")}
           disabled={disabled}
-          className={`text-xs font-medium px-3 py-1 rounded transition-colors disabled:opacity-50 ${
+          className={`text-sm font-medium px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50 ${
             decision === "denied"
               ? "bg-gray-200 text-govuk-dark-grey"
               : "border border-govuk-mid-grey text-govuk-dark-grey hover:bg-gray-50"
@@ -104,36 +104,45 @@ export function ConsentPanel({
 
   return (
     <div
-      className="my-2 rounded-lg border bg-white"
-      style={{ borderLeft: "4px solid #912b88" }}
+      className="my-3 rounded-2xl border border-purple-200 bg-white"
+      style={{ boxShadow: "0 2px 8px rgba(145,43,136,0.08)" }}
     >
       {/* Panel header */}
-      <div className="px-3 py-2.5 border-b border-gray-100">
-        <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">
-          Consent Required
-        </span>
-        <p className="text-xs text-govuk-dark-grey mt-1">
+      <div className="px-5 py-4 border-b border-gray-200">
+        <div className="flex items-center gap-2.5">
+          <span className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#912b88" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </span>
+          <span className="text-sm font-bold text-purple-700">
+            Consent Required
+          </span>
+        </div>
+        <p className="text-sm text-govuk-dark-grey mt-2 ml-[38px]">
           Review and grant consent for your application.
         </p>
       </div>
 
       {/* Grant rows */}
-      <div className="divide-y divide-gray-100">
-        {grants.map((grant) => (
-          <GrantRow
-            key={grant.id}
-            grant={grant}
-            decision={decisions[grant.id]}
-            onDecision={onDecision}
-            disabled={disabled}
-          />
+      <div className="space-y-0">
+        {grants.map((grant, idx) => (
+          <div key={grant.id}>
+            {idx > 0 && <div className="border-t border-gray-200 mx-5" />}
+            <GrantRow
+              grant={grant}
+              decision={decisions[grant.id]}
+              onDecision={onDecision}
+              disabled={disabled}
+            />
+          </div>
         ))}
       </div>
 
       {/* All reviewed hint */}
       {allDecided && (
-        <div className="px-3 pb-3 pt-1">
-          <p className="text-xs text-govuk-dark-grey text-center">
+        <div className="px-5 pb-4 pt-1">
+          <p className="text-sm text-govuk-dark-grey text-center">
             All consents reviewed — check the summary below.
           </p>
         </div>
