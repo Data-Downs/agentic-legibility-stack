@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { FieldEditorOverlay } from "./FieldEditorOverlay";
 
 interface SubmittedField {
   id: string;
@@ -220,6 +221,7 @@ export function SubmittedSection({
   const [saving, setSaving] = useState(false);
   const [cascadeMessage, setCascadeMessage] = useState<string | null>(null);
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const [overlayField, setOverlayField] = useState<SubmittedField | null>(null);
 
   // Group by category, exclude system fields
   const grouped: Record<string, SubmittedField[]> = {};
@@ -329,13 +331,13 @@ export function SubmittedSection({
                         <span className="text-sm text-govuk-dark-grey">
                           {formatKey(f.fieldKey)}
                         </span>
-                        {editingKey === f.fieldKey ? (
+                        {editingKey === f.fieldKey && !isComplex ? (
                           <div className="flex items-center gap-2">
-                            <textarea
+                            <input
+                              type="text"
                               value={editValue}
                               onChange={(e) => setEditValue(e.target.value)}
-                              className="text-sm border border-govuk-blue rounded px-2 py-1 w-48 min-h-[32px]"
-                              rows={isComplex ? 4 : 1}
+                              className="text-sm border border-govuk-blue rounded px-2 py-1 w-40"
                               autoFocus
                             />
                             <button
@@ -372,7 +374,7 @@ export function SubmittedSection({
                               </span>
                             )}
                             <button
-                              onClick={() => startEdit(f)}
+                              onClick={() => isComplex ? setOverlayField(f) : startEdit(f)}
                               className="text-xs text-govuk-blue underline shrink-0"
                             >
                               Edit
@@ -396,6 +398,15 @@ export function SubmittedSection({
           <p className="text-sm text-govuk-dark-grey italic">No submitted data yet.</p>
         )}
       </div>
+
+      {overlayField && (
+        <FieldEditorOverlay
+          field={overlayField}
+          personaId={personaId}
+          onClose={() => setOverlayField(null)}
+          onSaved={onRefresh}
+        />
+      )}
     </div>
   );
 }
