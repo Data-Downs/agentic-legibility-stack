@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agentic Legibility Stack</title>
-  <meta name="description" content="A reference architecture for accountable AI agents in UK government services">
+  <title>Agentic Legibility Stack &mdash; V2 Platform</title>
+  <meta name="description" content="108 government services, 16 life events, deployed on Cloudflare Workers. A platform reference architecture for accountable AI agents in UK government.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -63,6 +63,7 @@
       gap: 1.25rem;
       list-style: none;
       flex-wrap: wrap;
+      align-items: center;
     }
     .nav-links a {
       font-size: 0.85rem;
@@ -70,6 +71,11 @@
       color: #505a5f;
     }
     .nav-links a:hover { color: #1d70b8; text-decoration: none; }
+    .nav-links .nav-v1 {
+      color: #1d70b8;
+      border-left: 1px solid #b1b4b6;
+      padding-left: 1.25rem;
+    }
 
     @media (max-width: 640px) {
       .nav-links { display: none; }
@@ -111,6 +117,11 @@
       display: flex;
       gap: 1rem;
       flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .hero-secondary {
+      font-size: 0.9rem;
+      color: #505a5f;
       margin-bottom: 2rem;
     }
     .btn {
@@ -157,12 +168,15 @@
     /* ── Cards ── */
     .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
 
     @media (max-width: 800px) {
       .grid-3 { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 640px) {
       .grid-2 { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: 1fr; }
     }
 
     .card {
@@ -211,6 +225,7 @@
     .kw { color: #1d70b8; }
     .str { color: #00703c; }
     .num { color: #912b88; }
+    .cmt { color: #505a5f; font-style: italic; }
 
     /* ── Callout ── */
     .callout {
@@ -285,55 +300,13 @@
       line-height: 1;
     }
     .diagram-arrow::before { content: '|'; }
-    .diagram-arrow::after { content: '\u25BC'; font-size: 0.6rem; margin-top: -2px; }
+    .diagram-arrow::after { content: '\25BC'; font-size: 0.6rem; margin-top: -2px; }
     .diagram-label {
       font-size: 0.7rem;
       color: #505a5f;
       font-style: italic;
       text-align: center;
       margin: 0.25rem 0;
-    }
-    .diagram-fan {
-      display: flex;
-      justify-content: center;
-      gap: 0.75rem;
-      position: relative;
-      padding-top: 1.25rem;
-    }
-    .diagram-fan::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 50%;
-      width: 2px;
-      height: 0.5rem;
-      background: #b1b4b6;
-      transform: translateX(-50%);
-    }
-    .diagram-fan::after {
-      content: '';
-      position: absolute;
-      top: 0.5rem;
-      left: calc(50% - 220px);
-      width: 440px;
-      height: 2px;
-      background: #b1b4b6;
-    }
-    .diagram-fan .diagram-box {
-      min-width: 100px;
-      font-size: 0.75rem;
-      padding: 0.5rem 0.6rem;
-      position: relative;
-    }
-    .diagram-fan .diagram-box::before {
-      content: '';
-      position: absolute;
-      top: -0.75rem;
-      left: 50%;
-      width: 2px;
-      height: 0.75rem;
-      background: #b1b4b6;
-      transform: translateX(-50%);
     }
     .diagram-evidence {
       border: 2px dashed #f47738;
@@ -345,57 +318,187 @@
     }
     .diagram-evidence strong { color: #f47738; }
 
+    /* ── Stats Banner ── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2rem;
+      text-align: center;
+      padding: 1rem 0;
+    }
+    .stat-grid .stat-number {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+    .stat-grid .stat-label {
+      font-size: 0.85rem;
+      color: #b1b4b6;
+      font-weight: 500;
+    }
     @media (max-width: 640px) {
-      .diagram-fan { flex-direction: column; align-items: center; padding-top: 0.5rem; }
-      .diagram-fan::after { display: none; }
-      .diagram-fan .diagram-box::before { display: none; }
-      .diagram-fan .diagram-box { min-width: 160px; }
+      .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+      .stat-grid .stat-number { font-size: 2.25rem; }
     }
 
-    /* ── Agent cards ── */
-    .agent-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
-    @media (max-width: 640px) { .agent-grid { grid-template-columns: 1fr; } }
-
-    .agent-card {
+    /* ── Life Event Grid ── */
+    .life-event-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+    .life-event-card {
+      background: #fff;
       border: 1px solid #b1b4b6;
-      border-top: 4px solid;
+      border-radius: 2px;
+      padding: 1rem;
+      text-align: center;
+      transition: border-color 0.15s;
+    }
+    .life-event-card:hover { border-color: #1d70b8; }
+    .life-event-card .le-icon {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .life-event-card .le-name {
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-bottom: 0.25rem;
+    }
+    .life-event-card .le-desc {
+      font-size: 0.75rem;
+      color: #505a5f;
+      line-height: 1.4;
+    }
+    @media (max-width: 800px) {
+      .life-event-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .life-event-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Flow Chain ── */
+    .flow-chain {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 1.5rem 0;
+    }
+    .flow-chain .flow-node {
+      background: #f0f6fc;
+      border: 1px solid #1d70b8;
+      border-radius: 2px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .flow-chain .flow-arrow {
+      color: #505a5f;
+      font-size: 0.9rem;
+    }
+
+    /* ── Worker Boxes ── */
+    .two-col-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+    @media (max-width: 640px) {
+      .two-col-split { grid-template-columns: 1fr; }
+    }
+    .worker-box {
+      background: #fff;
+      border: 2px solid #b1b4b6;
       border-radius: 2px;
       padding: 1.5rem;
-      background: #fff;
     }
-    .agent-card h3 { margin-bottom: 0.75rem; }
-    .agent-card ul {
+    .worker-box h3 {
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .worker-box .wb-tag {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: #f47738;
+      color: #fff;
+      padding: 0.15rem 0.4rem;
+      border-radius: 2px;
+    }
+    .worker-box ul {
       list-style: none;
       padding: 0;
     }
-    .agent-card li {
+    .worker-box li {
       padding: 0.3rem 0;
       padding-left: 1.25rem;
       position: relative;
       font-size: 0.9rem;
       color: #505a5f;
     }
-    .agent-card li::before {
+    .worker-box li::before {
       content: '\2713';
       position: absolute;
       left: 0;
       font-weight: 700;
+      color: #00703c;
+    }
+    .worker-binding {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+      color: #505a5f;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .worker-binding .binding-arrow {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .worker-binding .binding-label {
+      font-size: 0.7rem;
+      background: #f3f2f1;
+      padding: 0.15rem 0.5rem;
+      border-radius: 2px;
+      border: 1px solid #e0dfde;
     }
 
-    /* ── Persona/Service cards ── */
-    .service-dept {
-      font-size: 0.75rem;
-      font-weight: 600;
+    /* ── Badge NEW ── */
+    .badge-new {
+      display: inline-block;
+      background: #00703c;
+      color: #fff;
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 0.1rem 0.35rem;
+      border-radius: 2px;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: #505a5f;
-      margin-bottom: 0.5rem;
+      vertical-align: middle;
+      margin-left: 0.35rem;
     }
-    .persona-desc {
-      font-size: 0.85rem;
-      color: #505a5f;
-      margin-top: 0.5rem;
+
+    /* ── Version banner ── */
+    .version-banner {
+      background: #1d70b8;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      text-align: center;
+      font-size: 0.8rem;
     }
+    .version-banner a { color: #fff; text-decoration: underline; font-weight: 600; }
 
     /* ── Getting started ── */
     .steps { counter-reset: step; list-style: none; padding: 0; }
@@ -457,13 +560,14 @@
   <div class="container">
     <span class="nav-brand">Agentic Legibility Stack</span>
     <ul class="nav-links">
+      <li><a href="#graph">Graph</a></li>
       <li><a href="#architecture">Architecture</a></li>
-      <li><a href="#artefacts">Artefacts</a></li>
-      <li><a href="#evidence">Evidence</a></li>
-      <li><a href="#agents">Agents</a></li>
-      <li><a href="#demos">Demos</a></li>
+      <li><a href="#data-planes">Data Planes</a></li>
+      <li><a href="#mcp">MCP</a></li>
+      <li><a href="#deployment">Deployment</a></li>
       <li><a href="#packages">Packages</a></li>
-      <li><a href="#get-started">Get Started</a></li>
+      <li><a href="#try-it">Try It</a></li>
+      <li><a href="v1/" class="nav-v1">V1 Docs</a></li>
     </ul>
   </div>
 </nav>
@@ -471,25 +575,31 @@
 <!-- ── Hero ── -->
 <section class="hero">
   <div class="container">
-    <span class="hero-label">Reference Architecture</span>
+    <span class="hero-label">Platform Reference Architecture</span>
     <h1>Agentic Legibility Stack</h1>
     <p class="hero-subtitle">
-      A reference architecture for accountable AI agents in UK government services.
+      108 government services, 16 life events, deployed on Cloudflare Workers.
+      A reference architecture for accountable AI agents in UK government.
     </p>
     <p class="hero-desc">
-      A Turborepo monorepo with 2 Next.js apps and 7 shared packages, demonstrating how
+      A Turborepo monorepo with 2 Next.js apps and 11 shared packages, demonstrating how
       AI agents could interact with government services while maintaining transparency,
-      accountability, and citizen control. This is a prototype &mdash; not a live government tool.
+      accountability, and citizen control. Every action is traced, every consent is recorded,
+      every decision is auditable.
     </p>
     <div class="hero-actions">
-      <a href="https://github.com/datadowns/agentic-legibility-stack" class="btn btn-primary">View on GitHub</a>
-      <a href="#get-started" class="btn btn-secondary">Get Started</a>
+      <a href="https://als-studio.chris-8ab.workers.dev" class="btn btn-primary" target="_blank" rel="noopener">Try the Live Demo</a>
+      <a href="https://github.com/datadowns/agentic-legibility-stack" class="btn btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
     </div>
+    <p class="hero-secondary">
+      <a href="v1/">Read the original V1 documentation &rarr;</a>
+    </p>
     <div class="tech-badges">
       <span class="badge">TypeScript</span>
       <span class="badge">Next.js 15</span>
       <span class="badge">Turborepo</span>
-      <span class="badge">SQLite</span>
+      <span class="badge">Cloudflare Workers</span>
+      <span class="badge">D1</span>
       <span class="badge">Claude API</span>
       <span class="badge">MCP</span>
       <span class="badge">React 19</span>
@@ -497,39 +607,191 @@
   </div>
 </section>
 
-<!-- ── The Problem ── -->
-<section class="section section-alt" id="problem">
+<!-- ── Impact Stats ── -->
+<section class="section-dark section" style="padding: 3rem 0;">
   <div class="container">
-    <h2>The Problem</h2>
-    <p class="section-intro">
-      When AI agents start acting on behalf of citizens with government services, who is accountable?
-      If an agent applies for benefits incorrectly, submits the wrong data, or misunderstands
-      eligibility rules &mdash; what happened, who authorized it, and how does the citizen get redress?
-    </p>
-    <p style="color: #505a5f; max-width: 700px; margin-bottom: 2rem;">
-      Current web-form-based services have implicit accountability: the citizen fills in the
-      form themselves. Agentic services need explicit accountability infrastructure: formal service
-      definitions, consent records, evidence trails, and human escalation paths.
-    </p>
-    <div class="grid-3">
-      <div class="card card-accent card-purple">
-        <h3>Who authorized this?</h3>
-        <p>Consent models track what data was shared, with whom, and for what purpose. Every data share is recorded.</p>
+    <div class="stat-grid">
+      <div>
+        <div class="stat-number">108</div>
+        <div class="stat-label">Government Services</div>
       </div>
-      <div class="card card-accent card-orange">
-        <h3>What actually happened?</h3>
-        <p>The Evidence Plane records every agent action in an append-only trace store. Nothing is silently edited or deleted.</p>
+      <div>
+        <div class="stat-number">16</div>
+        <div class="stat-label">Life Events</div>
       </div>
-      <div class="card card-accent card-green">
-        <h3>What if something goes wrong?</h3>
-        <p>Handoff to humans with full context. Redress pathways and complaint routes are part of every service definition.</p>
+      <div>
+        <div class="stat-number">15</div>
+        <div class="stat-label">Departments</div>
+      </div>
+      <div>
+        <div class="stat-number">11</div>
+        <div class="stat-label">Packages</div>
       </div>
     </div>
   </div>
 </section>
 
+<!-- ── From Prototype to Platform ── -->
+<section class="section section-alt" id="evolution">
+  <div class="container">
+    <h2>From Prototype to Platform</h2>
+    <p class="section-intro">
+      The V1 prototype proved the architecture with 4 services running locally.
+      V2 scales it to 108 services across 15 departments, deployed on Cloudflare Workers
+      with 3 D1 databases and a remote MCP server.
+    </p>
+
+    <table class="data-table" style="margin-bottom: 1.5rem;">
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>V1 Prototype</th>
+          <th>V2 Platform</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Services</td><td>4 hand-authored</td><td><strong>108</strong> (4 full + 104 graph-only)</td></tr>
+        <tr><td>Packages</td><td>7</td><td><strong>11</strong></td></tr>
+        <tr><td>Databases</td><td>1 local SQLite</td><td><strong>3 D1 databases</strong></td></tr>
+        <tr><td>Deployment</td><td>Local only</td><td><strong>Cloudflare Workers</strong></td></tr>
+        <tr><td>MCP Server</td><td>stdio (local)</td><td><strong>StreamableHTTP</strong> (remote)</td></tr>
+        <tr><td>Personal Data</td><td>None</td><td><strong>3-tier model</strong> (verified/submitted/inferred)</td></tr>
+        <tr><td>Service Storage</td><td>Filesystem JSON</td><td><strong>DB-backed store</strong> with gap analysis</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      The original V1 documentation is preserved at <a href="v1/">docs/v1/</a> &mdash; it covers the foundational
+      architecture, the 4-artefact pattern, the Evidence Plane, and the two agent personalities (DOT &amp; MAX).
+    </div>
+  </div>
+</section>
+
+<!-- ── The Service Graph ── -->
+<section class="section" id="graph">
+  <div class="container">
+    <h2>The Service Graph</h2>
+    <p class="section-intro">
+      108 government services connected by 98 dependency edges across 16 life events.
+      The graph models how services relate: registering a birth <em>enables</em> applying for
+      Child Benefit, which <em>requires</em> a National Insurance number.
+    </p>
+
+    <h3 style="margin-bottom: 1rem;">16 Life Events</h3>
+    <div class="life-event-grid">
+      <div class="life-event-card">
+        <span class="le-icon">&#9702;</span>
+        <div class="le-name">Having a Baby</div>
+        <div class="le-desc">Birth registration, parental leave and childcare</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&mdash;</span>
+        <div class="le-name">Death of Someone Close</div>
+        <div class="le-desc">Registration, probate and bereavement payments</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&infin;</span>
+        <div class="le-name">Getting Married</div>
+        <div class="le-desc">Legal notice, certificates and name changes</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&#9680;</span>
+        <div class="le-name">Retiring</div>
+        <div class="le-desc">State Pension, Pension Credit and age entitlements</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&#9672;</span>
+        <div class="le-name">Starting a Business</div>
+        <div class="le-desc">Registration, tax obligations and compliance</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&#8962;</span>
+        <div class="le-name">Buying a Home</div>
+        <div class="le-desc">Stamp duty, land registration and first-time buyer schemes</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&rarr;</span>
+        <div class="le-name">Moving House</div>
+        <div class="le-desc">Address updates across all government systems</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&#8856;</span>
+        <div class="le-name">Losing Your Job</div>
+        <div class="le-desc">Benefits, tax refunds and NI record protection</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&#9678;</span>
+        <div class="le-name">Disability or Health Condition</div>
+        <div class="le-desc">Benefits, adaptations and workplace support</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&#8853;</span>
+        <div class="le-name">Becoming a Carer</div>
+        <div class="le-desc">Allowances, NI credits and legal powers</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&divide;</span>
+        <div class="le-name">Separating or Divorcing</div>
+        <div class="le-desc">Legal proceedings, children and financial impacts</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&#9676;</span>
+        <div class="le-name">Child Starting School</div>
+        <div class="le-desc">School places, meals, SEND and funding</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&#10022;</span>
+        <div class="le-name">Arriving in the UK</div>
+        <div class="le-desc">Visas, BRP, NI number and NHS access</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&#9673;</span>
+        <div class="le-name">Learning to Drive</div>
+        <div class="le-desc">Provisional licence, theory test and driving test</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&#9651;</span>
+        <div class="le-name">Going to University</div>
+        <div class="le-desc">Student finance, accommodation and healthcare</div>
+      </div>
+      <div class="life-event-card">
+        <span class="le-icon">&#9670;</span>
+        <div class="le-name">Starting a New Job</div>
+        <div class="le-desc">Tax setup, workplace pension and employer checks</div>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 2.5rem; margin-bottom: 0.75rem;">Example: &ldquo;Having a Baby&rdquo; Dependency Chain</h3>
+    <p style="color: #505a5f; margin-bottom: 1rem; font-size: 0.95rem;">
+      Services are connected by REQUIRES and ENABLES edges. Here's one path through the graph:
+    </p>
+    <div class="flow-chain">
+      <span class="flow-node">Register Birth (GRO)</span>
+      <span class="flow-arrow">&rarr;</span>
+      <span class="flow-node">Child Benefit (HMRC)</span>
+      <span class="flow-arrow">&rarr;</span>
+      <span class="flow-node">Tax-Free Childcare (HMRC)</span>
+      <span class="flow-arrow">&rarr;</span>
+      <span class="flow-node">30 Hours Free Childcare (HMRC)</span>
+    </div>
+    <div class="flow-chain">
+      <span class="flow-node">Maternity Allowance (DWP)</span>
+      <span class="flow-arrow">&rarr;</span>
+      <span class="flow-node">Sure Start Grant (DWP)</span>
+      <span class="flow-arrow">&rarr;</span>
+      <span class="flow-node">Healthy Start (NHS)</span>
+    </div>
+
+    <div class="callout">
+      <strong>Department breakdown:</strong> HMRC (27 services), DWP (21), Local Authority (14),
+      Home Office (6), HMCTS (6), NHS (5), GRO (5), DVLA (5), OPG (2), DVSA (2),
+      and 5 more departments with 1 service each.
+    </div>
+  </div>
+</section>
+
 <!-- ── Architecture ── -->
-<section class="section" id="architecture">
+<section class="section section-alt" id="architecture">
   <div class="container">
     <h2>Architecture</h2>
     <p class="section-intro">
@@ -548,27 +810,13 @@
         </div>
       </div>
       <div class="diagram-arrow"></div>
-
-      <!-- Agent -->
-      <div class="diagram-row" style="gap: 2rem;">
-        <div class="diagram-box" style="border-left-color: #1d70b8;">
-          <strong>DOT Agent</strong>
-          <span>Cautious</span>
-        </div>
-        <div style="align-self: center; color: #505a5f; font-size: 0.8rem; font-weight: 500;">or</div>
-        <div class="diagram-box" style="border-left-color: #1d70b8;">
-          <strong>MAX Agent</strong>
-          <span>Proactive</span>
-        </div>
-      </div>
-      <div class="diagram-arrow"></div>
       <div class="diagram-label">Single LLM choke point</div>
 
       <!-- AnthropicAdapter -->
       <div class="diagram-row">
         <div class="diagram-box" style="border-left-color: #1d70b8; background: #f0f6fc;">
           <strong>AnthropicAdapter</strong>
-          <span>Claude claude-sonnet-4-5 + thinking</span>
+          <span>Claude + thinking</span>
         </div>
       </div>
       <div class="diagram-arrow"></div>
@@ -581,145 +829,86 @@
           <span>Policy &bull; Consent &bull; Trace &bull; Receipt</span>
         </div>
       </div>
+      <div class="diagram-arrow"></div>
 
-      <!-- Fan out to services -->
-      <div class="diagram-fan">
-        <div class="diagram-box" style="border-left-color: #00703c;">
-          <strong>Renew Driving Licence</strong>
-          <span>DVLA</span>
-        </div>
-        <div class="diagram-box" style="border-left-color: #00703c;">
-          <strong>Apply Universal Credit</strong>
-          <span>DWP</span>
-        </div>
-        <div class="diagram-box" style="border-left-color: #00703c;">
-          <strong>Check State Pension</strong>
-          <span>DWP</span>
-        </div>
-        <div class="diagram-box" style="border-left-color: #00703c;">
-          <strong>Become a Robot</strong>
-          <span>Mock</span>
+      <!-- Services -->
+      <div class="diagram-row">
+        <div class="diagram-box" style="border-left-color: #00703c; min-width: 260px;">
+          <strong>108 Government Services</strong>
+          <span>4 full artefact sets &bull; 104 graph-only</span>
         </div>
       </div>
 
-      <!-- Evidence Plane -->
-      <div class="diagram-evidence">
-        <strong>Evidence Plane</strong>
-        <span style="display: block; font-size: 0.8rem; color: #505a5f;">
-          Append-only SQLite &mdash; records every LLM call, policy evaluation, consent grant, service invocation, receipt, and handoff
-        </span>
+      <!-- 3 Data Planes -->
+      <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;">
+        <div class="diagram-evidence" style="flex: 1; min-width: 160px;">
+          <strong>Evidence Plane</strong>
+          <span style="display: block; font-size: 0.75rem; color: #505a5f;">Traces &amp; Receipts (D1)</span>
+        </div>
+        <div class="diagram-evidence" style="flex: 1; min-width: 160px; border-color: #912b88; background: #fdf0fc;">
+          <strong style="color: #912b88;">Personal Data</strong>
+          <span style="display: block; font-size: 0.75rem; color: #505a5f;">3-Tier Model (D1)</span>
+        </div>
+        <div class="diagram-evidence" style="flex: 1; min-width: 160px; border-color: #1d70b8; background: #f0f6fc;">
+          <strong style="color: #1d70b8;">Service Catalog</strong>
+          <span style="display: block; font-size: 0.75rem; color: #505a5f;">Store &amp; Graph (D1)</span>
+        </div>
       </div>
     </div>
 
     <p style="color: #505a5f; max-width: 700px; margin: 0 auto; text-align: center; font-size: 0.9rem;">
-      A citizen talks to an agent (DOT or MAX). The agent calls Claude via the AnthropicAdapter.
+      A citizen talks to an agent. The agent calls Claude via the AnthropicAdapter.
       When it needs a government service, the call goes through the CapabilityInvoker, which evaluates
-      policy rules, checks consent, and produces a receipt. The Evidence Plane sits underneath
-      everything, recording all activity.
+      policy rules, checks consent, and produces a receipt. Three D1 databases sit underneath
+      everything &mdash; the Evidence Plane, Personal Data store, and Service Catalog.
     </p>
   </div>
 </section>
 
-<!-- ── 4-Artefact Pattern ── -->
-<section class="section section-alt" id="artefacts">
+<!-- ── Three Data Planes ── -->
+<section class="section" id="data-planes">
   <div class="container">
-    <h2>The 4-Artefact Pattern</h2>
+    <h2>Three Data Planes</h2>
     <p class="section-intro">
-      Every government service is formally defined by four machine-readable JSON files.
-      Together they answer: what does this service do, who is eligible, how does it progress,
-      and what data is shared.
+      The platform separates data concerns into three distinct planes, each backed by a
+      Cloudflare D1 database with a common <code>DatabaseAdapter</code> interface.
     </p>
 
-    <div class="grid-2">
-      <!-- Manifest -->
-      <div class="card card-accent card-blue">
-        <div class="card-tag">Capability Definition</div>
-        <h3>manifest.json &mdash; WHAT</h3>
-        <p>Defines what the service does, its inputs and outputs, SLAs, fees, redress pathways, and audit requirements.</p>
-        <pre class="code-block"><code>{
-  <span class="kw">"id"</span>: <span class="str">"dvla.renew-driving-licence"</span>,
-  <span class="kw">"name"</span>: <span class="str">"Renew Driving Licence"</span>,
-  <span class="kw">"department"</span>: <span class="str">"DVLA"</span>,
-  <span class="kw">"constraints"</span>: {
-    <span class="kw">"fee"</span>: <span class="str">"14 GBP"</span>,
-    <span class="kw">"sla"</span>: <span class="str">"10 working days"</span>
-  }
-}</code></pre>
-      </div>
-
-      <!-- Policy -->
-      <div class="card card-accent card-green">
-        <div class="card-tag">Eligibility Rules</div>
-        <h3>policy.json &mdash; WHO</h3>
-        <p>Structured rules that determine eligibility, with conditions, failure messages, and alternative services.</p>
-        <pre class="code-block"><code>{
-  <span class="kw">"rules"</span>: [{
-    <span class="kw">"id"</span>: <span class="str">"age-check"</span>,
-    <span class="kw">"condition"</span>: {
-      <span class="kw">"field"</span>: <span class="str">"age"</span>,
-      <span class="kw">"operator"</span>: <span class="str">">="</span>,
-      <span class="kw">"value"</span>: <span class="num">18</span>
-    },
-    <span class="kw">"reason_if_failed"</span>: <span class="str">"Must be 18+"</span>
-  }]
-}</code></pre>
-      </div>
-
-      <!-- State Model -->
+    <div class="grid-3">
       <div class="card card-accent card-orange">
-        <div class="card-tag">State Transitions</div>
-        <h3>state-model.json &mdash; HOW</h3>
-        <p>Defines valid states and transitions. Terminal states (completed, rejected, handed-off) require receipts.</p>
-        <pre class="code-block"><code>{
-  <span class="kw">"states"</span>: [
-    <span class="str">"not-started"</span>,
-    <span class="str">"identity-verified"</span>,
-    <span class="str">"application-submitted"</span>,
-    <span class="str">"completed"</span>
-  ],
-  <span class="kw">"transitions"</span>: [
-    { <span class="kw">"from"</span>: <span class="str">"not-started"</span>,
-      <span class="kw">"to"</span>: <span class="str">"identity-verified"</span> }
-  ]
-}</code></pre>
+        <div class="card-tag">Append-Only Store</div>
+        <h3>Evidence Plane</h3>
+        <p>Records every action: LLM calls, policy evaluations, consent grants, service invocations, receipts, state transitions, and handoffs. Nothing is edited or deleted.</p>
+        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
+          <code>TraceStore</code> &bull; <code>CaseStore</code> &bull; <code>ReceiptGenerator</code>
+        </div>
       </div>
 
-      <!-- Consent -->
       <div class="card card-accent card-purple">
-        <div class="card-tag">Data Sharing</div>
-        <h3>consent.json &mdash; WHY</h3>
-        <p>Declares exactly what data is shared, from where, with whom, and for what purpose. Consent is per-session and revocable.</p>
-        <pre class="code-block"><code>{
-  <span class="kw">"grants"</span>: [{
-    <span class="kw">"id"</span>: <span class="str">"identity-verification"</span>,
-    <span class="kw">"data_shared"</span>: [
-      <span class="str">"full_name"</span>,
-      <span class="str">"date_of_birth"</span>,
-      <span class="str">"ni_number"</span>
-    ],
-    <span class="kw">"purpose"</span>: <span class="str">"Confirm identity"</span>
-  }]
-}</code></pre>
+        <div class="card-tag">3-Tier Model</div>
+        <h3>Personal Data Plane</h3>
+        <p>
+          <strong>Tier 1 &mdash; Verified:</strong> Read-only credentials from Wallet (NI number, licence).<br>
+          <strong>Tier 2 &mdash; Submitted:</strong> Editable data from persona (address, finances).<br>
+          <strong>Tier 3 &mdash; Inferred:</strong> LLM-extracted facts from chat, deletable by citizen.
+        </p>
+        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
+          <code>SubmittedStore</code> &bull; <code>InferredStore</code> &bull; <code>ConsentLedger</code>
+        </div>
+      </div>
+
+      <div class="card card-accent card-blue">
+        <div class="card-tag">DB-Backed Catalog</div>
+        <h3>Service Catalog</h3>
+        <p>All 108 services stored in D1. Supports CRUD operations, gap analysis (missing artefacts), auto-seeding from the service graph, and promoted service management.</p>
+        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
+          <code>ServiceArtefactStore</code> &bull; <code>ServiceGraphStore</code>
+        </div>
       </div>
     </div>
 
-    <div class="callout">
-      These artefacts live in <code>data/services/{service-name}/</code>. They are the contract
-      between the government service and any AI agent that wants to interact with it.
-    </div>
-  </div>
-</section>
-
-<!-- ── Evidence Plane ── -->
-<section class="section" id="evidence">
-  <div class="container">
-    <h2>Evidence Plane</h2>
-    <p class="section-intro">
-      An append-only SQLite trace store that records every action the system takes.
-      Nothing is silently edited or deleted. It enables full replay and audit of any agent session.
-    </p>
-
-    <table class="data-table" style="margin-bottom: 2rem;">
+    <h3 style="margin-top: 2.5rem; margin-bottom: 1rem;">Evidence Event Types</h3>
+    <table class="data-table">
       <thead>
         <tr>
           <th>Event Type</th>
@@ -736,140 +925,186 @@
         <tr><td><code>handoff.initiated</code></td><td>When and why escalation to a human was triggered</td></tr>
       </tbody>
     </table>
+  </div>
+</section>
 
-    <div class="grid-2">
-      <div class="card card-accent card-blue">
-        <h3>Citizen Experience</h3>
-        <p>Citizens see their own receipts, consent history, and a timeline of what the agent did on their behalf.</p>
+<!-- ── Remote MCP Server ── -->
+<section class="section section-alt" id="mcp">
+  <div class="container">
+    <h2>Remote MCP Server</h2>
+    <p class="section-intro">
+      Connect any MCP-compatible client to the live service catalog.
+      The server runs as a stateless Cloudflare Worker using StreamableHTTP transport &mdash;
+      no local process required.
+    </p>
+
+    <div class="grid-3" style="margin-bottom: 2rem;">
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 2.5rem; font-weight: 700; color: #1d70b8;">122</div>
+        <div style="font-size: 0.9rem; color: #505a5f; font-weight: 500;">Resources</div>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Service manifests, policies, state models, consent definitions</p>
       </div>
-      <div class="card card-accent card-green">
-        <h3>Legibility Studio</h3>
-        <p>Administrators see the full trace explorer, replay engine, service definitions, gap analysis, and operational dashboards.</p>
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 2.5rem; font-weight: 700; color: #00703c;">8</div>
+        <div style="font-size: 0.9rem; color: #505a5f; font-weight: 500;">Tools</div>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Search services, check eligibility, get artefacts, list life events</p>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 2.5rem; font-weight: 700; color: #912b88;">114</div>
+        <div style="font-size: 0.9rem; color: #505a5f; font-weight: 500;">Prompts</div>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Pre-built conversation starters for each service and life event</p>
       </div>
     </div>
 
-    <h3 style="margin-top: 2.5rem; margin-bottom: 1rem;">Service Ledger</h3>
-    <p style="color: #505a5f; max-width: 700px; margin-bottom: 1.5rem;">
-      The Service Ledger extends the Evidence Plane with case-level operational tracking.
-      It provides a dashboard view of all active cases across services, with KPI metrics,
-      bottleneck analysis, state progress flows, and case review workflows.
-    </p>
-    <div class="grid-3">
-      <div class="card card-accent card-orange">
-        <h3>Case Tracking</h3>
-        <p>Every citizen journey becomes a trackable case with state history, timeline views, and review capabilities.</p>
-      </div>
-      <div class="card card-accent card-purple">
-        <h3>Operational KPIs</h3>
-        <p>Completion rates, average processing times, bottleneck identification, and sparkline trend charts per service.</p>
-      </div>
-      <div class="card card-accent card-blue">
-        <h3>Review Workflows</h3>
-        <p>Cases can be reviewed, approved, reset, or escalated. Full audit trail maintained for every action.</p>
-      </div>
+    <h3 style="margin-bottom: 0.75rem;">Claude Desktop Configuration</h3>
+    <pre class="code-block"><code>{
+  <span class="kw">"mcpServers"</span>: {
+    <span class="kw">"als-govuk"</span>: {
+      <span class="kw">"type"</span>: <span class="str">"streamable-http"</span>,
+      <span class="kw">"url"</span>: <span class="str">"https://als-studio.chris-8ab.workers.dev/mcp"</span>
+    }
+  }
+}</code></pre>
+
+    <div class="callout">
+      The MCP server is served from the same Legibility Studio Worker.
+      It exposes the full service catalog as MCP resources, tools, and prompts over StreamableHTTP.
+      No API key required for read access.
     </div>
   </div>
 </section>
 
-<!-- ── Agent Personalities ── -->
-<section class="section section-alt" id="agents">
+<!-- ── The 4-Artefact Contract ── -->
+<section class="section" id="artefacts">
   <div class="container">
-    <h2>Two Agent Personalities</h2>
+    <h2>The 4-Artefact Contract</h2>
     <p class="section-intro">
-      The same architecture supports different interaction styles. DOT and MAX demonstrate
-      the fundamental trade-off between transparency and efficiency.
+      Every government service is formally defined by four machine-readable JSON files.
+      4 services have full artefact sets; the remaining 104 are graph-only with generated manifests.
     </p>
 
-    <div class="agent-grid">
-      <div class="agent-card" style="border-top-color: #1d70b8;">
-        <h3>DOT &mdash; The Cautious Agent</h3>
-        <ul>
-          <li>Asks permission before using personal data</li>
-          <li>Explains reasoning step by step</li>
-          <li>Requests explicit consent for each data share</li>
-          <li>Best for understanding the accountability architecture</li>
-        </ul>
+    <div class="grid-2">
+      <div class="card card-accent card-blue">
+        <div class="card-tag">Capability Definition</div>
+        <h3>manifest.json &mdash; WHAT</h3>
+        <p>Service identity, inputs/outputs, SLAs, fees, redress pathways, and audit requirements.</p>
+        <pre class="code-block"><code>{
+  <span class="kw">"id"</span>: <span class="str">"dvla.renew-driving-licence"</span>,
+  <span class="kw">"name"</span>: <span class="str">"Renew Driving Licence"</span>,
+  <span class="kw">"department"</span>: <span class="str">"DVLA"</span>,
+  <span class="kw">"constraints"</span>: { <span class="kw">"fee"</span>: <span class="str">"14 GBP"</span> }
+}</code></pre>
       </div>
-      <div class="agent-card" style="border-top-color: #00703c;">
-        <h3>MAX &mdash; The Proactive Agent</h3>
-        <ul>
-          <li>Auto-fills data without asking</li>
-          <li>Gets things done quickly and efficiently</li>
-          <li>Still records everything in the Evidence Plane</li>
-          <li>Best for seeing the efficiency vs. transparency trade-off</li>
-        </ul>
+      <div class="card card-accent card-green">
+        <div class="card-tag">Eligibility Rules</div>
+        <h3>policy.json &mdash; WHO</h3>
+        <p>Structured rules for eligibility with conditions, failure messages, and alternatives.</p>
+        <pre class="code-block"><code>{
+  <span class="kw">"rules"</span>: [{
+    <span class="kw">"condition"</span>: {
+      <span class="kw">"field"</span>: <span class="str">"age"</span>,
+      <span class="kw">"operator"</span>: <span class="str">">="</span>,
+      <span class="kw">"value"</span>: <span class="num">18</span>
+    }
+  }]
+}</code></pre>
+      </div>
+      <div class="card card-accent card-orange">
+        <div class="card-tag">State Transitions</div>
+        <h3>state-model.json &mdash; HOW</h3>
+        <p>Valid states and transitions. Terminal states require receipts.</p>
+        <pre class="code-block"><code>{
+  <span class="kw">"states"</span>: [<span class="str">"not-started"</span>,
+    <span class="str">"identity-verified"</span>,
+    <span class="str">"completed"</span>],
+  <span class="kw">"transitions"</span>: [...]
+}</code></pre>
+      </div>
+      <div class="card card-accent card-purple">
+        <div class="card-tag">Data Sharing</div>
+        <h3>consent.json &mdash; WHY</h3>
+        <p>What data is shared, from where, with whom, and for what purpose. Per-session, revocable.</p>
+        <pre class="code-block"><code>{
+  <span class="kw">"grants"</span>: [{
+    <span class="kw">"data_shared"</span>: [<span class="str">"full_name"</span>,
+      <span class="str">"ni_number"</span>],
+    <span class="kw">"purpose"</span>: <span class="str">"Confirm identity"</span>
+  }]
+}</code></pre>
       </div>
     </div>
 
     <div class="callout">
-      Both agents run on identical infrastructure. The difference is purely in their system
-      prompt personality. The Evidence Plane captures the same events for both &mdash;
-      the question is whether the citizen sees consent requests before or after the fact.
+      Full artefact sets live in <code>data/services/{service-name}/</code>. Graph-only services
+      get auto-generated manifests from the service graph. The Studio's gap analysis tool identifies
+      which artefacts are missing for each service.
     </div>
   </div>
 </section>
 
-<!-- ── Demo Services & Personas ── -->
-<section class="section" id="demos">
+<!-- ── Deployment Architecture ── -->
+<section class="section section-alt" id="deployment">
   <div class="container">
-    <h2>Demo Services &amp; Personas</h2>
+    <h2>Deployment Architecture</h2>
     <p class="section-intro">
-      Four services and four citizen personas, each designed to exercise
-      different parts of the architecture.
+      Two Cloudflare Workers with service bindings and 3 D1 databases.
+      The same codebase runs locally with SQLite via a <code>DatabaseAdapter</code> abstraction.
     </p>
 
-    <h3 style="margin-bottom: 1rem;">Services</h3>
-    <div class="grid-2" style="margin-bottom: 2.5rem;">
-      <div class="card card-accent card-blue">
-        <div class="service-dept">DVLA</div>
-        <h3>Renew Driving Licence</h3>
-        <p>Fee: &pound;14. SLA: 10 working days. Tests payment flow, photo submission, and Wallet credential sharing.</p>
+    <div class="two-col-split" style="margin-bottom: 2rem;">
+      <div class="worker-box">
+        <h3>Citizen Experience <span class="wb-tag">Worker</span></h3>
+        <ul>
+          <li>Chat UI with persona picker</li>
+          <li>Personal data dashboard</li>
+          <li>Evidence API (<code>/api/traces</code>)</li>
+          <li>LLM calls via AnthropicAdapter</li>
+        </ul>
+        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
+          <strong>D1 Bindings:</strong> TRACES_DB, PERSONAL_DATA_DB
+        </div>
       </div>
-      <div class="card card-accent card-green">
-        <div class="service-dept">DWP</div>
-        <h3>Apply Universal Credit</h3>
-        <p>Complex eligibility with household income assessment, savings thresholds, and edge cases. Tests the policy engine thoroughly.</p>
-      </div>
-      <div class="card card-accent card-orange">
-        <div class="service-dept">DWP</div>
-        <h3>Check State Pension</h3>
-        <p>Read-only forecast lookup. No payment, no application. Tests information retrieval and credential sharing.</p>
-      </div>
-      <div class="card card-accent card-purple">
-        <div class="service-dept">Mock</div>
-        <h3>Become a Robot</h3>
-        <p>A mock demonstration service used for testing the architecture with intentionally absurd scenarios.</p>
+      <div class="worker-box">
+        <h3>Legibility Studio <span class="wb-tag">Worker</span></h3>
+        <ul>
+          <li>Service catalog &amp; gap analysis</li>
+          <li>Trace explorer &amp; case management</li>
+          <li>Remote MCP server (<code>/mcp</code>)</li>
+          <li>V1 REST API (<code>/api/v1/*</code>)</li>
+        </ul>
+        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
+          <strong>D1 Binding:</strong> SERVICE_STORE_DB
+        </div>
       </div>
     </div>
 
-    <h3 style="margin-bottom: 1rem;">Personas</h3>
-    <div class="grid-2">
-      <div class="card card-accent card-purple">
-        <h3>Emma &amp; Liam</h3>
-        <p class="persona-desc">Young expecting couple, first baby. Good for benefits, family services, and driving scenarios.</p>
-      </div>
+    <div class="worker-binding">
+      <span>citizen-experience</span>
+      <span class="binding-arrow">&larr; <span class="binding-label">Service Binding (STUDIO)</span> &rarr;</span>
+      <span>legibility-studio</span>
+    </div>
+
+    <div class="grid-2" style="margin-top: 1.5rem;">
       <div class="card card-accent card-blue">
-        <h3>Rajesh</h3>
-        <p class="persona-desc">Self-employed IT consultant, two children. Tests tax, child benefit, and self-employment edge cases.</p>
+        <h3>DatabaseAdapter Pattern</h3>
+        <p>A common async interface with two implementations: <code>SqliteAdapter</code> for local development
+          and <code>D1Adapter</code> for Cloudflare. The app detects its environment at startup and picks the right adapter.</p>
       </div>
       <div class="card card-accent card-green">
-        <h3>Margaret</h3>
-        <p class="persona-desc">Retired, 71, managing health conditions. Tests pension, over-pension-age eligibility, and driving renewal for over-70s.</p>
-      </div>
-      <div class="card card-accent card-orange">
-        <h3>Priya</h3>
-        <p class="persona-desc">Tests interactive task card flows, form-based inputs, and the full Universal Credit journey with consent and state tracking.</p>
+        <h3>OpenNext on Workers</h3>
+        <p>Both apps use <code>@opennextjs/cloudflare</code> to compile Next.js 15 for the Workers runtime.
+          Static assets are served from Workers KV, server routes run on the edge.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── Package Architecture ── -->
-<section class="section section-alt" id="packages">
+<!-- ── 11 Packages ── -->
+<section class="section" id="packages">
   <div class="container">
-    <h2>Package Architecture</h2>
+    <h2>11 Packages</h2>
     <p class="section-intro">
-      The monorepo is organized as 2 Next.js applications and 7 shared packages.
+      The monorepo is organized as 2 Next.js applications and 11 shared packages.
       Each package has a single responsibility.
     </p>
 
@@ -880,68 +1115,97 @@
       <tbody>
         <tr><td><code>@als/schemas</code></td><td>Shared TypeScript types and interfaces for all data structures</td></tr>
         <tr><td><code>@als/runtime</code></td><td>CapabilityInvoker, ServiceRegistry, HandoffManager &mdash; the orchestration layer</td></tr>
-        <tr><td><code>@als/evidence</code></td><td>SQLite trace store, trace emitter, receipt generator &mdash; the Evidence Plane</td></tr>
+        <tr><td><code>@als/evidence</code></td><td>Trace store, receipt generator, DatabaseAdapter &mdash; the Evidence Plane</td></tr>
         <tr><td><code>@als/legibility</code></td><td>PolicyEvaluator, StateMachine, ConsentManager &mdash; artefact interpretation</td></tr>
         <tr><td><code>@als/identity</code></td><td>GOV.UK One Login and Wallet simulators</td></tr>
-        <tr><td><code>@als/personal-data</code></td><td>Two-tier data model: verified credentials + incidental data</td></tr>
-        <tr><td><code>@als/adapters</code></td><td>AnthropicAdapter, GOV.UK Content adapter, MCP adapter &mdash; external connectors</td></tr>
+        <tr><td><code>@als/personal-data</code> <span class="badge-new">NEW</span></td><td>3-tier model: SubmittedStore, InferredStore, ServiceAccessStore, ConsentLedger</td></tr>
+        <tr><td><code>@als/adapters</code></td><td>AnthropicAdapter, GOV.UK Content adapter, MCP client adapter</td></tr>
+        <tr><td><code>@als/mcp-server</code></td><td>MCP server (stdio + StreamableHTTP) exposing service artefacts as tools/resources</td></tr>
+        <tr><td><code>@als/service-graph</code> <span class="badge-new">NEW</span></td><td>108 services, 98 edges, 16 life events &mdash; graph traversal engine</td></tr>
+        <tr><td><code>@als/service-store</code> <span class="badge-new">NEW</span></td><td>DB-backed CRUD for services, gap analysis, auto-seeding from graph</td></tr>
       </tbody>
     </table>
 
     <h3 style="margin-bottom: 0.75rem;">Applications</h3>
     <table class="data-table">
       <thead>
-        <tr><th>App</th><th>Port</th><th>Purpose</th></tr>
+        <tr><th>App</th><th>Local</th><th>Deployed</th><th>Purpose</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>citizen-experience</code></td><td>3100</td><td>Citizen-facing chat with persona picker, agent selection, interactive task cards, consent flows, and journey tracking</td></tr>
-        <tr><td><code>legibility-studio</code></td><td>3101</td><td>Admin dashboard: service designer, evidence explorer, gap analysis, service ledger, and case management</td></tr>
+        <tr>
+          <td><code>citizen-experience</code></td>
+          <td><code>:3100</code></td>
+          <td><a href="https://als-citizen.chris-8ab.workers.dev" target="_blank" rel="noopener">als-citizen.&hellip;</a></td>
+          <td>Citizen-facing chat, personal data dashboard, evidence API</td>
+        </tr>
+        <tr>
+          <td><code>legibility-studio</code></td>
+          <td><code>:3101</code></td>
+          <td><a href="https://als-studio.chris-8ab.workers.dev" target="_blank" rel="noopener">als-studio.&hellip;</a></td>
+          <td>Service catalog, trace explorer, gap analysis, MCP server</td>
+        </tr>
       </tbody>
     </table>
-
-    <div class="callout">
-      The Legibility Studio fetches evidence data via HTTP from the citizen-experience API &mdash;
-      it does not directly import the evidence package. This avoids native SQLite module bundling issues.
-    </div>
   </div>
 </section>
 
-<!-- ── Getting Started ── -->
-<section class="section" id="get-started">
+<!-- ── Try It Yourself ── -->
+<section class="section section-alt" id="try-it">
   <div class="container">
-    <h2>Getting Started</h2>
-    <p class="section-intro">
-      Prerequisites: Node.js 18+ and an
-      <a href="https://console.anthropic.com" target="_blank" rel="noopener">Anthropic API key</a>.
-    </p>
+    <h2>Try It Yourself</h2>
 
-    <ol class="steps">
-      <li>Clone the repository<br>
-        <code>git clone https://github.com/datadowns/agentic-legibility-stack.git</code>
-      </li>
-      <li>Install dependencies<br>
-        <code>npm install</code>
-      </li>
-      <li>Set your API key &mdash; create <code>apps/citizen-experience/.env.local</code><br>
-        <code>ANTHROPIC_API_KEY=sk-ant-...your-key...</code>
-      </li>
-      <li>Seed demo trace data (optional)<br>
-        <code>npm run seed</code>
-      </li>
-      <li>Start both apps<br>
-        <code>npm run dev</code>
-      </li>
-      <li>Open the apps<br>
-        <a href="http://localhost:3100">localhost:3100</a> (Citizen Experience) &bull;
-        <a href="http://localhost:3101">localhost:3101</a> (Legibility Studio)
-      </li>
-    </ol>
+    <div class="two-col-split">
+      <div>
+        <h3 style="margin-bottom: 1rem;">Live Demo</h3>
+        <p style="color: #505a5f; margin-bottom: 1rem;">
+          The platform is deployed on Cloudflare Workers. No setup required.
+        </p>
+        <div class="hero-actions" style="margin-bottom: 1.5rem;">
+          <a href="https://als-studio.chris-8ab.workers.dev" class="btn btn-primary" target="_blank" rel="noopener">Open Legibility Studio</a>
+        </div>
+        <h3 style="margin-bottom: 0.75rem; font-size: 1rem;">Connect via MCP</h3>
+        <p style="color: #505a5f; margin-bottom: 0.75rem; font-size: 0.9rem;">
+          Add this to your Claude Desktop config:
+        </p>
+        <pre class="code-block"><code>{
+  <span class="kw">"mcpServers"</span>: {
+    <span class="kw">"als-govuk"</span>: {
+      <span class="kw">"type"</span>: <span class="str">"streamable-http"</span>,
+      <span class="kw">"url"</span>: <span class="str">"https://als-studio.chris-8ab.workers.dev/mcp"</span>
+    }
+  }
+}</code></pre>
+      </div>
 
-    <p style="margin-top: 1.5rem; color: #505a5f;">
-      See the full
-      <a href="https://github.com/datadowns/agentic-legibility-stack/blob/main/GETTING-STARTED.md">Getting Started Guide</a>
-      for a detailed walkthrough of personas, agent personalities, and features to try.
-    </p>
+      <div>
+        <h3 style="margin-bottom: 1rem;">Run Locally</h3>
+        <p style="color: #505a5f; margin-bottom: 1rem;">
+          Prerequisites: Node.js 18+ and an
+          <a href="https://console.anthropic.com" target="_blank" rel="noopener">Anthropic API key</a>.
+        </p>
+        <ol class="steps">
+          <li>Clone the repository<br>
+            <code>git clone https://github.com/datadowns/agentic-legibility-stack.git</code>
+          </li>
+          <li>Install dependencies<br>
+            <code>npm install</code>
+          </li>
+          <li>Set your API key<br>
+            <code>echo "ANTHROPIC_API_KEY=sk-ant-..." > apps/citizen-experience/.env.local</code>
+          </li>
+          <li>Seed the databases<br>
+            <code>npm run seed</code>
+          </li>
+          <li>Start both apps<br>
+            <code>npm run dev</code>
+          </li>
+          <li>Open the apps<br>
+            <a href="http://localhost:3100">localhost:3100</a> &bull;
+            <a href="http://localhost:3101">localhost:3101</a>
+          </li>
+        </ol>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -951,12 +1215,14 @@
     <div class="footer-grid">
       <div>
         <strong>Agentic Legibility Stack</strong>
-        <p>A reference implementation &mdash; not a live government service.</p>
-        <p style="margin-top: 0.5rem;">Built with Next.js, TypeScript, and Claude.</p>
+        <p>A platform reference implementation &mdash; not a live government service.</p>
+        <p style="margin-top: 0.5rem;">Built with Next.js, TypeScript, Cloudflare Workers, and Claude.</p>
       </div>
       <div>
-        <a href="https://github.com/datadowns/agentic-legibility-stack">GitHub Repository</a>
-        <p><a href="#get-started">Getting Started</a></p>
+        <a href="https://github.com/datadowns/agentic-legibility-stack" target="_blank" rel="noopener">GitHub Repository</a>
+        <p><a href="https://als-studio.chris-8ab.workers.dev" target="_blank" rel="noopener">Live Demo</a></p>
+        <p><a href="v1/">V1 Documentation</a></p>
+        <p style="margin-top: 0.5rem; font-size: 0.8rem;">Branch: <code style="color: #b1b4b6;">v2/platform</code></p>
       </div>
     </div>
   </div>
