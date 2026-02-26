@@ -164,8 +164,8 @@ function serviceDirSlug(serviceId: string): string {
 
 /** Load a policy ruleset for any service — works for both known and Studio-created services */
 async function loadPolicyRuleset(serviceId: string): Promise<PolicyRuleset | null> {
-  // Try bundled data first
-  const bundled = getServiceArtefact(serviceId, "policy");
+  // Try bundled data first (async — checks Studio then bundled)
+  const bundled = await getServiceArtefact(serviceId, "policy");
   if (bundled) return bundled as unknown as PolicyRuleset;
   // Fallback to filesystem
   const slug = serviceDirSlug(serviceId);
@@ -265,7 +265,7 @@ function buildPolicyContext(personaData: Record<string, unknown>): Record<string
 
 /** Load a manifest for a service */
 async function loadManifest(serviceId: string): Promise<Record<string, unknown> | null> {
-  const bundled = getServiceArtefact(serviceId, "manifest");
+  const bundled = await getServiceArtefact(serviceId, "manifest");
   if (bundled) return bundled;
   const slug = serviceDirSlug(serviceId);
   for (const base of [
@@ -370,7 +370,7 @@ function generateScenarioPrompt(manifest: Record<string, unknown>, serviceId?: s
 
 /** Load a state model for a service */
 async function loadStateModel(serviceId: string): Promise<StateModelDefinition | null> {
-  const bundled = getServiceArtefact(serviceId, "stateModel");
+  const bundled = await getServiceArtefact(serviceId, "stateModel");
   if (bundled) return bundled as unknown as StateModelDefinition;
   const slug = serviceDirSlug(serviceId);
   for (const base of [
@@ -389,7 +389,7 @@ async function loadStateModel(serviceId: string): Promise<StateModelDefinition |
 
 /** Load consent model for a service */
 async function loadConsentModel(serviceId: string): Promise<Record<string, unknown> | null> {
-  const bundled = getServiceArtefact(serviceId, "consent");
+  const bundled = await getServiceArtefact(serviceId, "consent");
   if (bundled) return bundled;
   const slug = serviceDirSlug(serviceId);
   for (const base of [
@@ -837,7 +837,7 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
       scenarioPrompt = generateScenarioPrompt(manifest, serviceId);
     } else {
       // Try graph manifest via unified lookup
-      const graphManifest = getAnyManifest(serviceId);
+      const graphManifest = await getAnyManifest(serviceId);
       scenarioPrompt = graphManifest
         ? generateScenarioPrompt(graphManifest as unknown as Record<string, unknown>, serviceId)
         : `You are helping a citizen with a government service related to: ${scenario}. Answer their questions helpfully.`;

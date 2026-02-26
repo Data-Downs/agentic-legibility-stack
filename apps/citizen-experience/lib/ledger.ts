@@ -17,9 +17,9 @@ function serviceDirSlug(serviceId: string): string {
 }
 
 /** Load a state model definition for a service */
-export function loadStateModel(serviceId: string): StateModelDefinition | null {
-  // Try bundled data first (works on Cloudflare)
-  const bundled = getServiceArtefact(serviceId, "stateModel");
+export async function loadStateModel(serviceId: string): Promise<StateModelDefinition | null> {
+  // Try bundled data first (works on Cloudflare, now async with Studio fallback)
+  const bundled = await getServiceArtefact(serviceId, "stateModel");
   if (bundled) return bundled as unknown as StateModelDefinition;
   // Fallback to filesystem
   const slug = serviceDirSlug(serviceId);
@@ -38,8 +38,8 @@ export function loadStateModel(serviceId: string): StateModelDefinition | null {
 }
 
 /** Get the total number of states in a service's state model */
-export function getTotalStates(serviceId: string): number {
-  const model = loadStateModel(serviceId);
+export async function getTotalStates(serviceId: string): Promise<number> {
+  const model = await loadStateModel(serviceId);
   return model ? model.states.length : 0;
 }
 

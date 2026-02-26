@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   const engine = getGraphEngine();
-  const lifeEvents = getLifeEvents().map((le) => {
+  const rawLifeEvents = await getLifeEvents();
+  const lifeEvents = rawLifeEvents.map((le) => {
     const services = engine.getLifeEventServices(le.id).map((node) => ({
       id: node.id,
       name: node.name,
@@ -26,8 +27,8 @@ export async function GET() {
       id: le.id,
       icon: le.icon,
       name: le.name,
-      desc: le.desc,
-      entryNodeCount: le.entryNodes.length,
+      desc: le.desc ?? (le as unknown as Record<string, unknown>).description ?? "",
+      entryNodeCount: le.entryNodes?.length ?? 0,
       totalServiceCount: services.length,
       services,
     };

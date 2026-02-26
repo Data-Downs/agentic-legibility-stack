@@ -548,11 +548,18 @@ function serviceDirSlug(serviceId: string): string {
   return parts.length > 1 ? parts.slice(1).join(".") : parts[0];
 }
 
-/** Get a service artefact by serviceId and type */
-export function getServiceArtefact(
+/** Get a service artefact by serviceId and type — tries Studio API first, falls back to bundled */
+export async function getServiceArtefact(
   serviceId: string,
   type: keyof ServiceArtefacts,
-): Record<string, unknown> | null {
+): Promise<Record<string, unknown> | null> {
+  // Try Studio API first
+  const client = getServiceClient();
+  if (client) {
+    const remote = await client.getServiceArtefact(serviceId, type);
+    if (remote) return remote;
+  }
+  // Fallback to bundled data
   const slug = serviceDirSlug(serviceId);
   return SERVICE_DATA[slug]?.[type] ?? null;
 }
@@ -578,6 +585,10 @@ export function isCloudflare(): boolean {
   return !!(process.env.CF_PAGES || process.env.__NEXT_ON_PAGES__);
 }
 
+// ── ServiceClient (Studio API) ──
+
+import { getServiceClient } from "./service-client";
+
 // ── Service Graph integration ──
 
 import { ServiceGraphEngine, graphNodeToManifest } from "@als/service-graph";
@@ -593,10 +604,16 @@ for (const node of graphEngine.getServices()) {
 }
 
 /**
- * Get a manifest for any service — checks full artefact services first,
- * then falls back to graph-derived manifests.
+ * Get a manifest for any service — tries Studio API first, then checks
+ * full artefact services, then falls back to graph-derived manifests.
  */
-export function getAnyManifest(serviceId: string): CapabilityManifest | null {
+export async function getAnyManifest(serviceId: string): Promise<CapabilityManifest | null> {
+  // Try Studio API first
+  const client = getServiceClient();
+  if (client) {
+    const remote = await client.getServiceArtefact(serviceId, "manifest");
+    if (remote) return remote as unknown as CapabilityManifest;
+  }
   // Full artefact service (qualified ID e.g. "dwp.apply-universal-credit")
   const slug = serviceDirSlug(serviceId);
   const fullArtefact = SERVICE_DATA[slug]?.manifest;
@@ -615,18 +632,24 @@ export function getAnyManifest(serviceId: string): CapabilityManifest | null {
   return null;
 }
 
-/** Get all services — full artefact services + graph services merged */
-export function getAllServices(): CapabilityManifest[] {
-  // Start with full artefact services
+/** Get all services — tries Studio API first, falls back to bundled + graph merged */
+export async function getAllServices(): Promise<CapabilityManifest[]> {
+  // Try Studio API first
+  const client = getServiceClient();
+  if (client) {
+    const remote = await client.getAllServices();
+    if (remote?.services?.length) {
+      return remote.services as unknown as CapabilityManifest[];
+    }
+  }
+  // Fallback to bundled + graph
   const full: CapabilityManifest[] = [];
   for (const [slug, artefacts] of Object.entries(SERVICE_DATA)) {
     const m = artefacts.manifest as unknown as CapabilityManifest;
     full.push({ ...m, source: 'full' });
   }
-  // Add graph services that don't duplicate a full-artefact service
   const fullSlugs = new Set(Object.keys(SERVICE_DATA));
   for (const [id, manifest] of Object.entries(GRAPH_MANIFESTS)) {
-    // Check if this graph service already exists as a full artefact
     const matchesFull = fullSlugs.has(id) || [...fullSlugs].some((s) => id.endsWith(s));
     if (!matchesFull) {
       full.push(manifest);
@@ -635,8 +658,17 @@ export function getAllServices(): CapabilityManifest[] {
   return full;
 }
 
-/** Get all life events */
-export function getLifeEvents(): LifeEvent[] {
+/** Get all life events — tries Studio API first, falls back to local graph engine */
+export async function getLifeEvents(): Promise<LifeEvent[]> {
+  // Try Studio API first
+  const client = getServiceClient();
+  if (client) {
+    const remote = await client.getLifeEvents();
+    if (remote?.lifeEvents?.length) {
+      return remote.lifeEvents as unknown as LifeEvent[];
+    }
+  }
+  // Fallback to local graph engine
   return graphEngine.getLifeEvents();
 }
 

@@ -11,6 +11,9 @@ assets = { directory = ".open-next/assets", binding = "ASSETS" }
 # Note: ANTHROPIC_API_KEY should be set via `wrangler secret put ANTHROPIC_API_KEY`
 # but in OpenNext, secrets are available through getCloudflareContext().env
 
+[vars]
+STUDIO_API_URL = "https://als-studio.chris-8ab.workers.dev"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "als-evidence"
