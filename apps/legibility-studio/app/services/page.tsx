@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import KPICard from "@/components/ui/KPICard";
 import PageHeader from "@/components/ui/PageHeader";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
@@ -16,6 +16,9 @@ interface Service {
   promoted: boolean;
   completeness: number;
   gapCount: number;
+  source?: "full" | "graph";
+  serviceType?: string;
+  govuk_url?: string;
 }
 
 interface DashboardData {
@@ -31,13 +34,6 @@ interface DashboardData {
   humanActionTotal: number;
   bottlenecks: Array<{ stateId: string; caseCount: number }>;
 }
-
-/** Built-in services that always appear on the citizen Dashboard */
-const BUILT_IN_SERVICE_IDS = new Set([
-  "dvla.renew-driving-licence",
-  "dwp.apply-universal-credit",
-  "dwp.check-state-pension",
-]);
 
 function AllServicesDashboard({ dashboard }: { dashboard: DashboardData }) {
   const agentPct =
@@ -158,6 +154,9 @@ export default function ServicesPage() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [sourceFilter, setSourceFilter] = useState<"all" | "full" | "graph">("all");
+  const [deptFilter, setDeptFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -171,6 +170,34 @@ export default function ServicesPage() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
+
+  const departments = useMemo(() => {
+    const depts = new Set(services.map((s) => s.department));
+    return [...depts].sort();
+  }, [services]);
+
+  const filteredServices = useMemo(() => {
+    let filtered = services;
+    if (sourceFilter !== "all") {
+      filtered = filtered.filter((s) => (s.source || "full") === sourceFilter);
+    }
+    if (deptFilter !== "all") {
+      filtered = filtered.filter((s) => s.department === deptFilter);
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.description.toLowerCase().includes(q) ||
+          s.id.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [services, sourceFilter, deptFilter, searchQuery]);
+
+  const fullCount = services.filter((s) => (s.source || "full") === "full").length;
+  const graphCount = services.filter((s) => s.source === "graph").length;
 
   const togglePromote = useCallback(async (serviceId: string) => {
     setTogglingId(serviceId);
@@ -204,7 +231,7 @@ export default function ServicesPage() {
       <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Services" }]} />
       <PageHeader
         title="Services"
-        subtitle={`${services.length} service(s) registered in the Agentic Legibility Stack.`}
+        subtitle={`${services.length} service(s) registered — ${fullCount} full, ${graphCount} from graph.`}
         actions={
           <a
             href="/services/new"
@@ -215,101 +242,176 @@ export default function ServicesPage() {
         }
       />
 
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        {/* Source filter */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm text-gray-500">Source:</span>
+          {(["all", "full", "graph"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setSourceFilter(f)}
+              className={`text-xs font-bold px-2.5 py-1 rounded-full border transition-colors ${
+                sourceFilter === f
+                  ? "bg-govuk-blue text-white border-govuk-blue"
+                  : "bg-white text-gray-600 border-gray-300 hover:border-govuk-blue"
+              }`}
+            >
+              {f === "all" ? `All (${services.length})` : f === "full" ? `Full (${fullCount})` : `Graph (${graphCount})`}
+            </button>
+          ))}
+        </div>
+
+        {/* Department filter */}
+        <select
+          value={deptFilter}
+          onChange={(e) => setDeptFilter(e.target.value)}
+          className="text-sm border border-gray-300 rounded-lg px-2.5 py-1"
+        >
+          <option value="all">All departments</option>
+          {departments.map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+
+        {/* Search */}
+        <input
+          type="text"
+          placeholder="Search services..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="text-sm border border-gray-300 rounded-lg px-3 py-1 flex-1 min-w-[200px]"
+        />
+      </div>
+
       {/* All-services dashboard */}
       {dashboard && <AllServicesDashboard dashboard={dashboard} />}
 
       <div className="space-y-4">
-        {services.map((service) => (
+        {filteredServices.map((service) => (
           <div
             key={service.id}
             className="border border-studio-border rounded-xl bg-white hover:shadow-sm transition-shadow"
           >
             <a
-              href={`/services/${encodeURIComponent(service.id)}`}
+              href={service.source === "graph" && service.govuk_url ? service.govuk_url : `/services/${encodeURIComponent(service.id)}`}
               className="block p-5"
+              target={service.source === "graph" ? "_blank" : undefined}
+              rel={service.source === "graph" ? "noopener noreferrer" : undefined}
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-lg font-bold">{service.name}</h2>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className="text-lg font-bold">{service.name}</h2>
+                    <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                      (service.source || "full") === "full"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}>
+                      {(service.source || "full") === "full" ? "Full" : "Graph"}
+                    </span>
+                    {service.serviceType && (
+                      <span className="text-[10px] font-medium text-gray-500 uppercase">{service.serviceType}</span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500 mt-0.5">{service.department}</p>
                   <p className="text-sm mt-2 text-gray-700">{service.description}</p>
                 </div>
-                <div className="text-right">
-                  <div className="text-3xl font-light tracking-tight">{service.completeness}%</div>
-                  <div className="text-xs text-gray-500">complete</div>
-                  {service.gapCount > 0 && (
-                    <div className="text-xs text-red-600 mt-1">
-                      {service.gapCount} gap(s)
-                    </div>
-                  )}
-                </div>
+                {(service.source || "full") === "full" && (
+                  <div className="text-right">
+                    <div className="text-3xl font-light tracking-tight">{service.completeness}%</div>
+                    <div className="text-xs text-gray-500">complete</div>
+                    {service.gapCount > 0 && (
+                      <div className="text-xs text-red-600 mt-1">
+                        {service.gapCount} gap(s)
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-2 mt-3">
-                <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                  Manifest
-                </span>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
-                    service.hasPolicy
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  Policy {service.hasPolicy ? "" : "(missing)"}
-                </span>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
-                    service.hasStateModel
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  State Model {service.hasStateModel ? "" : "(missing)"}
-                </span>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
-                    service.hasConsent
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  Consent {service.hasConsent ? "" : "(missing)"}
-                </span>
+                {(service.source || "full") === "full" ? (
+                  <>
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                      Manifest
+                    </span>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full ${
+                        service.hasPolicy
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      Policy {service.hasPolicy ? "" : "(missing)"}
+                    </span>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full ${
+                        service.hasStateModel
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      State Model {service.hasStateModel ? "" : "(missing)"}
+                    </span>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full ${
+                        service.hasConsent
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      Consent {service.hasConsent ? "" : "(missing)"}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                      Eligibility data
+                    </span>
+                    <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                      GOV.UK link
+                    </span>
+                  </>
+                )}
               </div>
             </a>
 
             {/* Action bar */}
             <div className="border-t border-studio-border px-5 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <a
-                  href={`/services/${encodeURIComponent(service.id)}/ledger`}
-                  className="text-sm font-semibold text-studio-accent hover:underline"
-                >
-                  View ledger
-                </a>
-                <span className="text-gray-300">|</span>
-                <a
-                  href={`/services/${encodeURIComponent(service.id)}/edit`}
-                  className="text-sm font-semibold text-studio-accent hover:underline"
-                >
-                  Edit service
-                </a>
-                <span className="text-gray-300">|</span>
-                <a
-                  href={`/services/${encodeURIComponent(service.id)}`}
-                  className="text-sm font-semibold text-red-600 hover:underline"
-                >
-                  Delete
-                </a>
+                {(service.source || "full") === "full" ? (
+                  <>
+                    <a
+                      href={`/services/${encodeURIComponent(service.id)}/ledger`}
+                      className="text-sm font-semibold text-studio-accent hover:underline"
+                    >
+                      View ledger
+                    </a>
+                    <span className="text-gray-300">|</span>
+                    <a
+                      href={`/services/${encodeURIComponent(service.id)}/edit`}
+                      className="text-sm font-semibold text-studio-accent hover:underline"
+                    >
+                      Edit service
+                    </a>
+                    <span className="text-gray-300">|</span>
+                    <a
+                      href={`/services/${encodeURIComponent(service.id)}`}
+                      className="text-sm font-semibold text-red-600 hover:underline"
+                    >
+                      Delete
+                    </a>
+                  </>
+                ) : (
+                  <span className="text-sm text-gray-500">
+                    Graph-only — needs artefacts for full integration
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-3">
-                {BUILT_IN_SERVICE_IDS.has(service.id) ? (
-                  <span className="text-sm text-gray-500">
-                    <span className="text-blue-700 font-medium">Built-in</span>
-                  </span>
-                ) : (
+                {(service.source || "full") === "full" && (
                   <>
                     <span className="text-sm text-gray-500">
                       {service.promoted ? (

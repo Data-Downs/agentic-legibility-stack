@@ -214,6 +214,30 @@ export const SERVICE_TO_SCENARIO: Record<string, ScenarioType> = {
   family: "parenting",
 };
 
+/** A life event from the service graph */
+export interface LifeEventInfo {
+  id: string;
+  icon: string;
+  name: string;
+  desc: string;
+  entryNodeCount: number;
+  totalServiceCount: number;
+  services: LifeEventService[];
+}
+
+/** A service within a life event */
+export interface LifeEventService {
+  id: string;
+  name: string;
+  dept: string;
+  serviceType: string;
+  proactive: boolean;
+  gated: boolean;
+  desc: string;
+  govuk_url: string;
+  eligibility_summary: string;
+}
+
 /** Default service for each persona — used when no service is explicitly selected */
 export const PERSONA_DEFAULT_SERVICE: Record<string, ServiceType> = {
   "emma-liam": "driving",

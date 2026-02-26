@@ -560,3 +560,75 @@ export function getPromptFile(filePath: string): string | null {
 export function isCloudflare(): boolean {
   return !!(process.env.CF_PAGES || process.env.__NEXT_ON_PAGES__);
 }
+
+// ── Service Graph integration ──
+
+import { ServiceGraphEngine, graphNodeToManifest } from "@als/service-graph";
+import type { CapabilityManifest } from "@als/schemas";
+import type { LifeEvent, ServiceNode } from "@als/service-graph";
+
+const graphEngine = new ServiceGraphEngine();
+
+/** Graph node manifests — built once from all 108 graph services */
+const GRAPH_MANIFESTS: Record<string, CapabilityManifest> = {};
+for (const node of graphEngine.getServices()) {
+  GRAPH_MANIFESTS[node.id] = graphNodeToManifest(node);
+}
+
+/**
+ * Get a manifest for any service — checks full artefact services first,
+ * then falls back to graph-derived manifests.
+ */
+export function getAnyManifest(serviceId: string): CapabilityManifest | null {
+  // Full artefact service (qualified ID e.g. "dwp.apply-universal-credit")
+  const slug = serviceDirSlug(serviceId);
+  const fullArtefact = SERVICE_DATA[slug]?.manifest;
+  if (fullArtefact) {
+    return { ...fullArtefact, source: 'full' } as unknown as CapabilityManifest;
+  }
+  // Graph service (flat ID e.g. "dwp-universal-credit")
+  if (GRAPH_MANIFESTS[serviceId]) {
+    return GRAPH_MANIFESTS[serviceId];
+  }
+  // Try slug match on graph
+  const graphNode = graphEngine.findBySlug(serviceId);
+  if (graphNode) {
+    return GRAPH_MANIFESTS[graphNode.id] ?? null;
+  }
+  return null;
+}
+
+/** Get all services — full artefact services + graph services merged */
+export function getAllServices(): CapabilityManifest[] {
+  // Start with full artefact services
+  const full: CapabilityManifest[] = [];
+  for (const [slug, artefacts] of Object.entries(SERVICE_DATA)) {
+    const m = artefacts.manifest as unknown as CapabilityManifest;
+    full.push({ ...m, source: 'full' });
+  }
+  // Add graph services that don't duplicate a full-artefact service
+  const fullSlugs = new Set(Object.keys(SERVICE_DATA));
+  for (const [id, manifest] of Object.entries(GRAPH_MANIFESTS)) {
+    // Check if this graph service already exists as a full artefact
+    const matchesFull = fullSlugs.has(id) || [...fullSlugs].some((s) => id.endsWith(s));
+    if (!matchesFull) {
+      full.push(manifest);
+    }
+  }
+  return full;
+}
+
+/** Get all life events */
+export function getLifeEvents(): LifeEvent[] {
+  return graphEngine.getLifeEvents();
+}
+
+/** Get the graph engine for direct access */
+export function getGraphEngine(): ServiceGraphEngine {
+  return graphEngine;
+}
+
+/** Get a graph service node by ID */
+export function getGraphNode(serviceId: string): ServiceNode | undefined {
+  return graphEngine.getService(serviceId);
+}

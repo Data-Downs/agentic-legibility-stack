@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
     "@als/identity",
     "@als/personal-data",
     "@als/adapters",
+    "@als/service-graph",
   ],
   serverExternalPackages: ["better-sqlite3"],
 };

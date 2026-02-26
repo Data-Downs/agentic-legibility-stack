@@ -11,7 +11,7 @@ import { PolicyEvaluator, StateMachine } from "@als/legibility";
 import { getTraceEmitter, getReceiptGenerator } from "@/lib/evidence";
 import { getRegistry } from "@/lib/registry";
 import { extractStructuredOutput } from "@/lib/extract-structured-output";
-import { getServiceArtefact, getPersonaData, getPromptFile } from "@/lib/service-data";
+import { getServiceArtefact, getPersonaData, getPromptFile, getAnyManifest, getGraphNode } from "@/lib/service-data";
 import { getInferredStore, getServiceAccessStore, getSubmittedStore } from "@/lib/personal-data-store";
 
 // ── AnthropicAdapter — the ONLY Anthropic SDK usage ──
@@ -60,16 +60,28 @@ const invoker = new CapabilityInvoker();
 const policyEvaluator = new PolicyEvaluator();
 const handoffManager = new HandoffManager();
 
-// ── Scenario → service mapping (known services; new services fall through) ──
-const SCENARIO_TO_SERVICE: Record<string, string> = {
+// ── Scenario → service mapping ──
+// Legacy map for the 3 original Dashboard service-type names
+const LEGACY_SCENARIO_MAP: Record<string, string> = {
   driving: "dvla.renew-driving-licence",
   benefits: "dwp.apply-universal-credit",
   parenting: "dwp.check-state-pension",
 };
 
-/** Resolve a scenario name to a serviceId — checks known map first, falls through to scenario itself */
+/**
+ * Resolve a scenario/service name to a canonical serviceId.
+ * Checks: legacy map → qualified ID → graph node ID → graph slug match.
+ */
 function resolveServiceId(scenario: string): string {
-  return SCENARIO_TO_SERVICE[scenario] || scenario;
+  // 1. Legacy dashboard names
+  if (LEGACY_SCENARIO_MAP[scenario]) return LEGACY_SCENARIO_MAP[scenario];
+  // 2. Already a qualified ID (e.g. "dvla.renew-driving-licence")
+  if (scenario.includes(".")) return scenario;
+  // 3. Direct graph node ID (e.g. "hmrc-child-benefit")
+  const graphNode = getGraphNode(scenario);
+  if (graphNode) return graphNode.id;
+  // 4. Fallback — use as-is
+  return scenario;
 }
 
 // ── MCP connection ──
@@ -267,39 +279,80 @@ async function loadManifest(serviceId: string): Promise<Record<string, unknown> 
 }
 
 /** Generate a scenario prompt from a manifest — used as fallback when no scenario-{name}.txt exists */
-function generateScenarioPrompt(manifest: Record<string, unknown>): string {
+function generateScenarioPrompt(manifest: Record<string, unknown>, serviceId?: string): string {
   const lines: string[] = [];
   lines.push(`SERVICE: ${manifest.name}`);
   lines.push(`DEPARTMENT: ${manifest.department}`);
   lines.push(`DESCRIPTION: ${manifest.description}`);
 
-  const constraints = manifest.constraints as Record<string, unknown> | undefined;
-  if (constraints) {
-    if (constraints.sla) lines.push(`SLA: ${constraints.sla}`);
-    if (constraints.fee) {
-      const fee = constraints.fee as Record<string, unknown>;
-      lines.push(`FEE: ${fee.amount} ${fee.currency}`);
+  // Include graph eligibility data if available
+  const graphNode = serviceId ? getGraphNode(serviceId) : null;
+  if (graphNode) {
+    lines.push("");
+    lines.push(`GOV.UK PAGE: ${graphNode.govuk_url}`);
+    lines.push(`SERVICE TYPE: ${graphNode.serviceType}`);
+    if (graphNode.deadline) lines.push(`DEADLINE: ${graphNode.deadline}`);
+    lines.push("");
+    lines.push(`ELIGIBILITY SUMMARY: ${graphNode.eligibility.summary}`);
+    if (graphNode.eligibility.means_tested) lines.push("NOTE: This service is means-tested.");
+    if (graphNode.eligibility.criteria.length > 0) {
+      lines.push("");
+      lines.push("ELIGIBILITY CRITERIA:");
+      for (const c of graphNode.eligibility.criteria) {
+        lines.push(`  - [${c.factor}] ${c.description}`);
+      }
     }
-    if (constraints.availability) lines.push(`AVAILABILITY: ${constraints.availability}`);
-  }
+    if (graphNode.eligibility.keyQuestions.length > 0) {
+      lines.push("");
+      lines.push("KEY QUESTIONS TO ASK THE CITIZEN:");
+      for (const q of graphNode.eligibility.keyQuestions) {
+        lines.push(`  - ${q}`);
+      }
+    }
+    if (graphNode.eligibility.exclusions?.length) {
+      lines.push("");
+      lines.push("COMMON EXCLUSIONS:");
+      for (const e of graphNode.eligibility.exclusions) {
+        lines.push(`  - ${e}`);
+      }
+    }
+    if (graphNode.eligibility.evidenceRequired?.length) {
+      lines.push("");
+      lines.push("EVIDENCE TYPICALLY REQUIRED:");
+      for (const e of graphNode.eligibility.evidenceRequired) {
+        lines.push(`  - ${e}`);
+      }
+    }
+  } else {
+    // Non-graph manifest — use legacy fields
+    const constraints = manifest.constraints as Record<string, unknown> | undefined;
+    if (constraints) {
+      if (constraints.sla) lines.push(`SLA: ${constraints.sla}`);
+      if (constraints.fee) {
+        const fee = constraints.fee as Record<string, unknown>;
+        lines.push(`FEE: ${fee.amount} ${fee.currency}`);
+      }
+      if (constraints.availability) lines.push(`AVAILABILITY: ${constraints.availability}`);
+    }
 
-  const redress = manifest.redress as Record<string, unknown> | undefined;
-  if (redress) {
-    if (redress.complaint_url) lines.push(`COMPLAINTS: ${redress.complaint_url}`);
-    if (redress.appeal_process) lines.push(`APPEALS: ${redress.appeal_process}`);
-    if (redress.ombudsman) lines.push(`OMBUDSMAN: ${redress.ombudsman}`);
-  }
+    const redress = manifest.redress as Record<string, unknown> | undefined;
+    if (redress) {
+      if (redress.complaint_url) lines.push(`COMPLAINTS: ${redress.complaint_url}`);
+      if (redress.appeal_process) lines.push(`APPEALS: ${redress.appeal_process}`);
+      if (redress.ombudsman) lines.push(`OMBUDSMAN: ${redress.ombudsman}`);
+    }
 
-  const handoff = manifest.handoff as Record<string, unknown> | undefined;
-  if (handoff) {
-    if (handoff.escalation_phone) lines.push(`PHONE: ${handoff.escalation_phone}`);
-    if (handoff.opening_hours) lines.push(`HOURS: ${handoff.opening_hours}`);
-  }
+    const handoff = manifest.handoff as Record<string, unknown> | undefined;
+    if (handoff) {
+      if (handoff.escalation_phone) lines.push(`PHONE: ${handoff.escalation_phone}`);
+      if (handoff.opening_hours) lines.push(`HOURS: ${handoff.opening_hours}`);
+    }
 
-  const inputSchema = manifest.input_schema as Record<string, unknown> | undefined;
-  if (inputSchema?.properties) {
-    const props = Object.keys(inputSchema.properties as Record<string, unknown>);
-    lines.push(`INPUTS REQUIRED: ${props.join(", ")}`);
+    const inputSchema = manifest.input_schema as Record<string, unknown> | undefined;
+    if (inputSchema?.properties) {
+      const props = Object.keys(inputSchema.properties as Record<string, unknown>);
+      lines.push(`INPUTS REQUIRED: ${props.join(", ")}`);
+    }
   }
 
   lines.push("");
@@ -756,9 +809,15 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     // No scenario file — generate prompt from manifest for dynamic/new services
     const serviceId = resolveServiceId(scenario);
     const manifest = await loadManifest(serviceId);
-    scenarioPrompt = manifest
-      ? generateScenarioPrompt(manifest)
-      : `You are helping a citizen with a government service related to: ${scenario}. Answer their questions helpfully.`;
+    if (manifest) {
+      scenarioPrompt = generateScenarioPrompt(manifest, serviceId);
+    } else {
+      // Try graph manifest via unified lookup
+      const graphManifest = getAnyManifest(serviceId);
+      scenarioPrompt = graphManifest
+        ? generateScenarioPrompt(graphManifest as unknown as Record<string, unknown>, serviceId)
+        : `You are helping a citizen with a government service related to: ${scenario}. Answer their questions helpfully.`;
+    }
   }
 
   const userPostcode = personaData.address?.postcode || "";

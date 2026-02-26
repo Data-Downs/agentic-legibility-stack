@@ -47,6 +47,19 @@ export interface CapabilityManifest {
 
   /** Whether this service is promoted on the citizen Dashboard */
   promoted?: boolean;
+
+  /** Data source: 'full' = hand-crafted artefacts, 'graph' = service graph */
+  source?: 'full' | 'graph';
+  /** Service type from the graph (benefit, obligation, registration, etc.) */
+  serviceType?: string;
+  /** Canonical GOV.UK URL */
+  govuk_url?: string;
+  /** One-line eligibility summary from the graph */
+  eligibility_summary?: string;
+  /** Agent should proactively surface this service based on life-event signals */
+  proactive?: boolean;
+  /** Only surface after confirming a prerequisite service */
+  gated?: boolean;
 }
 
 // ── Policy Ruleset ──

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAppStore, getConversations } from "@/lib/store";
 import { SERVICE_TITLES, DEMO_TODAY, getServiceTitle } from "@/lib/types";
-import type { ServiceType, PersonaData } from "@/lib/types";
+import type { ServiceType, PersonaData, LifeEventInfo, LifeEventService } from "@/lib/types";
 
 const serviceIcons: Record<string, React.ReactNode> = {
   driving: (
@@ -138,39 +138,23 @@ function getServiceDetail(service: string, data: PersonaData): string {
   return "";
 }
 
-// IDs of the original 3 built-in services
-const KNOWN_SERVICE_IDS = new Set([
-  "dvla.renew-driving-licence",
-  "dwp.apply-universal-credit",
-  "dwp.check-state-pension",
-]);
-
-interface DynamicService {
-  id: string;
-  name: string;
-  description: string;
-  department: string;
-  promoted?: boolean;
-}
-
 export function Dashboard() {
   const personaData = useAppStore((s) => s.personaData);
   const persona = useAppStore((s) => s.persona);
   const navigateTo = useAppStore((s) => s.navigateTo);
   const startNewConversation = useAppStore((s) => s.startNewConversation);
-  const [newServices, setNewServices] = useState<DynamicService[]>([]);
+  const [lifeEvents, setLifeEvents] = useState<LifeEventInfo[]>([]);
+  const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/services")
+    fetch("/api/life-events")
       .then((r) => r.json())
       .then((resp) => {
-        const list: DynamicService[] = resp.services || resp;
-        const dynamic = list.filter((s) => !KNOWN_SERVICE_IDS.has(s.id) && s.promoted);
-        setNewServices(dynamic);
+        if (resp.lifeEvents) {
+          setLifeEvents(resp.lifeEvents);
+        }
       })
-      .catch(() => {
-        // Silently fail — new services section just won't appear
-      });
+      .catch(() => {});
   }, []);
 
   if (!personaData) return null;
@@ -180,6 +164,11 @@ export function Dashboard() {
   const upcomingDates = getUpcomingDates(personaData);
   const credentials = getCredentials(personaData);
   const recentConversations = persona ? getConversations(persona).slice(0, 3) : [];
+
+  function handleStartGraphService(svc: LifeEventService) {
+    startNewConversation(svc.id as ServiceType);
+    navigateTo("chat", svc.id as ServiceType);
+  }
 
   return (
     <div className="max-w-lg mx-auto">
@@ -250,7 +239,7 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Service cards */}
+      {/* Quick-access service cards (backward compatible) */}
       <h3 className="font-bold text-sm text-govuk-dark-grey uppercase tracking-wide mb-3">Services</h3>
       <div className="flex flex-col gap-3 mb-6">
         {services.map((service) => (
@@ -288,36 +277,90 @@ export function Dashboard() {
         ))}
       </div>
 
-      {/* New Government Services — dynamically discovered */}
-      {newServices.length > 0 && (
+      {/* Life events discovery */}
+      {lifeEvents.length > 0 && (
         <div className="mb-6">
-          <h3 className="font-bold text-sm text-govuk-dark-grey uppercase tracking-wide mb-3">New services</h3>
-          <div className="flex flex-col gap-3">
-            {newServices.map((svc) => (
-              <button
-                key={svc.id}
-                onClick={() => {
-                  startNewConversation(svc.id as ServiceType);
-                  navigateTo("chat", svc.id as ServiceType);
-                }}
-                className="w-full text-left bg-white border border-govuk-mid-grey rounded-xl overflow-hidden hover:border-govuk-blue hover:shadow-sm transition-all"
-              >
-                <div className="border-l-4 border-[#00703c] p-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-[#00703c] text-white px-1.5 py-0.5 rounded">
-                      New
-                    </span>
-                    <span className="text-xs text-govuk-dark-grey">{svc.department}</span>
+          <h3 className="font-bold text-sm text-govuk-dark-grey uppercase tracking-wide mb-3">Life events</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {lifeEvents.map((le) => (
+              <div key={le.id}>
+                <button
+                  onClick={() => setExpandedEvent(expandedEvent === le.id ? null : le.id)}
+                  className={`w-full text-left p-3 rounded-xl border transition-all ${
+                    expandedEvent === le.id
+                      ? "border-govuk-blue bg-blue-50 shadow-sm"
+                      : "border-govuk-mid-grey bg-white hover:border-govuk-blue hover:shadow-sm"
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="text-lg leading-none mt-0.5">{le.icon}</span>
+                    <div className="min-w-0">
+                      <strong className="block text-sm text-govuk-black leading-tight">{le.name}</strong>
+                      <span className="text-xs text-govuk-dark-grey">
+                        {le.totalServiceCount} service{le.totalServiceCount !== 1 ? "s" : ""}
+                      </span>
+                    </div>
                   </div>
-                  <strong className="block text-govuk-black mb-1">{getServiceTitle(svc.id, svc.name)}</strong>
-                  <p className="text-sm text-govuk-dark-grey mb-2 line-clamp-2">{svc.description}</p>
-                  <span className="text-sm font-medium text-[#00703c]">
-                    Find out if you&apos;re eligible &rarr;
-                  </span>
-                </div>
-              </button>
+                </button>
+              </div>
             ))}
           </div>
+
+          {/* Expanded life event detail */}
+          {expandedEvent && (() => {
+            const le = lifeEvents.find((e) => e.id === expandedEvent);
+            if (!le) return null;
+            return (
+              <div className="mt-3 bg-white border border-govuk-blue rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h4 className="font-bold text-govuk-black">{le.icon} {le.name}</h4>
+                    <p className="text-sm text-govuk-dark-grey">{le.desc}</p>
+                  </div>
+                  <button
+                    onClick={() => setExpandedEvent(null)}
+                    className="text-govuk-dark-grey hover:text-govuk-black"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {le.services
+                    .filter((s) => !s.gated)
+                    .map((svc) => (
+                      <button
+                        key={svc.id}
+                        onClick={() => handleStartGraphService(svc)}
+                        className="w-full text-left p-3 rounded-lg border border-govuk-mid-grey hover:border-govuk-blue hover:shadow-sm transition-all"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0 flex-1">
+                            <strong className="block text-sm text-govuk-black">{svc.name}</strong>
+                            <span className="text-xs text-govuk-dark-grey">{svc.dept}</span>
+                          </div>
+                          <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ml-2 shrink-0 ${
+                            svc.serviceType === "benefit" ? "bg-green-100 text-green-800" :
+                            svc.serviceType === "obligation" ? "bg-amber-100 text-amber-800" :
+                            svc.serviceType === "grant" ? "bg-purple-100 text-purple-800" :
+                            "bg-blue-100 text-blue-800"
+                          }`}>
+                            {svc.serviceType}
+                          </span>
+                        </div>
+                        <p className="text-xs text-govuk-dark-grey mt-1 line-clamp-2">{svc.desc}</p>
+                      </button>
+                    ))}
+                  {le.services.filter((s) => s.gated).length > 0 && (
+                    <p className="text-xs text-govuk-dark-grey mt-1">
+                      + {le.services.filter((s) => s.gated).length} more service{le.services.filter((s) => s.gated).length !== 1 ? "s" : ""} unlocked after prerequisites
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -351,8 +394,8 @@ export function Dashboard() {
       <div className="bg-govuk-light-grey rounded-xl p-4">
         <h3 className="font-bold text-sm mb-2">Quick start</h3>
         <p className="text-sm text-govuk-dark-grey mb-3">
-          Tap a service card above to start chatting about that topic, or type a
-          question in the input bar below.
+          Tap a service card above to start chatting about that topic, or explore
+          life events to discover relevant government services.
         </p>
       </div>
     </div>

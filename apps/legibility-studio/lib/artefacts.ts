@@ -1,11 +1,12 @@
 /**
  * Server-side artefact loader for the Legibility Studio.
  * Reads service manifests, policies, state models, and consent models
- * from the shared data/services/ directory.
+ * from the shared data/services/ directory + service graph.
  */
 
 import { ArtefactStore } from "@als/legibility";
 import type { ServiceArtefacts } from "@als/legibility";
+import { ServiceGraphEngine, graphNodeToManifest } from "@als/service-graph";
 import path from "path";
 
 let store: ArtefactStore | null = null;
@@ -44,6 +45,54 @@ export async function getServiceArtefacts(serviceId: string): Promise<ServiceArt
 export async function listServices(): Promise<string[]> {
   const s = await getArtefactStore();
   return s.listServices();
+}
+
+/** Graph service summary for Studio display */
+export interface GraphServiceInfo {
+  id: string;
+  name: string;
+  department: string;
+  description: string;
+  serviceType: string;
+  govuk_url: string;
+  eligibility_summary: string;
+  proactive: boolean;
+  gated: boolean;
+}
+
+const graphEngine = new ServiceGraphEngine();
+
+/** List all graph services that don't already have full artefacts on disk */
+export function listGraphServices(fullServiceIds: string[]): GraphServiceInfo[] {
+  const fullSlugs = new Set(fullServiceIds.map((id) => {
+    const parts = id.split(".");
+    return parts.length > 1 ? parts.slice(1).join(".") : parts[0];
+  }));
+
+  return graphEngine.getServices()
+    .filter((node) => !fullSlugs.has(node.id))
+    .map((node) => ({
+      id: node.id,
+      name: node.name,
+      department: node.dept,
+      description: node.desc,
+      serviceType: node.serviceType,
+      govuk_url: node.govuk_url,
+      eligibility_summary: node.eligibility.summary,
+      proactive: node.proactive,
+      gated: node.gated,
+    }));
+}
+
+/** Get life events from the graph */
+export function listLifeEvents() {
+  return graphEngine.getLifeEvents();
+}
+
+/** Get unique department keys from graph */
+export function listDepartments(): string[] {
+  const depts = new Set(graphEngine.getServices().map((n) => n.deptKey));
+  return [...depts].sort();
 }
 
 /**

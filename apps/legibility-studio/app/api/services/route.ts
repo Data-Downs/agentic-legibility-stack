@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getArtefactStore, analyzeGaps, invalidateArtefactStore, getServicesDirectory } from "@/lib/artefacts";
+import { getArtefactStore, analyzeGaps, invalidateArtefactStore, getServicesDirectory, listGraphServices } from "@/lib/artefacts";
 import { generateServiceId } from "@/lib/slugify";
 
 /**
  * GET /api/services
- * Returns all registered services with their artefact completeness.
+ * Returns all registered services: full artefact services + graph services.
  */
 export async function GET() {
   try {
     const store = await getArtefactStore();
     const serviceIds = store.listServices();
 
-    const services = serviceIds.map((id) => {
+    const fullServices = serviceIds.map((id) => {
       const artefacts = store.get(id)!;
       const gaps = analyzeGaps(artefacts);
       const present = gaps.filter((g) => g.status === "present").length;
@@ -28,8 +28,28 @@ export async function GET() {
         promoted: !!artefacts.manifest.promoted,
         completeness: Math.round((present / total) * 100),
         gapCount: total - present,
+        source: "full" as const,
       };
     });
+
+    // Graph services that don't have full artefacts on disk
+    const graphServices = listGraphServices(serviceIds).map((gs) => ({
+      id: gs.id,
+      name: gs.name,
+      department: gs.department,
+      description: gs.description,
+      hasPolicy: false,
+      hasStateModel: false,
+      hasConsent: false,
+      promoted: false,
+      completeness: 0,
+      gapCount: 0,
+      source: "graph" as const,
+      serviceType: gs.serviceType,
+      govuk_url: gs.govuk_url,
+    }));
+
+    const services = [...fullServices, ...graphServices];
 
     return NextResponse.json({ services });
   } catch (error) {
