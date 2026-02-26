@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS inferred_data (
   source TEXT NOT NULL DEFAULT 'conversation',
   session_id TEXT,
   extracted_from TEXT,
+  mentions INTEGER NOT NULL DEFAULT 1,
+  superseded_by TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -91,6 +93,14 @@ async function ensureInit(): Promise<void> {
       // On D1, tables are created by migrations. On SQLite, create inline.
       if (!(adapter instanceof D1Adapter)) {
         await adapter.exec(INIT_SQL);
+
+        // Migration: add mentions + superseded_by columns for existing DBs
+        try {
+          await adapter.run("ALTER TABLE inferred_data ADD COLUMN mentions INTEGER NOT NULL DEFAULT 1");
+        } catch { /* column already exists */ }
+        try {
+          await adapter.run("ALTER TABLE inferred_data ADD COLUMN superseded_by TEXT");
+        } catch { /* column already exists */ }
       }
 
       submittedStore = new SubmittedStore(adapter);

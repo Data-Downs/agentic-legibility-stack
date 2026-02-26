@@ -817,7 +817,28 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     systemPrompt += policyContext;
   }
 
-  // Personal data extraction prompt
+  // Personal data extraction prompt — includes existing facts for dedup
+  let factsAlreadyKnown = "";
+  let unresolvedContradictions = "";
+  try {
+    const inferredStoreForPrompt = await getInferredStore();
+    const allFacts = await inferredStoreForPrompt.getAll(persona);
+    const activeFacts = allFacts.filter(f => !f.supersededBy).slice(0, 30);
+    if (activeFacts.length > 0) {
+      factsAlreadyKnown = "\n\nFACTS ALREADY KNOWN (from previous chat):\n" +
+        activeFacts.map(f => `- ${f.fieldKey}: ${JSON.stringify(f.fieldValue)} (confidence: ${f.confidence}, mentions: ${f.mentions})`).join("\n") +
+        "\n\nIMPORTANT: Use the EXACT key names listed above when re-referencing these facts. Do NOT re-extract facts that have the same key AND the same value as above.";
+    }
+    const contradictions = await inferredStoreForPrompt.getContradictions(persona);
+    if (contradictions.length > 0) {
+      unresolvedContradictions = "\n\nUNRESOLVED CONTRADICTIONS:\n" +
+        contradictions.map(c => `- "${c.old.fieldKey}": was "${JSON.stringify(c.old.fieldValue)}", now "${JSON.stringify(c.new.fieldValue)}"`).join("\n") +
+        "\n\nIMPORTANT: Ask the user to clarify which value is correct for the contradictions above.";
+    }
+  } catch (err) {
+    console.warn("Failed to load existing facts for prompt:", err);
+  }
+
   systemPrompt += `\n\n---\n\nPERSONAL DATA EXTRACTION:
 When the user reveals personal facts in conversation, include an "extractedFacts" array in your JSON block.
 Rules:
@@ -830,7 +851,7 @@ Rules:
 Example:
 "extractedFacts": [
   { "key": "number_of_daughters", "value": 2, "confidence": "high", "source_snippet": "I have 2 daughters" }
-]`;
+]${factsAlreadyKnown}${unresolvedContradictions}`;
 
 
   // ── State Model Journey (JSON mode: inline, MCP mode: via tools) ──
@@ -1012,13 +1033,13 @@ Example:
     conversationTitle = structuredOutput.title;
   }
 
-  // ── Store extracted facts (Tier 3) ──
+  // ── Store extracted facts (Tier 3) with dedup / contradiction detection ──
   if (structuredOutput?.extractedFacts && structuredOutput.extractedFacts.length > 0) {
     try {
       const inferredStoreInstance = await getInferredStore();
       const sessionId = `session_${Date.now()}`;
       for (const fact of structuredOutput.extractedFacts) {
-        await inferredStoreInstance.store(persona, {
+        const result = await inferredStoreInstance.storeOrMerge(persona, {
           fieldKey: fact.key,
           fieldValue: fact.value,
           confidence: fact.confidence,
@@ -1026,8 +1047,9 @@ Example:
           sessionId,
           extractedFrom: fact.source_snippet,
         });
+        console.log(`   Fact "${fact.key}": ${result.outcome}${result.outcome === "contradiction" ? ` (was: ${JSON.stringify(result.existing?.fieldValue)}, now: ${JSON.stringify(fact.value)})` : ""}`);
       }
-      console.log(`   Extracted ${structuredOutput.extractedFacts.length} personal fact(s)`);
+      console.log(`   Processed ${structuredOutput.extractedFacts.length} personal fact(s)`);
     } catch (err) {
       console.warn("Failed to store extracted facts:", err);
     }

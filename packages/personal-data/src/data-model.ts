@@ -104,6 +104,8 @@ export interface InferredFact {
   source: string;
   sessionId?: string;
   extractedFrom?: string;
+  mentions: number;
+  supersededBy?: string;
   createdAt: string;
   updatedAt: string;
 }
