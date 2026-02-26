@@ -8,7 +8,7 @@ export async function OPTIONS() {
 
 /**
  * POST /api/v1/seed
- * Triggers a re-seed of the service store from graph data + filesystem.
+ * Triggers a re-seed of the service store from graph data + embedded full services.
  * Body: { clear?: boolean }
  */
 export async function POST(request: Request) {
@@ -17,20 +17,7 @@ export async function POST(request: Request) {
     const clear = body.clear ?? true;
 
     const adapter = await getServiceStoreAdapter();
-
-    let servicesDir: string | null = null;
-    try {
-      const path = await import("path");
-      servicesDir = path.join(process.cwd(), "..", "..", "data", "services");
-      const fs = await import("fs");
-      if (!fs.existsSync(servicesDir)) {
-        servicesDir = null;
-      }
-    } catch {
-      // No filesystem (Cloudflare)
-    }
-
-    const result = await seedServiceStore(adapter, { servicesDir, clear });
+    const result = await seedServiceStore(adapter, { clear });
 
     // Invalidate singleton so next request picks up fresh data
     invalidateServiceStore();

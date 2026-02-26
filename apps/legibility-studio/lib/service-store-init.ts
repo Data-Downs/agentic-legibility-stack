@@ -67,22 +67,7 @@ async function ensureInit(): Promise<void> {
       const isEmpty = await artefactStore.isEmpty();
       if (isEmpty) {
         console.log("[ServiceStore] Empty DB detected — auto-seeding...");
-        let servicesDir: string | null = null;
-        try {
-          const path = await import("path");
-          servicesDir = path.join(process.cwd(), "..", "..", "data", "services");
-          const fs = await import("fs");
-          if (!fs.existsSync(servicesDir)) {
-            servicesDir = null;
-          }
-        } catch {
-          // No filesystem (Cloudflare) — seed graph-only
-        }
-
-        const result = await seedServiceStore(adapter, {
-          servicesDir,
-          clear: false,
-        });
+        const result = await seedServiceStore(adapter, { clear: false });
         console.log(
           `[ServiceStore] Seeded: ${result.graphServices} graph + ${result.fullServices} full services, ${result.edges} edges, ${result.lifeEvents} life events`
         );

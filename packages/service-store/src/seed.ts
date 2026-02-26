@@ -1,6 +1,9 @@
 /**
  * Seed the service store from @als/service-graph constants and
- * filesystem-based service artefacts (data/services/).
+ * embedded full-artefact service data.
+ *
+ * Full services are now embedded in full-services.ts (no filesystem dependency)
+ * so seeding works on both local dev and Cloudflare Workers.
  */
 
 import type { DatabaseAdapter } from "@als/evidence";
@@ -12,10 +15,11 @@ import {
 } from "@als/service-graph";
 import { ServiceArtefactStore } from "./service-store";
 import { ServiceGraphStore } from "./graph-store";
+import { FULL_SERVICES } from "./full-services";
 
 export interface SeedOptions {
-  /** Path to data/services/ directory — null to skip filesystem services */
-  servicesDir: string | null;
+  /** @deprecated — no longer used. Full services are now embedded. */
+  servicesDir?: string | null;
   /** If true, clear existing data before seeding */
   clear?: boolean;
 }
@@ -30,7 +34,9 @@ export interface SeedResult {
 /**
  * Seed the service store with data from:
  * 1. @als/service-graph (108 graph services, 98 edges, 16 life events)
- * 2. Filesystem data/services/ (4 full-artefact services) — optional
+ * 2. Embedded full-artefact services (4 services with policy/stateModel/consent)
+ *
+ * Full services that have a matching graph node ID replace the graph-only entry.
  */
 export async function seedServiceStore(
   db: DatabaseAdapter,
@@ -50,11 +56,19 @@ export async function seedServiceStore(
   let graphCount = 0;
   let fullCount = 0;
 
-  // 1. Seed graph services
+  // Build set of graph IDs that will be replaced by full services
+  const replacedGraphIds = new Set<string>();
+  for (const fs of FULL_SERVICES) {
+    if (fs.graphId) replacedGraphIds.add(fs.graphId);
+  }
+
+  // 1. Seed graph services (skip those that will be replaced by full services)
   const nodes = engine.getServices();
   const graphStatements: Array<{ sql: string; params: unknown[] }> = [];
 
   for (const node of nodes) {
+    if (replacedGraphIds.has(node.id)) continue; // Will be seeded as full service
+
     const manifest = graphNodeToManifest(node);
     graphStatements.push({
       sql: `INSERT OR IGNORE INTO services (id, name, department, department_key, description, source, service_type, govuk_url, eligibility_summary, promoted, proactive, gated, manifest_json)
@@ -78,65 +92,36 @@ export async function seedServiceStore(
 
   await db.batch(graphStatements);
 
-  // 2. Seed full-artefact services from filesystem (if available)
-  if (options.servicesDir) {
-    try {
-      const fs = await import("fs");
-      const path = await import("path");
-      const entries = fs.readdirSync(options.servicesDir, { withFileTypes: true });
+  // 2. Seed full-artefact services from embedded data
+  for (const fullSvc of FULL_SERVICES) {
+    // Use graph ID if available, otherwise use manifest ID
+    const serviceId = fullSvc.graphId || (fullSvc.manifest.id as string) || fullSvc.dirName;
 
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
+    // Delete any existing entry (graph or stale full) with this ID
+    await db.run("DELETE FROM services WHERE id = ?", serviceId);
 
-        const dir = path.join(options.servicesDir, entry.name);
-        const manifestPath = path.join(dir, "manifest.json");
-
-        if (!fs.existsSync(manifestPath)) continue;
-
-        const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
-        const serviceId = manifest.id || entry.name;
-
-        let policy = null;
-        let stateModel = null;
-        let consent = null;
-
-        const policyPath = path.join(dir, "policy.json");
-        if (fs.existsSync(policyPath)) {
-          policy = JSON.parse(fs.readFileSync(policyPath, "utf-8"));
-        }
-
-        const stateModelPath = path.join(dir, "state-model.json");
-        if (fs.existsSync(stateModelPath)) {
-          stateModel = JSON.parse(fs.readFileSync(stateModelPath, "utf-8"));
-        }
-
-        const consentPath = path.join(dir, "consent.json");
-        if (fs.existsSync(consentPath)) {
-          consent = JSON.parse(fs.readFileSync(consentPath, "utf-8"));
-        }
-
-        // Upsert: replace graph entry with full artefact entry
-        await db.run("DELETE FROM services WHERE id = ?", serviceId);
-        await artefactStore.createService({
-          id: serviceId,
-          manifest: {
-            ...manifest,
-            source: "full",
-          },
-          policy,
-          stateModel,
-          consent,
-          source: "full",
-          departmentKey: manifest.department
-            ? manifest.department.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
-            : "other",
-        });
-        fullCount++;
-      }
-    } catch (err) {
-      // Filesystem not available (e.g. Cloudflare Workers) — skip
-      console.warn("[ServiceStore] Filesystem seed skipped:", (err as Error).message);
+    // Also delete any entry with the manifest ID if different from serviceId
+    const manifestId = fullSvc.manifest.id as string;
+    if (manifestId && manifestId !== serviceId) {
+      await db.run("DELETE FROM services WHERE id = ?", manifestId);
     }
+
+    await artefactStore.createService({
+      id: serviceId,
+      manifest: {
+        ...fullSvc.manifest,
+        source: "full",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
+      policy: fullSvc.policy,
+      stateModel: fullSvc.stateModel,
+      consent: fullSvc.consent,
+      source: "full",
+      departmentKey: fullSvc.manifest.department
+        ? (fullSvc.manifest.department as string).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+        : "other",
+    });
+    fullCount++;
   }
 
   // 3. Seed edges
