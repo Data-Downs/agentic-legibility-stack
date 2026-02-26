@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSubmittedStore, getInferredStore, getServiceAccessStore } from "@/lib/personal-data-store";
 import { getPersonaData } from "@/lib/service-data";
-import { WalletSimulator } from "@als/identity";
+import { WalletSimulator, type WalletCredential } from "@als/identity";
 import { VerifiedStore } from "@als/personal-data";
 
 // Wallet/verified store for Tier 1
@@ -45,7 +45,7 @@ export async function GET(
       );
       if (testUser) {
         const wallet = new WalletSimulator();
-        const creds = testUser.credentials as Array<Record<string, unknown>> | undefined;
+        const creds = testUser.credentials as WalletCredential[] | undefined;
         if (creds && creds.length > 0) {
           wallet.loadCredentials(testUser.id as string, creds);
         }

@@ -5,7 +5,6 @@ import { useAppStore } from "@/lib/store";
 import {
   PERSONA_COLORS,
   PERSONA_INITIALS,
-  SERVICE_TITLES,
 } from "@/lib/types";
 
 export function AppHeader() {
@@ -16,6 +15,7 @@ export function AppHeader() {
   const serviceMode = useAppStore((s) => s.serviceMode);
   const currentView = useAppStore((s) => s.currentView);
   const currentService = useAppStore((s) => s.currentService);
+  const serviceName = useAppStore((s) => s.serviceName);
   const navigateBack = useAppStore((s) => s.navigateBack);
   const setSettingsPaneOpen = useAppStore((s) => s.setSettingsPaneOpen);
   const setPersonaSelectorOpen = useAppStore((s) => s.setPersonaSelectorOpen);
@@ -51,9 +51,9 @@ export function AppHeader() {
       case "dashboard":
         return "Your services";
       case "detail":
-        return SERVICE_TITLES[currentService || ""] || "Details";
+        return serviceName || "Details";
       case "chat":
-        return SERVICE_TITLES[currentService || ""] || "Chat";
+        return serviceName || "Chat";
       case "tasks":
         return "To do";
       default:

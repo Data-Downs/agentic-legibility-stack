@@ -173,7 +173,6 @@ export interface StoredTask {
 export type AgentType = "dot" | "max";
 export type ServiceMode = "json" | "mcp";
 export type ServiceType = "driving" | "benefits" | "family" | (string & {});
-export type ScenarioType = "driving" | "benefits" | "parenting";
 export type ViewType =
   | "persona-picker"
   | "dashboard"
@@ -220,18 +219,6 @@ export const PERSONA_INITIALS: Record<string, string> = {
   priya: "P",
 };
 
-export const SERVICE_TITLES: Record<string, string> = {
-  driving: "Driving",
-  benefits: "Benefits & money",
-  family: "Family",
-};
-
-export const SERVICE_TO_SCENARIO: Record<string, ScenarioType> = {
-  driving: "driving",
-  benefits: "benefits",
-  family: "parenting",
-};
-
 /** A life event from the service graph */
 export interface LifeEventInfo {
   id: string;
@@ -263,11 +250,6 @@ export const PERSONA_DEFAULT_SERVICE: Record<string, ServiceType> = {
   margaret: "family",
   priya: "benefits",
 };
-
-/** Get a display title for a service — checks known titles first, falls back to manifest name */
-export function getServiceTitle(serviceKey: string, manifestName?: string): string {
-  return SERVICE_TITLES[serviceKey] || manifestName || serviceKey;
-}
 
 // Simulated "today" for demo — makes upcoming dates interesting
 export const DEMO_TODAY = new Date("2026-02-15");

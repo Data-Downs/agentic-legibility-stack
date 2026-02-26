@@ -12,7 +12,7 @@ import type {
   UCStateInfo,
   ConsentGrant,
 } from "./types";
-import { SERVICE_TO_SCENARIO, PERSONA_DEFAULT_SERVICE } from "./types";
+import { PERSONA_DEFAULT_SERVICE } from "./types";
 
 interface AppStore {
   // Identity
@@ -25,7 +25,8 @@ interface AppStore {
   // Navigation
   currentView: ViewType;
   currentService: ServiceType | null;
-  viewHistory: Array<{ view: ViewType; service: ServiceType | null }>;
+  serviceName: string | null;
+  viewHistory: Array<{ view: ViewType; service: ServiceType | null; serviceName: string | null }>;
 
   // Chat
   conversationHistory: ChatMessage[];
@@ -70,10 +71,10 @@ interface AppStore {
   setPersona: (id: string) => Promise<void>;
   setAgent: (agent: AgentType) => void;
   setServiceMode: (mode: ServiceMode) => void;
-  navigateTo: (view: ViewType, service?: ServiceType | null) => void;
+  navigateTo: (view: ViewType, service?: ServiceType | null, serviceName?: string | null) => void;
   navigateBack: () => void;
   sendMessage: (text: string) => Promise<void>;
-  startNewConversation: (service?: ServiceType | null) => void;
+  startNewConversation: (service?: ServiceType | null, serviceName?: string | null) => void;
   loadConversation: (conversationId: string) => void;
   setReasoning: (reasoning: string) => void;
   clearReasoningBadge: () => void;
@@ -151,6 +152,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   enrichedData: null,
   currentView: "persona-picker",
   currentService: null,
+  serviceName: null,
   viewHistory: [],
   conversationHistory: [],
   activeConversationId: null,
@@ -181,6 +183,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       currentReasoning: "",
       hasNewReasoning: false,
       currentService: null,
+      serviceName: null,
       viewHistory: [],
       activeConversationId: null,
       activeConversation: null,
@@ -228,19 +231,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
-  navigateTo: (view: ViewType, service?: ServiceType | null) => {
+  navigateTo: (view: ViewType, service?: ServiceType | null, serviceName?: string | null) => {
     const state = get();
     if (state.currentView !== view) {
       set((s) => ({
         viewHistory: [
           ...s.viewHistory,
-          { view: s.currentView, service: s.currentService },
+          { view: s.currentView, service: s.currentService, serviceName: s.serviceName },
         ],
       }));
     }
     set({
       currentView: view,
       currentService: service !== undefined ? service : get().currentService,
+      serviceName: serviceName !== undefined ? serviceName : get().serviceName,
     });
   },
 
@@ -252,11 +256,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
         viewHistory: state.viewHistory.slice(0, -1),
         currentView: prev.view,
         currentService: prev.view === "dashboard" ? null : prev.service,
+        serviceName: prev.view === "dashboard" ? null : prev.serviceName,
       });
     }
   },
 
-  startNewConversation: (service?: ServiceType | null) => {
+  startNewConversation: (service?: ServiceType | null, serviceName?: string | null) => {
     set({
       conversationHistory: [],
       activeConversationId: null,
@@ -275,6 +280,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     });
     if (service !== undefined) {
       set({ currentService: service });
+    }
+    if (serviceName !== undefined) {
+      set({ serviceName: serviceName });
     }
   },
 
@@ -299,7 +307,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (state.ucState && TERMINAL_STATES.has(state.ucState)) return;
 
     const service = state.currentService || PERSONA_DEFAULT_SERVICE[state.persona] || "driving";
-    const scenario = SERVICE_TO_SCENARIO[service] || service;
+    const LEGACY_SCENARIO_MAP: Record<string, string> = {
+      driving: "driving",
+      benefits: "benefits",
+      family: "parenting",
+    };
+    const scenario = LEGACY_SCENARIO_MAP[service] || service;
     const isNewConversation = state.conversationHistory.length === 0;
 
     // Add user message to history

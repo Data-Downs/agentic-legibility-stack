@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getArtefactStore, analyzeGaps, invalidateArtefactStore, getServicesDirectory, listGraphServices } from "@/lib/artefacts";
+import { getArtefactStore, analyzeGaps, invalidateArtefactStore, getServicesDirectory, listGraphServices, listLifeEvents } from "@/lib/artefacts";
 import { generateServiceId } from "@/lib/slugify";
 
 /**
@@ -50,8 +50,9 @@ export async function GET() {
     }));
 
     const services = [...fullServices, ...graphServices];
+    const lifeEvents = listLifeEvents();
 
-    return NextResponse.json({ services });
+    return NextResponse.json({ services, lifeEvents });
   } catch (error) {
     console.error("Error loading services:", error);
     return NextResponse.json({ error: "Failed to load services" }, { status: 500 });

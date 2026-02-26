@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  devIndicators: false,
+  devIndicators: false as unknown as NextConfig["devIndicators"],
   transpilePackages: [
     "@als/schemas",
     "@als/runtime",

@@ -84,9 +84,14 @@ export function listGraphServices(fullServiceIds: string[]): GraphServiceInfo[] 
     }));
 }
 
-/** Get life events from the graph */
+/** Get life events from the graph with their associated service IDs */
 export function listLifeEvents() {
-  return graphEngine.getLifeEvents();
+  return graphEngine.getLifeEvents().map((le) => ({
+    id: le.id,
+    name: le.name,
+    icon: le.icon,
+    serviceIds: graphEngine.getLifeEventServices(le.id).map((n) => n.id),
+  }));
 }
 
 /** Get unique department keys from graph */

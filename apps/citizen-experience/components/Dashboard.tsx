@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAppStore, getConversations } from "@/lib/store";
-import { SERVICE_TITLES, DEMO_TODAY, getServiceTitle } from "@/lib/types";
+import { DEMO_TODAY } from "@/lib/types";
 import type { ServiceType, PersonaData, LifeEventInfo, LifeEventService } from "@/lib/types";
 
 const serviceIcons: Record<string, React.ReactNode> = {
@@ -144,13 +144,17 @@ export function Dashboard() {
   const lastName = personaData.primaryContact?.lastName || (raw.name as string)?.split(" ").slice(1).join(" ") || "";
   const niNumber = personaData.primaryContact?.nationalInsuranceNumber || (raw.national_insurance_number as string) || "";
   const dob = personaData.primaryContact?.dateOfBirth || (raw.date_of_birth as string) || "";
-  const services: ServiceType[] = ["driving", "benefits", "family"];
+  const QUICK_ACCESS: Array<{ key: ServiceType; label: string }> = [
+    { key: "driving", label: "Driving" },
+    { key: "benefits", label: "Benefits & money" },
+    { key: "family", label: "Family" },
+  ];
   const upcomingDates = getUpcomingDates(personaData);
   const recentConversations = persona ? getConversations(persona).slice(0, 3) : [];
 
   function handleStartGraphService(svc: LifeEventService) {
-    startNewConversation(svc.id as ServiceType);
-    navigateTo("chat", svc.id as ServiceType);
+    startNewConversation(svc.id as ServiceType, svc.name);
+    navigateTo("chat", svc.id as ServiceType, svc.name);
   }
 
   return (
@@ -210,24 +214,24 @@ export function Dashboard() {
       {/* Quick-access service cards (backward compatible) */}
       <h3 className="font-bold text-sm text-govuk-dark-grey uppercase tracking-wide mb-3">Services</h3>
       <div className="flex flex-col gap-3 mb-6">
-        {services.map((service) => (
+        {QUICK_ACCESS.map(({ key, label }) => (
           <button
-            key={service}
+            key={key}
             onClick={() => {
-              startNewConversation(service);
-              navigateTo("chat", service);
+              startNewConversation(key, label);
+              navigateTo("chat", key, label);
             }}
             className="flex items-center gap-4 w-full p-4 bg-white border border-govuk-mid-grey rounded-xl hover:border-govuk-blue hover:shadow-sm transition-all text-left"
           >
             <div className="w-10 h-10 rounded-lg bg-govuk-light-grey flex items-center justify-center text-govuk-dark-grey shrink-0">
-              {serviceIcons[service]}
+              {serviceIcons[key]}
             </div>
             <div className="flex-1 min-w-0">
               <strong className="block text-govuk-black">
-                {SERVICE_TITLES[service]}
+                {label}
               </strong>
               <span className="text-sm text-govuk-dark-grey">
-                {getServiceDetail(service, personaData)}
+                {getServiceDetail(key, personaData)}
               </span>
             </div>
             <svg

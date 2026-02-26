@@ -21,6 +21,13 @@ interface Service {
   govuk_url?: string;
 }
 
+interface LifeEventFilter {
+  id: string;
+  name: string;
+  icon: string;
+  serviceIds: string[];
+}
+
 interface DashboardData {
   totalCases: number;
   activeCases: number;
@@ -156,6 +163,8 @@ export default function ServicesPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<"all" | "full" | "graph">("all");
   const [deptFilter, setDeptFilter] = useState<string>("all");
+  const [lifeEventFilter, setLifeEventFilter] = useState<string>("all");
+  const [lifeEvents, setLifeEvents] = useState<LifeEventFilter[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -164,6 +173,7 @@ export default function ServicesPage() {
       fetch(`${process.env.NEXT_PUBLIC_CITIZEN_API || "http://localhost:3100"}/api/ledger/dashboard`).then((r) => r.json()).catch(() => null),
     ]).then(([servicesData, dashboardData]) => {
       setServices(servicesData.services || []);
+      setLifeEvents(servicesData.lifeEvents || []);
       if (dashboardData && !dashboardData.error && dashboardData.totalCases > 0) {
         setDashboard(dashboardData);
       }
@@ -184,6 +194,13 @@ export default function ServicesPage() {
     if (deptFilter !== "all") {
       filtered = filtered.filter((s) => s.department === deptFilter);
     }
+    if (lifeEventFilter !== "all") {
+      const le = lifeEvents.find((e) => e.id === lifeEventFilter);
+      if (le) {
+        const ids = new Set(le.serviceIds);
+        filtered = filtered.filter((s) => ids.has(s.id));
+      }
+    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -194,7 +211,7 @@ export default function ServicesPage() {
       );
     }
     return filtered;
-  }, [services, sourceFilter, deptFilter, searchQuery]);
+  }, [services, sourceFilter, deptFilter, lifeEventFilter, lifeEvents, searchQuery]);
 
   const fullCount = services.filter((s) => (s.source || "full") === "full").length;
   const graphCount = services.filter((s) => s.source === "graph").length;
@@ -273,6 +290,20 @@ export default function ServicesPage() {
             <option key={d} value={d}>{d}</option>
           ))}
         </select>
+
+        {/* Life event filter */}
+        {lifeEvents.length > 0 && (
+          <select
+            value={lifeEventFilter}
+            onChange={(e) => setLifeEventFilter(e.target.value)}
+            className="text-sm border border-gray-300 rounded-lg px-2.5 py-1"
+          >
+            <option value="all">All life events</option>
+            {lifeEvents.map((le) => (
+              <option key={le.id} value={le.id}>{le.icon} {le.name} ({le.serviceIds.length})</option>
+            ))}
+          </select>
+        )}
 
         {/* Search */}
         <input

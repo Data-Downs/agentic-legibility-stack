@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback, KeyboardEvent } from "react";
 import { useAppStore } from "@/lib/store";
-import { SERVICE_TITLES } from "@/lib/types";
 
 export function MessageInput() {
   const [text, setText] = useState("");
@@ -11,6 +10,7 @@ export function MessageInput() {
   const isLoading = useAppStore((s) => s.isLoading);
   const currentView = useAppStore((s) => s.currentView);
   const currentService = useAppStore((s) => s.currentService);
+  const serviceName = useAppStore((s) => s.serviceName);
   const navigateTo = useAppStore((s) => s.navigateTo);
   const startNewConversation = useAppStore((s) => s.startNewConversation);
 
@@ -18,7 +18,7 @@ export function MessageInput() {
     currentView === "chat"
       ? "Message..."
       : currentView === "detail"
-        ? `Ask about ${(SERVICE_TITLES[currentService || ""] || "this service").toLowerCase()}...`
+        ? `Ask about ${(serviceName || "this service").toLowerCase()}...`
         : "Ask a question about your services...";
 
   const handleSubmit = useCallback(async () => {
