@@ -11,7 +11,7 @@ import { PolicyEvaluator, StateMachine } from "@als/legibility";
 import { getTraceEmitter, getReceiptGenerator } from "@/lib/evidence";
 import { getRegistry } from "@/lib/registry";
 import { extractStructuredOutput } from "@/lib/extract-structured-output";
-import { getServiceArtefact, getPersonaData, getPromptFile, getAnyManifest, getGraphNode } from "@/lib/service-data";
+import { getServiceArtefact, getPersonaData, getPersonaMapping, getPromptFile, getAnyManifest, getGraphNode } from "@/lib/service-data";
 import { getInferredStore, getServiceAccessStore, getSubmittedStore } from "@/lib/personal-data-store";
 
 // ── AnthropicAdapter — the ONLY Anthropic SDK usage ──
@@ -200,13 +200,14 @@ function extractEmploymentStatus(employment: Record<string, unknown> | undefined
 
 /** Build a policy context object for evaluation from persona data + test users */
 function buildPolicyContext(personaData: Record<string, unknown>): Record<string, unknown> {
+  // Support both old nested format (primaryContact.firstName) and flat test-user format (name, date_of_birth)
   const contact = personaData.primaryContact as Record<string, unknown> | undefined;
-  const dob = contact?.dateOfBirth as string | undefined;
+  const dob = (contact?.dateOfBirth as string) || (personaData.date_of_birth as string) || undefined;
   const address = personaData.address as Record<string, unknown> | undefined;
 
-  // Calculate age
-  let age = 0;
-  if (dob) {
+  // Calculate age — use pre-computed age if available, else compute from DOB
+  let age = (personaData.age as number) || 0;
+  if (!age && dob) {
     const birthDate = new Date(dob);
     const today = new Date();
     age = today.getFullYear() - birthDate.getFullYear();
@@ -216,16 +217,19 @@ function buildPolicyContext(personaData: Record<string, unknown>): Record<string
     }
   }
 
-  // Extract financial data
+  // Extract financial data — supports nested (financials.savingsAccount.balance) and flat (savings)
   const financials = personaData.financials as Record<string, unknown> | undefined;
-  let savings = 0;
-  if (financials?.savingsAccount) {
+  let savings = (personaData.savings as number) || 0;
+  if (!savings && financials?.savingsAccount) {
     savings = (financials.savingsAccount as Record<string, unknown>)?.balance as number || 0;
   }
 
-  // Extract employment status (handles nested-by-person structure)
+  // Extract employment status — supports nested (employment object) and flat (employment_status)
   const employment = personaData.employment as Record<string, unknown> | undefined;
-  const empStatus = extractEmploymentStatus(employment);
+  const empStatus = (personaData.employment_status as string) || extractEmploymentStatus(employment);
+
+  // NI number — supports nested (primaryContact.nationalInsuranceNumber) and flat (national_insurance_number)
+  const niNumber = (personaData.national_insurance_number as string) || (contact?.nationalInsuranceNumber as string) || undefined;
 
   // Derive health/mobility fields for services like Blue Badge
   const healthInfo = personaData.healthInfo as Record<string, unknown> | undefined;
@@ -242,15 +246,15 @@ function buildPolicyContext(personaData: Record<string, unknown>): Record<string
   return {
     // Explicit computed fields
     age,
-    jurisdiction: "England",
-    national_insurance_number: contact?.nationalInsuranceNumber,
-    driving_licence_number: personaData.vehicles ? "exists" : undefined,
+    jurisdiction: (personaData.jurisdiction as string) || "England",
+    national_insurance_number: niNumber,
+    driving_licence_number: personaData.vehicles ? "exists" : (personaData.credentials ? "exists" : undefined),
     savings,
-    bank_account: true,
-    self_employed: empStatus === "Self-employed",
+    bank_account: personaData.bank_account ?? true,
+    self_employed: empStatus === "Self-employed" || empStatus === "self-employed",
     employment_status: empStatus,
-    over_70: age >= 70,
-    no_fixed_address: false,
+    over_70: (personaData.over_70 as boolean) ?? age >= 70,
+    no_fixed_address: !address,
     licence_status: "valid",
     has_mobility_condition: hasMobilityCondition,
     has_health_conditions: conditions.length > 0,
@@ -613,20 +617,30 @@ function buildStateContext(
   }
 
   // Data availability analysis — show ACTUAL values so the LLM can present them
+  // Supports both old nested format (primaryContact.firstName) and flat test-user format (name, date_of_birth)
   const contact = personaData.primaryContact as Record<string, unknown> | undefined;
   const financials = personaData.financials as Record<string, unknown> | undefined;
   const employment = personaData.employment as Record<string, unknown> | undefined;
   const address = personaData.address as Record<string, unknown> | undefined;
-  const empStatus = extractEmploymentStatus(employment);
+
+  // Resolve fields from either format
+  const personaName = (personaData.name as string) || (contact?.firstName ? `${contact.firstName} ${contact.lastName}` : null);
+  const personaDob = (personaData.date_of_birth as string) || (contact?.dateOfBirth as string) || null;
+  const personaNI = (personaData.national_insurance_number as string) || (contact?.nationalInsuranceNumber as string) || null;
+  const personaSavings = (personaData.savings as number) ?? (financials?.savingsAccount ? ((financials.savingsAccount as Record<string, unknown>).balance as number) || 0 : null);
+  const personaEmployer = (personaData.employer as string) || null;
+  const empStatus = (personaData.employment_status as string) || extractEmploymentStatus(employment);
 
   ctx += `\nDATA ON FILE (from citizen's records — use these values, do not make up others):\n`;
-  ctx += `- Name: ${contact?.firstName ? `${contact.firstName} ${contact.lastName}` : "NEED TO ASK"}\n`;
-  ctx += `- DOB: ${contact?.dateOfBirth || "NEED TO ASK"}\n`;
-  ctx += `- NI Number: ${contact?.nationalInsuranceNumber || "NEED TO ASK"}\n`;
-  ctx += `- Address: ${address ? [address.line1, address.city, address.postcode].filter(Boolean).join(", ") : "NEED TO ASK"}\n`;
-  ctx += `- Employment status: ${empStatus !== "unknown" ? empStatus : "NEED TO ASK"}`;
+  ctx += `- Name: ${personaName || "NEED TO ASK"}\n`;
+  ctx += `- DOB: ${personaDob || "NEED TO ASK"}\n`;
+  ctx += `- NI Number: ${personaNI || "NEED TO ASK"}\n`;
+  ctx += `- Address: ${address ? [address.line_1 || address.line1, address.city, address.postcode].filter(Boolean).join(", ") : "NEED TO ASK"}\n`;
+  ctx += `- Employment status: ${empStatus && empStatus !== "unknown" ? empStatus : "NEED TO ASK"}`;
   // Add employment details if available
-  if (employment) {
+  if (personaEmployer) {
+    ctx += ` (employer: ${personaEmployer})`;
+  } else if (employment) {
     // Handle nested-by-person: {priya: {previousEmployer: ...}}
     for (const val of Object.values(employment)) {
       if (typeof val === "object" && val !== null) {
@@ -641,10 +655,10 @@ function buildStateContext(
     if (employment.businessName) ctx += ` (business: ${employment.businessName})`;
   }
   ctx += `\n`;
-  ctx += `- Savings: ${financials?.savingsAccount ? `£${((financials.savingsAccount as Record<string, unknown>).balance as number) || 0}` : "NEED TO ASK"}\n`;
+  ctx += `- Savings: ${personaSavings !== null ? `£${personaSavings}` : "NEED TO ASK"}\n`;
   ctx += `- Housing tenure: ${address?.housingStatus || "NEED TO ASK — citizen must provide"}\n`;
   const bankAccounts = (financials?.bankAccounts as Array<Record<string, unknown>>) || [];
-  ctx += `- Bank accounts: ${bankAccounts.length > 0 ? bankAccounts.map(a => `${a.bank || a.label} (****${(a.accountNumber as string || "").slice(-4)})`).join(", ") : "NEED TO ASK — citizen must provide"}\n`;
+  ctx += `- Bank accounts: ${bankAccounts.length > 0 ? bankAccounts.map(a => `${a.bank || a.label} (****${(a.accountNumber as string || "").slice(-4)})`).join(", ") : (personaData.bank_account ? "Yes (details not on file)" : "NEED TO ASK — citizen must provide")}\n`;
 
   // Consent grants needed
   if (consentModel) {
@@ -800,7 +814,17 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   // Load data and prompts
   const personaData = await loadPersonaData(persona);
   const agentPrompt = await loadFile(`data/prompts/${agent}-system.txt`);
-  const personaPrompt = await loadFile(`data/prompts/persona-${persona}.txt`);
+  // Resolve persona_mapping for prompt lookup (e.g. sarah-chen → emma-liam)
+  const personaPromptId = getPersonaMapping(persona);
+  let personaPrompt: string;
+  try {
+    personaPrompt = await loadFile(`data/prompts/persona-${personaPromptId}.txt`);
+  } catch {
+    // No persona-specific prompt — use a generic one
+    const personaData2 = getPersonaData(persona);
+    const name = (personaData2?.name as string) || persona;
+    personaPrompt = `You are communicating with ${name}. Be helpful, clear, and respectful.`;
+  }
   // Load scenario prompt — try file first, fall back to generating from manifest
   let scenarioPrompt: string;
   try {
@@ -1468,15 +1492,16 @@ Example:
     const registry = await getRegistry();
     const serviceManifest = serviceId ? registry.lookup(serviceId) : undefined;
 
-    const contact = personaData.primaryContact as Record<string, string>;
+    const contact = personaData.primaryContact as Record<string, string> | undefined;
+    const citizenName = (personaData.name as string) || (contact ? `${contact.firstName} ${contact.lastName}` : "Unknown");
     const handoffPackage = handoffManager.createPackage({
       reason: handoffCheck.reason!,
       description: handoffCheck.description!,
       agentAssessment: `Agent ${agent.toUpperCase()} detected handoff trigger during ${scenario} scenario.`,
       citizen: {
-        name: `${contact.firstName} ${contact.lastName}`,
-        phone: contact.phone,
-        email: contact.email,
+        name: citizenName,
+        phone: contact?.phone || "",
+        email: contact?.email || "",
       },
       service: serviceManifest,
       stepsCompleted: [`Chat conversation (${messages.length} messages)`],

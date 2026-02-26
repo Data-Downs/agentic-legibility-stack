@@ -35,6 +35,9 @@ import margaret from "../data/margaret.json";
 import priya from "../data/priya.json";
 import rajesh from "../data/rajesh.json";
 
+// ── Test users (the primary persona source) ──
+import testUsers from "../../../data/simulated/test-users.json";
+
 // ── Prompt files (bundled as string constants for Cloudflare) ──
 
 const PROMPT_FILES: Record<string, string> = {
@@ -531,6 +534,14 @@ const PERSONA_DATA: Record<string, Record<string, unknown>> = {
   rajesh: rajesh as unknown as Record<string, unknown>,
 };
 
+// Index test users by ID so getPersonaData("sarah-chen") works
+for (const user of testUsers as unknown as Array<Record<string, unknown>>) {
+  const id = user.id as string;
+  if (id && !PERSONA_DATA[id]) {
+    PERSONA_DATA[id] = user;
+  }
+}
+
 /** Extract the directory slug from a serviceId (e.g. "dvla.renew-driving-licence" → "renew-driving-licence") */
 function serviceDirSlug(serviceId: string): string {
   const parts = serviceId.split(".");
@@ -549,6 +560,12 @@ export function getServiceArtefact(
 /** Get persona data by persona ID */
 export function getPersonaData(personaId: string): Record<string, unknown> | null {
   return PERSONA_DATA[personaId] ?? null;
+}
+
+/** Resolve a test user ID to its persona_mapping (for prompt file lookup) */
+export function getPersonaMapping(personaId: string): string {
+  const data = PERSONA_DATA[personaId];
+  return (data?.persona_mapping as string) || personaId;
 }
 
 /** Get a bundled prompt file by its relative path (e.g. "data/prompts/dot-system.txt") */
