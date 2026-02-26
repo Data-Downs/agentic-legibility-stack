@@ -24,6 +24,8 @@ export async function GET() {
       source: s.source,
       serviceType: s.serviceType,
       govuk_url: s.govukUrl,
+      generatedAt: s.generatedAt,
+      interactionType: s.interactionType,
     }));
 
     const graphStore = await getServiceGraphStore();

@@ -22,10 +22,14 @@ export async function GET(
 
     return NextResponse.json({
       serviceId: service.id,
+      source: service.source,
       manifest: service.manifest,
       policy: service.policy || null,
       stateModel: service.stateModel || null,
       consent: service.consent || null,
+      generatedAt: service.generatedAt || null,
+      interactionType: service.interactionType || null,
+      govukUrl: service.govukUrl || null,
       gaps,
     });
   } catch (error) {

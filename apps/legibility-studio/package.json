@@ -11,6 +11,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@als/adapters": "*",
     "@als/evidence": "*",
     "@als/legibility": "*",
     "@als/mcp-server": "*",

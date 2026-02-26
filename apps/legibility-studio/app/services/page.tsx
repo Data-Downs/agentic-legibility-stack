@@ -19,6 +19,8 @@ interface Service {
   source?: "full" | "graph";
   serviceType?: string;
   govuk_url?: string;
+  generatedAt?: string;
+  interactionType?: string;
 }
 
 interface LifeEventFilter {
@@ -166,6 +168,9 @@ export default function ServicesPage() {
   const [lifeEventFilter, setLifeEventFilter] = useState<string>("all");
   const [lifeEvents, setLifeEvents] = useState<LifeEventFilter[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [batchResult, setBatchResult] = useState<{ succeeded: number; failed: number } | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -239,6 +244,58 @@ export default function ServicesPage() {
     }
   }, []);
 
+  const generateService = useCallback(async (serviceId: string) => {
+    setGeneratingId(serviceId);
+    try {
+      const res = await fetch(`/api/services/${encodeURIComponent(serviceId)}/generate`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setServices((prev) =>
+          prev.map((s) =>
+            s.id === serviceId
+              ? { ...s, source: "full" as const, hasPolicy: true, hasStateModel: true, hasConsent: true, generatedAt: data.generatedAt, interactionType: data.interactionType }
+              : s
+          )
+        );
+      } else {
+        const err = await res.json();
+        alert(err.error || "Generation failed");
+      }
+    } catch {
+      alert("Failed to generate artefacts");
+    } finally {
+      setGeneratingId(null);
+    }
+  }, []);
+
+  const handleBatchGenerate = useCallback(async () => {
+    if (!window.confirm("Generate artefacts for up to 10 graph-only services? This uses the LLM API and may take a few minutes.")) return;
+    setBatchGenerating(true);
+    setBatchResult(null);
+    try {
+      const res = await fetch("/api/v1/generate-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ limit: 10 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBatchResult({ succeeded: data.succeeded, failed: data.failed });
+        // Refresh service list
+        const refreshed = await fetch("/api/services").then((r) => r.json());
+        setServices(refreshed.services || []);
+      } else {
+        alert("Batch generation failed");
+      }
+    } catch {
+      alert("Batch generation failed");
+    } finally {
+      setBatchGenerating(false);
+    }
+  }, []);
+
+  const graphOnlyCount = services.filter((s) => s.source === "graph" && s.govuk_url).length;
+
   if (loading) {
     return <div className="text-center py-12 text-gray-500">Loading services...</div>;
   }
@@ -250,14 +307,32 @@ export default function ServicesPage() {
         title="Services"
         subtitle={`${services.length} service(s) registered — ${fullCount} full, ${graphCount} from graph.`}
         actions={
-          <a
-            href="/services/new"
-            className="bg-govuk-green text-white px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90"
-          >
-            + Create new service
-          </a>
+          <div className="flex gap-2">
+            {graphOnlyCount > 0 && (
+              <button
+                onClick={handleBatchGenerate}
+                disabled={batchGenerating}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-purple-700 disabled:opacity-50"
+              >
+                {batchGenerating ? "Generating..." : `Generate missing (${graphOnlyCount})`}
+              </button>
+            )}
+            <a
+              href="/services/new"
+              className="bg-govuk-green text-white px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90"
+            >
+              + Create new service
+            </a>
+          </div>
         }
       />
+
+      {batchResult && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 text-sm">
+          Batch complete: {batchResult.succeeded} succeeded, {batchResult.failed} failed.
+          <button onClick={() => setBatchResult(null)} className="ml-2 text-green-700 underline">Dismiss</button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
@@ -325,10 +400,8 @@ export default function ServicesPage() {
             className="border border-studio-border rounded-xl bg-white hover:shadow-sm transition-shadow"
           >
             <a
-              href={service.source === "graph" && service.govuk_url ? service.govuk_url : `/services/${encodeURIComponent(service.id)}`}
+              href={`/services/${encodeURIComponent(service.id)}`}
               className="block p-5"
-              target={service.source === "graph" ? "_blank" : undefined}
-              rel={service.source === "graph" ? "noopener noreferrer" : undefined}
             >
               <div className="flex justify-between items-start">
                 <div>
@@ -341,7 +414,17 @@ export default function ServicesPage() {
                     }`}>
                       {(service.source || "full") === "full" ? "Full" : "Graph"}
                     </span>
-                    {service.serviceType && (
+                    {service.interactionType && (
+                      <span className="text-[10px] font-medium text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded uppercase">
+                        {service.interactionType.replace(/_/g, " ")}
+                      </span>
+                    )}
+                    {service.generatedAt && (
+                      <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded" title={service.generatedAt}>
+                        Generated
+                      </span>
+                    )}
+                    {service.serviceType && !service.interactionType && (
                       <span className="text-[10px] font-medium text-gray-500 uppercase">{service.serviceType}</span>
                     )}
                   </div>
@@ -435,9 +518,26 @@ export default function ServicesPage() {
                     </a>
                   </>
                 ) : (
-                  <span className="text-sm text-gray-500">
-                    Graph-only — needs artefacts for full integration
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-500">
+                      Graph-only — needs artefacts for full integration
+                    </span>
+                    {service.govuk_url && (
+                      <>
+                        <span className="text-gray-300">|</span>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            generateService(service.id);
+                          }}
+                          disabled={generatingId === service.id}
+                          className="text-sm font-semibold text-purple-600 hover:underline disabled:opacity-50"
+                        >
+                          {generatingId === service.id ? "Generating..." : "Generate"}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
 

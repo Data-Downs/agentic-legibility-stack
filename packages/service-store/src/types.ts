@@ -22,6 +22,8 @@ export interface ServiceRow {
   policy_json: string | null;
   state_model_json: string | null;
   consent_json: string | null;
+  generated_at: string | null;
+  interaction_type: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -75,6 +77,8 @@ export interface ServiceWithArtefacts {
   policy: PolicyRuleset | null;
   stateModel: StateModelDefinition | null;
   consent: ConsentModel | null;
+  generatedAt: string | null;
+  interactionType: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -93,6 +97,8 @@ export interface ServiceSummary {
   hasPolicy: boolean;
   hasStateModel: boolean;
   hasConsent: boolean;
+  generatedAt: string | null;
+  interactionType: string | null;
 }
 
 /** Life event with resolved service IDs */

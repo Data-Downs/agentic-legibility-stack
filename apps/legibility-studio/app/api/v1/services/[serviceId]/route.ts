@@ -33,6 +33,8 @@ export async function GET(
       source: service.source,
       serviceType: service.serviceType,
       promoted: service.promoted,
+      generatedAt: service.generatedAt,
+      interactionType: service.interactionType,
       manifest: service.manifest,
       policy: service.policy,
       stateModel: service.stateModel,

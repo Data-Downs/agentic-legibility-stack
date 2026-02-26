@@ -45,6 +45,14 @@ export class ServiceArtefactStore {
       CREATE INDEX IF NOT EXISTS idx_services_source ON services(source);
       CREATE INDEX IF NOT EXISTS idx_services_promoted ON services(promoted);
     `);
+
+    // Add columns if missing (safe for existing DBs)
+    try {
+      await this.db.exec(`ALTER TABLE services ADD COLUMN generated_at TEXT`);
+    } catch { /* column already exists */ }
+    try {
+      await this.db.exec(`ALTER TABLE services ADD COLUMN interaction_type TEXT`);
+    } catch { /* column already exists */ }
   }
 
   /** Get a single service with full artefacts */
@@ -59,7 +67,7 @@ export class ServiceArtefactStore {
 
   /** List services with optional filtering (returns summaries, no full JSON) */
   async listServices(filter?: ServiceFilter): Promise<ServiceSummary[]> {
-    let sql = "SELECT id, name, department, department_key, description, source, service_type, govuk_url, promoted, proactive, gated, policy_json IS NOT NULL as has_policy, state_model_json IS NOT NULL as has_state_model, consent_json IS NOT NULL as has_consent FROM services WHERE 1=1";
+    let sql = "SELECT id, name, department, department_key, description, source, service_type, govuk_url, promoted, proactive, gated, generated_at, interaction_type, policy_json IS NOT NULL as has_policy, state_model_json IS NOT NULL as has_state_model, consent_json IS NOT NULL as has_consent FROM services WHERE 1=1";
     const params: unknown[] = [];
 
     if (filter?.department) {
@@ -86,7 +94,7 @@ export class ServiceArtefactStore {
 
     sql += " ORDER BY name ASC";
 
-    const rows = await this.db.all<ServiceRow & { has_policy: number; has_state_model: number; has_consent: number }>(
+    const rows = await this.db.all<ServiceRow & { has_policy: number; has_state_model: number; has_consent: number; generated_at: string | null; interaction_type: string | null }>(
       sql,
       ...params
     );
@@ -104,6 +112,8 @@ export class ServiceArtefactStore {
       hasPolicy: !!row.has_policy,
       hasStateModel: !!row.has_state_model,
       hasConsent: !!row.has_consent,
+      generatedAt: row.generated_at || null,
+      interactionType: row.interaction_type || null,
     }));
   }
 
@@ -150,6 +160,9 @@ export class ServiceArtefactStore {
       policy?: Record<string, unknown> | null;
       stateModel?: Record<string, unknown> | null;
       consent?: Record<string, unknown> | null;
+      source?: "full" | "graph";
+      generatedAt?: string;
+      interactionType?: string;
     }
   ): Promise<boolean> {
     const existing = await this.getService(id);
@@ -160,15 +173,18 @@ export class ServiceArtefactStore {
     await this.db.run(
       `UPDATE services SET
         name = ?, department = ?, department_key = ?, description = ?,
+        source = ?,
         service_type = ?, govuk_url = ?, eligibility_summary = ?,
         promoted = ?, proactive = ?, gated = ?,
         manifest_json = ?, policy_json = ?, state_model_json = ?, consent_json = ?,
+        generated_at = ?, interaction_type = ?,
         updated_at = datetime('now')
        WHERE id = ?`,
       m.name,
       m.department,
       this.slugify(m.department || ""),
       m.description || "",
+      data.source || existing.source,
       m.serviceType || null,
       m.govuk_url || null,
       m.eligibility_summary || null,
@@ -197,6 +213,8 @@ export class ServiceArtefactStore {
         : existing.consent
           ? JSON.stringify(existing.consent)
           : null,
+      data.generatedAt !== undefined ? data.generatedAt : existing.generatedAt,
+      data.interactionType !== undefined ? data.interactionType : existing.interactionType,
       id
     );
 
@@ -314,6 +332,8 @@ export class ServiceArtefactStore {
       policy: row.policy_json ? JSON.parse(row.policy_json) : null,
       stateModel: row.state_model_json ? JSON.parse(row.state_model_json) : null,
       consent: row.consent_json ? JSON.parse(row.consent_json) : null,
+      generatedAt: row.generated_at || null,
+      interactionType: row.interaction_type || null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
