@@ -11,5 +11,5 @@ assets = { directory = ".open-next/assets", binding = "ASSETS" }
 [[d1_databases]]
 binding = "SERVICE_STORE_DB"
 database_name = "als-service-store"
-database_id = "placeholder-create-with-wrangler-d1-create"
+database_id = "45140ebf-2525-4b8c-9123-ec75ed275052"
 migrations_dir = "migrations"
