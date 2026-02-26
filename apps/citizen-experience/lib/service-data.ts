@@ -554,7 +554,7 @@ export async function getServiceArtefact(
   type: keyof ServiceArtefacts,
 ): Promise<Record<string, unknown> | null> {
   // Try Studio API first
-  const client = getServiceClient();
+  const client = await getServiceClient();
   if (client) {
     const remote = await client.getServiceArtefact(serviceId, type);
     if (remote) return remote;
@@ -609,7 +609,7 @@ for (const node of graphEngine.getServices()) {
  */
 export async function getAnyManifest(serviceId: string): Promise<CapabilityManifest | null> {
   // Try Studio API first
-  const client = getServiceClient();
+  const client = await getServiceClient();
   if (client) {
     const remote = await client.getServiceArtefact(serviceId, "manifest");
     if (remote) return remote as unknown as CapabilityManifest;
@@ -635,7 +635,7 @@ export async function getAnyManifest(serviceId: string): Promise<CapabilityManif
 /** Get all services — tries Studio API first, falls back to bundled + graph merged */
 export async function getAllServices(): Promise<CapabilityManifest[]> {
   // Try Studio API first
-  const client = getServiceClient();
+  const client = await getServiceClient();
   if (client) {
     const remote = await client.getAllServices();
     if (remote?.services?.length) {
@@ -661,7 +661,7 @@ export async function getAllServices(): Promise<CapabilityManifest[]> {
 /** Get all life events — tries Studio API first, falls back to local graph engine */
 export async function getLifeEvents(): Promise<LifeEvent[]> {
   // Try Studio API first
-  const client = getServiceClient();
+  const client = await getServiceClient();
   if (client) {
     const remote = await client.getLifeEvents();
     if (remote?.lifeEvents?.length) {

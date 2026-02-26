@@ -110,18 +110,34 @@ export class ServiceClient {
   }
 }
 
+/** Resolve STUDIO_API_URL from process.env or Cloudflare context */
+async function resolveStudioUrl(): Promise<string | undefined> {
+  // Try process.env first (local dev)
+  if (process.env.STUDIO_API_URL) return process.env.STUDIO_API_URL;
+  // On Cloudflare Workers with OpenNext, vars live in getCloudflareContext().env
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { env } = getCloudflareContext() as any;
+    if (env?.STUDIO_API_URL) return env.STUDIO_API_URL as string;
+  } catch {
+    // Not on Cloudflare — ignore
+  }
+  return undefined;
+}
+
 /** Singleton ServiceClient — only created if STUDIO_API_URL is set */
 let _client: ServiceClient | null | undefined;
+let _resolvedUrl: string | undefined;
 
-export function getServiceClient(): ServiceClient | null {
-  if (_client !== undefined) return _client;
+export async function getServiceClient(): Promise<ServiceClient | null> {
+  const url = await resolveStudioUrl();
+  if (!url) return null;
 
-  const url = process.env.STUDIO_API_URL;
-  if (!url) {
-    _client = null;
-    return null;
-  }
+  // Return cached client if URL hasn't changed
+  if (_client && _resolvedUrl === url) return _client;
 
+  _resolvedUrl = url;
   _client = new ServiceClient(url);
   console.log(`[ServiceClient] Connecting to Studio at ${url}`);
   return _client;
