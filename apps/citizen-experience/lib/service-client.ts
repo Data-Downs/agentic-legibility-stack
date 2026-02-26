@@ -5,8 +5,15 @@
  * - TTL cache (default 60s) to avoid hammering Studio on every chat turn
  * - Request deduplication — concurrent calls for the same key share one in-flight fetch
  * - 5s timeout via AbortController for fast failure
+ * - Service binding support — on Cloudflare, uses env.STUDIO.fetch() for
+ *   direct Worker-to-Worker calls (bypasses *.workers.dev DNS routing)
  * - Returns null on any error (caller falls back to bundled data)
  */
+
+/** Minimal Fetcher interface — matches Cloudflare Service Binding */
+interface Fetcher {
+  fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
+}
 
 interface CacheEntry<T> {
   data: T;
@@ -14,14 +21,16 @@ interface CacheEntry<T> {
 }
 
 interface ServiceClientOptions {
-  ttl?: number;     // cache TTL in ms (default 60_000)
-  timeout?: number; // fetch timeout in ms (default 5_000)
+  ttl?: number;      // cache TTL in ms (default 60_000)
+  timeout?: number;  // fetch timeout in ms (default 5_000)
+  fetcher?: Fetcher; // optional service binding fetcher
 }
 
 export class ServiceClient {
   private baseUrl: string;
   private ttl: number;
   private timeout: number;
+  private fetcher: Fetcher | undefined;
   private cache = new Map<string, CacheEntry<unknown>>();
   private inflight = new Map<string, Promise<unknown>>();
 
@@ -30,6 +39,7 @@ export class ServiceClient {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
     this.ttl = options?.ttl ?? 60_000;
     this.timeout = options?.timeout ?? 5_000;
+    this.fetcher = options?.fetcher;
   }
 
   /** GET /api/v1/services/:id — returns full service detail or null */
@@ -92,10 +102,17 @@ export class ServiceClient {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), this.timeout);
 
-      const res = await fetch(`${this.baseUrl}${path}`, {
+      const url = `${this.baseUrl}${path}`;
+      const init: RequestInit = {
         signal: controller.signal,
         headers: { Accept: "application/json" },
-      });
+      };
+
+      // Use service binding fetcher if available, otherwise global fetch
+      const doFetch = this.fetcher
+        ? this.fetcher.fetch.bind(this.fetcher)
+        : globalThis.fetch;
+      const res = await doFetch(url, init);
       clearTimeout(timer);
 
       if (!res.ok) return null;
@@ -110,20 +127,24 @@ export class ServiceClient {
   }
 }
 
-/** Resolve STUDIO_API_URL from process.env or Cloudflare context */
-async function resolveStudioUrl(): Promise<string | undefined> {
-  // Try process.env first (local dev)
-  if (process.env.STUDIO_API_URL) return process.env.STUDIO_API_URL;
-  // On Cloudflare Workers with OpenNext, vars live in getCloudflareContext().env
+/** Resolve STUDIO_API_URL and optional service binding from env */
+async function resolveStudioConfig(): Promise<{ url?: string; fetcher?: Fetcher }> {
+  // On Cloudflare Workers with OpenNext, check for service binding + vars first
   try {
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { env } = getCloudflareContext() as any;
-    if (env?.STUDIO_API_URL) return env.STUDIO_API_URL as string;
+    const url = env?.STUDIO_API_URL as string | undefined;
+    const fetcher = env?.STUDIO as Fetcher | undefined;
+    if (url || fetcher) return { url, fetcher };
   } catch {
-    // Not on Cloudflare — ignore
+    // Not on Cloudflare — fall through to process.env
   }
-  return undefined;
+  // Local dev: use process.env
+  if (process.env.STUDIO_API_URL) {
+    return { url: process.env.STUDIO_API_URL };
+  }
+  return {};
 }
 
 /** Singleton ServiceClient — only created if STUDIO_API_URL is set */
@@ -131,14 +152,15 @@ let _client: ServiceClient | null | undefined;
 let _resolvedUrl: string | undefined;
 
 export async function getServiceClient(): Promise<ServiceClient | null> {
-  const url = await resolveStudioUrl();
+  const { url, fetcher } = await resolveStudioConfig();
   if (!url) return null;
 
   // Return cached client if URL hasn't changed
   if (_client && _resolvedUrl === url) return _client;
 
   _resolvedUrl = url;
-  _client = new ServiceClient(url);
-  console.log(`[ServiceClient] Connecting to Studio at ${url}`);
+  _client = new ServiceClient(url, { fetcher });
+  const mode = fetcher ? "service binding" : "public URL";
+  console.log(`[ServiceClient] Connecting to Studio at ${url} (${mode})`);
   return _client;
 }
