@@ -13,6 +13,7 @@
   "dependencies": {
     "@als/evidence": "*",
     "@als/legibility": "*",
+    "@als/mcp-server": "*",
     "@als/schemas": "*",
     "@als/service-graph": "*",
     "@als/service-store": "*",
