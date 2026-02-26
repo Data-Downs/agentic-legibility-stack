@@ -5,16 +5,13 @@ import { WalletSimulator } from "@als/identity";
 import { VerifiedStore } from "@als/personal-data";
 
 // Wallet/verified store for Tier 1
-const testUsersPath = "data/simulated/test-users.json";
-const walletCredsPath = "data/simulated/wallet-credentials.json";
-
-async function loadWalletData() {
+async function loadTestUsers(): Promise<Array<Record<string, unknown>> | null> {
   try {
     const fs = await import("fs/promises");
     const path = await import("path");
-    const usersRaw = await fs.readFile(path.join(process.cwd(), testUsersPath), "utf-8");
-    const credsRaw = await fs.readFile(path.join(process.cwd(), walletCredsPath), "utf-8");
-    return { users: JSON.parse(usersRaw), credentials: JSON.parse(credsRaw) };
+    const base = path.join(process.cwd(), "..", "..", "data", "simulated");
+    const usersRaw = await fs.readFile(path.join(base, "test-users.json"), "utf-8");
+    return JSON.parse(usersRaw);
   } catch {
     return null;
   }
@@ -39,27 +36,21 @@ export async function GET(
       await submittedStore.seedFromPersona(personaId, personaData);
     }
 
-    // Load Tier 1 verified data
+    // Load Tier 1 verified data from test-user credentials
     let tier1 = null;
-    const walletData = await loadWalletData();
-    if (walletData) {
-      const wallet = new WalletSimulator();
-      const testUser = walletData.users.find(
-        (u: Record<string, unknown>) => u.persona_mapping === personaId
+    const testUsers = await loadTestUsers();
+    if (testUsers) {
+      const testUser = testUsers.find(
+        (u) => u.id === personaId || u.persona_mapping === personaId
       );
       if (testUser) {
-        // Load credentials from wallet-credentials.json for this user
-        const userCreds = walletData.credentials.filter(
-          (c: Record<string, unknown>) => c.userId === testUser.id || c.user_id === testUser.id
-        );
-        if (userCreds.length > 0) {
-          wallet.loadCredentials(testUser.id, userCreds);
-        } else if (testUser.credentials) {
-          // Fallback: credentials embedded in test-users.json
-          wallet.loadCredentials(testUser.id, testUser.credentials);
+        const wallet = new WalletSimulator();
+        const creds = testUser.credentials as Array<Record<string, unknown>> | undefined;
+        if (creds && creds.length > 0) {
+          wallet.loadCredentials(testUser.id as string, creds);
         }
         const verifiedStore = new VerifiedStore(wallet);
-        tier1 = verifiedStore.getVerifiedData(testUser.id, testUser);
+        tier1 = verifiedStore.getVerifiedData(testUser.id as string, testUser as never);
       }
     }
 

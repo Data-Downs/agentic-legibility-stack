@@ -81,27 +81,6 @@ function getUpcomingDates(data: PersonaData): Array<{ label: string; date: strin
   return dates.slice(0, 4);
 }
 
-function getCredentials(data: PersonaData): Array<{ type: string; status: string; valid: boolean }> {
-  const creds: Array<{ type: string; status: string; valid: boolean }> = [];
-
-  if (data.primaryContact.nationalInsuranceNumber) {
-    creds.push({ type: "National Insurance", status: "Verified", valid: true });
-  }
-
-  if (data.vehicles && data.vehicles.length > 0) {
-    // Check if any vehicle has a future MOT (proxy for having a licence)
-    const hasValidVehicle = data.vehicles.some((v) => v.motExpiry && daysUntil(v.motExpiry) > 0);
-    creds.push({
-      type: "Driving Licence",
-      status: hasValidVehicle ? "Valid" : "Needs renewal",
-      valid: hasValidVehicle,
-    });
-  }
-
-  creds.push({ type: "Proof of Address", status: data.address.postcode, valid: true });
-
-  return creds;
-}
 
 function getServiceDetail(service: string, data: PersonaData): string {
   if (service === "driving") {
@@ -159,10 +138,14 @@ export function Dashboard() {
 
   if (!personaData) return null;
 
-  const firstName = personaData.primaryContact.firstName;
+  // Support both nested (old persona) and flat (test-user) data formats
+  const raw = personaData as unknown as Record<string, unknown>;
+  const firstName = personaData.primaryContact?.firstName || (raw.name as string)?.split(" ")[0] || "there";
+  const lastName = personaData.primaryContact?.lastName || (raw.name as string)?.split(" ").slice(1).join(" ") || "";
+  const niNumber = personaData.primaryContact?.nationalInsuranceNumber || (raw.national_insurance_number as string) || "";
+  const dob = personaData.primaryContact?.dateOfBirth || (raw.date_of_birth as string) || "";
   const services: ServiceType[] = ["driving", "benefits", "family"];
   const upcomingDates = getUpcomingDates(personaData);
-  const credentials = getCredentials(personaData);
   const recentConversations = persona ? getConversations(persona).slice(0, 3) : [];
 
   function handleStartGraphService(svc: LifeEventService) {
@@ -186,35 +169,20 @@ export function Dashboard() {
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <span className="text-govuk-dark-grey">Name</span>
-            <p className="font-medium">{personaData.primaryContact.firstName} {personaData.primaryContact.lastName}</p>
+            <p className="font-medium">{firstName} {lastName}</p>
           </div>
           <div>
             <span className="text-govuk-dark-grey">NI Number</span>
-            <p className="font-medium font-mono">{maskNI(personaData.primaryContact.nationalInsuranceNumber || "")}</p>
+            <p className="font-medium font-mono">{maskNI(niNumber)}</p>
           </div>
           <div>
             <span className="text-govuk-dark-grey">Address</span>
-            <p className="font-medium">{personaData.address.city}, {personaData.address.postcode}</p>
+            <p className="font-medium">{personaData.address?.city}, {personaData.address?.postcode}</p>
           </div>
           <div>
             <span className="text-govuk-dark-grey">DOB</span>
-            <p className="font-medium">{formatDate(personaData.primaryContact.dateOfBirth)}</p>
+            <p className="font-medium">{dob ? formatDate(dob) : "—"}</p>
           </div>
-        </div>
-      </div>
-
-      {/* Credentials */}
-      <div className="bg-white border border-govuk-mid-grey rounded-xl p-4 mb-4">
-        <h3 className="font-bold text-sm text-govuk-dark-grey uppercase tracking-wide mb-3">Digital credentials</h3>
-        <div className="flex flex-col gap-2">
-          {credentials.map((cred) => (
-            <div key={cred.type} className="flex items-center justify-between text-sm">
-              <span>{cred.type}</span>
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cred.valid ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                {cred.status}
-              </span>
-            </div>
-          ))}
         </div>
       </div>
 

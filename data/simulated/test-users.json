@@ -19,6 +19,21 @@
         "issued": "2019-06-01",
         "expires": "2029-06-01",
         "status": "valid"
+      },
+      {
+        "type": "national-insurance",
+        "issuer": "HMRC",
+        "number": "QQ123456C",
+        "issued": "2007-03-15",
+        "status": "valid"
+      },
+      {
+        "type": "proof-of-address",
+        "issuer": "Royal Mail",
+        "number": "PAF-SC-CB21TN",
+        "issued": "2024-11-01",
+        "expires": "2025-11-01",
+        "status": "valid"
       }
     ],
     "employment_status": "employed",
@@ -48,6 +63,21 @@
         "issued": "2015-02-14",
         "expires": "2025-02-14",
         "status": "expired"
+      },
+      {
+        "type": "national-insurance",
+        "issuer": "HMRC",
+        "number": "AB654321D",
+        "issued": "1993-11-22",
+        "status": "valid"
+      },
+      {
+        "type": "proof-of-address",
+        "issuer": "Royal Mail",
+        "number": "PAF-MA-B12JR",
+        "issued": "2025-01-15",
+        "expires": "2026-01-15",
+        "status": "valid"
       }
     ],
     "employment_status": "self-employed",
@@ -77,6 +107,21 @@
         "issued": "2021-07-08",
         "expires": "2024-07-08",
         "status": "expired"
+      },
+      {
+        "type": "national-insurance",
+        "issuer": "HMRC",
+        "number": "CD789012E",
+        "issued": "1972-07-08",
+        "status": "valid"
+      },
+      {
+        "type": "proof-of-address",
+        "issuer": "Royal Mail",
+        "number": "PAF-MT-YO17HH",
+        "issued": "2025-06-01",
+        "expires": "2026-06-01",
+        "status": "valid"
       }
     ],
     "employment_status": "retired",
@@ -99,7 +144,23 @@
       "postcode": "BS1 4AQ"
     },
     "jurisdiction": "England",
-    "credentials": [],
+    "credentials": [
+      {
+        "type": "national-insurance",
+        "issuer": "HMRC",
+        "number": "EF345678G",
+        "issued": "2010-01-30",
+        "status": "valid"
+      },
+      {
+        "type": "proof-of-address",
+        "issuer": "Royal Mail",
+        "number": "PAF-DE-BS14AQ",
+        "issued": "2025-03-01",
+        "expires": "2026-03-01",
+        "status": "valid"
+      }
+    ],
     "employment_status": "unemployed",
     "income": 0,
     "savings": 800,
@@ -119,7 +180,32 @@
       "postcode": "M1 4BH"
     },
     "jurisdiction": "England",
-    "credentials": [],
+    "credentials": [
+      {
+        "type": "driving-licence",
+        "issuer": "DVLA",
+        "number": "SHARM980412PS7CD",
+        "issued": "2016-04-12",
+        "expires": "2026-04-12",
+        "status": "valid",
+        "claims": { "category": "provisional" }
+      },
+      {
+        "type": "national-insurance",
+        "issuer": "HMRC",
+        "number": "GH567890A",
+        "issued": "2016-04-12",
+        "status": "valid"
+      },
+      {
+        "type": "proof-of-address",
+        "issuer": "Royal Mail",
+        "number": "PAF-PS-M14BH",
+        "issued": "2025-08-01",
+        "expires": "2026-08-01",
+        "status": "valid"
+      }
+    ],
     "employment_status": "unemployed",
     "income": 0,
     "savings": 2400,
