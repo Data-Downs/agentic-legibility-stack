@@ -12,7 +12,8 @@
     "test": "turbo test",
     "clean": "rm -rf apps/citizen-experience/.next apps/legibility-studio/.next",
     "seed": "npx tsx scripts/seed-traces.ts",
-    "seed:ledger": "npx tsx scripts/seed-ledger.ts"
+    "seed:ledger": "npx tsx scripts/seed-ledger.ts",
+    "seed:services": "npx tsx scripts/seed-service-store.ts"
   },
   "devDependencies": {
     "turbo": "^2.3.0",
