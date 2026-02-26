@@ -17,7 +17,7 @@ async function init(): Promise<void> {
   if (initPromise) { await initPromise; return; }
 
   initPromise = (async () => {
-    const filePath = path.join(process.cwd(), "data", "simulated", "test-users.json");
+    const filePath = path.join(process.cwd(), "..", "..", "data", "simulated", "test-users.json");
     const raw = await fs.readFile(filePath, "utf-8");
     testUsers = JSON.parse(raw) as TestUser[];
 

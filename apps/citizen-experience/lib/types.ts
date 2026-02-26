@@ -182,6 +182,12 @@ export type ViewType =
   | "tasks";
 
 export const PERSONA_NAMES: Record<string, string> = {
+  "sarah-chen": "Sarah Chen",
+  "mohammed-al-rashid": "Mohammed Al-Rashid",
+  "margaret-thompson": "Margaret Thompson",
+  "david-evans": "David Evans",
+  "priya-sharma": "Priya Sharma",
+  // Legacy mappings (kept for backward compat)
   "emma-liam": "Emma & Liam",
   rajesh: "Rajesh Patel",
   margaret: "Margaret Thompson",
@@ -189,6 +195,12 @@ export const PERSONA_NAMES: Record<string, string> = {
 };
 
 export const PERSONA_COLORS: Record<string, string> = {
+  "sarah-chen": "#1d70b8",
+  "mohammed-al-rashid": "#00703c",
+  "margaret-thompson": "#912b88",
+  "david-evans": "#d4351c",
+  "priya-sharma": "#f47738",
+  // Legacy
   "emma-liam": "#1d70b8",
   rajesh: "#00703c",
   margaret: "#912b88",
@@ -196,6 +208,12 @@ export const PERSONA_COLORS: Record<string, string> = {
 };
 
 export const PERSONA_INITIALS: Record<string, string> = {
+  "sarah-chen": "SC",
+  "mohammed-al-rashid": "MA",
+  "margaret-thompson": "MT",
+  "david-evans": "DE",
+  "priya-sharma": "PS",
+  // Legacy
   "emma-liam": "E",
   rajesh: "R",
   margaret: "M",

@@ -1,14 +1,16 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import { PERSONA_NAMES, PERSONA_COLORS, PERSONA_INITIALS } from "@/lib/types";
 
-const personas = [
-  { id: "emma-liam", desc: "Young couple, expecting first baby" },
-  { id: "rajesh", desc: "Self-employed IT consultant" },
-  { id: "margaret", desc: "Retired, managing health conditions" },
-  { id: "priya", desc: "Recently redundant, applying for UC" },
-];
+interface TestUser {
+  id: string;
+  name: string;
+  age: number;
+  employment_status: string;
+  address: { city: string; postcode: string };
+}
 
 export function PersonaSelectorOverlay() {
   const persona = useAppStore((s) => s.persona);
@@ -18,6 +20,29 @@ export function PersonaSelectorOverlay() {
   const setAgent = useAppStore((s) => s.setAgent);
   const setServiceMode = useAppStore((s) => s.setServiceMode);
   const setOpen = useAppStore((s) => s.setPersonaSelectorOpen);
+  const [users, setUsers] = useState<TestUser[]>([]);
+
+  useEffect(() => {
+    fetch("/api/auth/test-users")
+      .then((r) => r.json())
+      .then((data) => setUsers(data.users || []))
+      .catch(() => {});
+  }, []);
+
+  // Build persona list: prefer live test users, fall back to static
+  const personas = users.length > 0
+    ? users.map((u) => ({
+        id: u.id,
+        name: u.name,
+        desc: `${u.employment_status}, age ${u.age}, ${u.address.city}`,
+      }))
+    : [
+        { id: "sarah-chen", name: "Sarah Chen", desc: "Employed, age 36, Cambridge" },
+        { id: "mohammed-al-rashid", name: "Mohammed Al-Rashid", desc: "Self-employed, age 50, Birmingham" },
+        { id: "margaret-thompson", name: "Margaret Thompson", desc: "Retired, age 71, York" },
+        { id: "david-evans", name: "David Evans", desc: "Unemployed, age 34, Cardiff" },
+        { id: "priya-sharma", name: "Priya Sharma", desc: "Unemployed, age 28, Manchester" },
+      ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -57,12 +82,12 @@ export function PersonaSelectorOverlay() {
               >
                 <span
                   className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
-                  style={{ backgroundColor: PERSONA_COLORS[p.id] }}
+                  style={{ backgroundColor: PERSONA_COLORS[p.id] || "#505a5f" }}
                 >
-                  {PERSONA_INITIALS[p.id]}
+                  {PERSONA_INITIALS[p.id] || p.name.split(" ").map(n => n[0]).join("")}
                 </span>
                 <div className="min-w-0">
-                  <strong className="block text-sm">{PERSONA_NAMES[p.id]}</strong>
+                  <strong className="block text-sm">{PERSONA_NAMES[p.id] || p.name}</strong>
                   <span className="text-xs text-govuk-dark-grey">{p.desc}</span>
                 </div>
                 {persona === p.id && (
