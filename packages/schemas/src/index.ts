@@ -365,6 +365,28 @@ export interface HumanReviewRequest {
   requestedBy: string;
 }
 
+// ── Card Types ──
+
+export type {
+  CardFieldType,
+  CardFieldDef,
+  CardDefinition,
+  CardRequest,
+  CardSubmission,
+} from "./card-types";
+
+export {
+  resolveCards,
+  inferInteractionType,
+  INTERACTION_TYPES,
+} from "./card-registry";
+
+export type {
+  InteractionType,
+  StateCardMapping,
+  InteractionCardSet,
+} from "./card-registry";
+
 // ── Utility types ──
 
 export interface JsonSchema {

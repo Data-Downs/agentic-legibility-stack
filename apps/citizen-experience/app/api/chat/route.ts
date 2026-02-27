@@ -6,7 +6,8 @@ import * as localMcpClient from "@/lib/local-mcp-client";
 import { CapabilityInvoker, HandoffManager } from "@als/runtime";
 import { AnthropicAdapter } from "@als/adapters";
 import type { AnthropicChatInput, AnthropicChatOutput } from "@als/adapters";
-import type { InvocationContext, PolicyRuleset, StateModelDefinition } from "@als/schemas";
+import type { InvocationContext, PolicyRuleset, StateModelDefinition, CardRequest } from "@als/schemas";
+import { resolveCards, inferInteractionType } from "@als/schemas";
 import { PolicyEvaluator, StateMachine } from "@als/legibility";
 import { getTraceEmitter, getReceiptGenerator } from "@/lib/evidence";
 import { getRegistry } from "@/lib/registry";
@@ -795,6 +796,7 @@ interface ChatOutput {
     source: string;
     purpose: string;
   }>;
+  cardRequests?: CardRequest[];
 }
 
 async function chatHandler(input: unknown): Promise<ChatOutput> {
@@ -1398,75 +1400,38 @@ Example:
     }
   }
 
-  // ── Deterministic Task Injection for data-collection states ──
-  // ONLY inject structured-form tasks at the correct states. The LLM is told
-  // not to include tasks for these states, but if it does anyway we
-  // replace its tasks with our deterministic ones (correct dataNeeded fields).
+  // ── Dynamic Card Resolution ──
+  // Resolve structured form cards based on (interactionType, currentState).
+  // Cards are data-driven from the card registry — no hardcoded housing/bank detection.
+  let cardRequests: CardRequest[] = [];
+
   if (stateMachine) {
-    const preTransitionState = currentUcState;
     const postTransitionState = stateMachine.getState();
-    const HOUSING_DATA_FIELDS = new Set(["tenure_type", "housing_tenure", "housing_status", "monthly_rent", "rent", "address", "housing tenure"]);
-    const BANK_DATA_FIELDS = new Set(["sort_code", "account_number", "bank_accounts", "bank_account", "bank_details", "bank accounts"]);
-    // Match the same keyword patterns the TaskCard UI uses to detect form types,
-    // so tasks whose description mentions "housing" don't render as housing forms.
-    const HOUSING_KEYWORDS = /housing|tenure|rent|own.*home|accommodation/i;
-    const BANK_KEYWORDS = /bank\s*account|payment\s*account|sort\s*code/i;
-    function taskMatchesHousing(t: { dataNeeded: string[]; description: string; detail: string }) {
-      return t.dataNeeded.some(d => HOUSING_DATA_FIELDS.has(d)) || HOUSING_KEYWORDS.test(`${t.description} ${t.detail}`);
-    }
-    function taskMatchesBank(t: { dataNeeded: string[]; description: string; detail: string }) {
-      return t.dataNeeded.some(d => BANK_DATA_FIELDS.has(d)) || BANK_KEYWORDS.test(`${t.description} ${t.detail}`);
-    }
 
-    const transitioned = stateTransitions.length > 0;
-    // Only inject the structured form task when we're AT the data-collection state
-    // and did NOT just transition OUT of it (which means data was already submitted).
-    const isHousingState = (
-      (postTransitionState === "personal-details-collected") ||
-      (preTransitionState === "personal-details-collected" && !transitioned)
-    );
-    const isBankState = (
-      (postTransitionState === "income-details-collected") ||
-      (preTransitionState === "income-details-collected" && !transitioned)
-    );
+    // Determine interaction type from graph node or fallback
+    const graphNodeForCards = serviceId ? getGraphNode(serviceId) : null;
+    const serviceTypeForCards = graphNodeForCards?.serviceType ?? null;
+    const interactionType = inferInteractionType(serviceTypeForCards);
 
-    if (isHousingState) {
-      // Remove any LLM-generated housing tasks (by dataNeeded OR description keywords)
-      const filtered = tasks.filter(t => !taskMatchesHousing(t));
+    // Resolve cards for the current state
+    const cardDefs = resolveCards(interactionType, postTransitionState, serviceId);
+    if (cardDefs.length > 0) {
+      cardRequests = cardDefs.map((def) => ({
+        cardType: def.cardType,
+        serviceId: serviceId || scenario,
+        stateId: postTransitionState,
+        definition: def,
+      }));
+
+      // Strip LLM-generated tasks that overlap with card data categories
+      const cardCategories = new Set(cardDefs.map((d) => d.dataCategory));
+      const CARD_DATA_KEYWORDS = /housing|tenure|rent|bank\s*account|sort\s*code|payment\s*account/i;
+      const filtered = tasks.filter((t) => {
+        const text = `${t.description} ${t.detail}`;
+        return !CARD_DATA_KEYWORDS.test(text);
+      });
       tasks.length = 0;
       tasks.push(...filtered);
-      // Inject the correct deterministic task
-      tasks.push({
-        id: `task_housing_${Date.now()}`,
-        description: "Provide your housing details",
-        detail: "Select your housing situation and enter your monthly rent if applicable",
-        type: "user",
-        dueDate: null,
-        dataNeeded: ["tenure_type", "monthly_rent"],
-      });
-    }
-
-    if (isBankState) {
-      // Remove any LLM-generated bank tasks (by dataNeeded OR description keywords)
-      const filtered = tasks.filter(t => !taskMatchesBank(t));
-      tasks.length = 0;
-      tasks.push(...filtered);
-      // Inject the correct deterministic task
-      tasks.push({
-        id: `task_bank_${Date.now()}`,
-        description: "Select a bank account for UC payments",
-        detail: "Choose which account you'd like Universal Credit payments sent to, or enter new details",
-        type: "user",
-        dueDate: null,
-        dataNeeded: ["sort_code", "account_number"],
-      });
-    }
-
-    // For states that should NOT have housing/bank tasks, strip any the LLM generated
-    if (!isHousingState && !isBankState) {
-      const stripped = tasks.filter(t => !taskMatchesHousing(t) && !taskMatchesBank(t));
-      tasks.length = 0;
-      tasks.push(...stripped);
     }
 
     // Strip eligibility-related tasks — eligibility is checked automatically by the
@@ -1537,6 +1502,7 @@ Example:
     handoff: handoffInfo,
     ucState: ucStateInfo,
     consentRequests,
+    cardRequests: cardRequests.length > 0 ? cardRequests : undefined,
   };
 }
 
