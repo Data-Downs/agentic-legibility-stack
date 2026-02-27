@@ -304,16 +304,59 @@ function parseLabeledJsonBlocks(
   };
 }
 
+// ── Normalization ──
+
+const OPERATOR_ALIASES: Record<string, string> = {
+  ">": ">=",
+  "<": "<=",
+  "=": "==",
+  "equals": "==",
+  "equal": "==",
+  "is": "==",
+  "not-equal": "!=",
+  "not_equal": "!=",
+  "not-equals": "!=",
+  "not_exists": "not-exists",
+  "notExists": "not-exists",
+  "not_exist": "not-exists",
+  "contains": "in",
+  "includes": "in",
+  "one-of": "in",
+  "one_of": "in",
+  "true": "exists",
+  "false": "not-exists",
+  "present": "exists",
+  "absent": "not-exists",
+};
+
+const VALID_OPS = new Set([">=", "<=", "==", "!=", "exists", "not-exists", "in"]);
+
+/** Normalize LLM-generated operators to our valid set. Mutates in place. */
+function normalizePolicy(p: Record<string, unknown>): void {
+  const rules = p.rules as Array<Record<string, unknown>> | undefined;
+  if (!Array.isArray(rules)) return;
+  for (const rule of rules) {
+    const cond = rule.condition as Record<string, unknown> | undefined;
+    if (!cond || !cond.operator) continue;
+    const op = String(cond.operator).trim();
+    if (!VALID_OPS.has(op)) {
+      const mapped = OPERATOR_ALIASES[op.toLowerCase()];
+      if (mapped) {
+        cond.operator = mapped;
+      }
+    }
+  }
+}
+
 // ── Validation ──
 
 function validatePolicy(p: Record<string, unknown>): boolean {
   if (!p.id || !p.version) return false;
   const rules = p.rules as Array<Record<string, unknown>> | undefined;
   if (!Array.isArray(rules) || rules.length === 0) return false;
-  const validOps = [">=", "<=", "==", "!=", "exists", "not-exists", "in"];
   for (const rule of rules) {
     const cond = rule.condition as Record<string, unknown> | undefined;
-    if (!cond || !cond.field || !validOps.includes(cond.operator as string)) {
+    if (!cond || !cond.field || !VALID_OPS.has(cond.operator as string)) {
       return false;
     }
   }
@@ -405,6 +448,9 @@ export async function generateArtefacts(
   const policy = parsed.policy as Record<string, unknown>;
   const stateModel = parsed.stateModel as Record<string, unknown>;
   const consent = parsed.consent as Record<string, unknown>;
+
+  // 5b. Normalize LLM output before validation
+  normalizePolicy(policy);
 
   // 6. Validate
   if (!validatePolicy(policy)) {
