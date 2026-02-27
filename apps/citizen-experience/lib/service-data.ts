@@ -498,6 +498,7 @@ interface ServiceArtefacts {
   policy: Record<string, unknown>;
   stateModel: Record<string, unknown>;
   consent: Record<string, unknown>;
+  stateInstructions?: Record<string, unknown>;
 }
 
 const SERVICE_DATA: Record<string, ServiceArtefacts> = {
@@ -553,11 +554,14 @@ export async function getServiceArtefact(
   serviceId: string,
   type: keyof ServiceArtefacts,
 ): Promise<Record<string, unknown> | null> {
-  // Try Studio API first
-  const client = await getServiceClient();
-  if (client) {
-    const remote = await client.getServiceArtefact(serviceId, type);
-    if (remote) return remote;
+  // Try Studio API first (only supports original 4 artefact types)
+  const remoteTypes = new Set(["manifest", "policy", "stateModel", "consent"]);
+  if (remoteTypes.has(type)) {
+    const client = await getServiceClient();
+    if (client) {
+      const remote = await client.getServiceArtefact(serviceId, type as "manifest" | "policy" | "stateModel" | "consent");
+      if (remote) return remote;
+    }
   }
   // Fallback to bundled data
   const slug = serviceDirSlug(serviceId);
