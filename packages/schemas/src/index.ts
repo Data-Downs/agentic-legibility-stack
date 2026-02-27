@@ -172,6 +172,10 @@ export interface TraceEvent {
     userId?: string;
     sessionId: string;
     capabilityId?: string;
+    modelVersion?: string;
+    promptHash?: string;
+    rulesetVersion?: string;
+    stateModelVersion?: string;
   };
 }
 
@@ -386,6 +390,45 @@ export type {
   StateCardMapping,
   InteractionCardSet,
 } from "./card-registry";
+
+// ── Orchestrator Action (LLM ↔ Orchestrator contract) ──
+
+export interface FieldExtraction {
+  key: string;
+  value: unknown;
+  confidence: "high" | "medium" | "low";
+  source_snippet?: string;
+}
+
+export interface OrchestratorAction {
+  responseText: string;
+  title?: string;
+  intent?: string;
+  extractedFields?: FieldExtraction[];
+  proposedTransition?: string;
+  tasks?: Array<{
+    description: string;
+    detail: string;
+    type: "agent" | "user";
+    dueDate?: string;
+    dataNeeded?: string[];
+  }>;
+  confidence?: number;
+  uncertaintyFlags?: string[];
+}
+
+// ── State Instructions ──
+
+export interface StateInstructions {
+  version: string;
+  instructions: Record<string, string>;
+  forcedTransitions?: Record<string, string>;
+  autoTransitions?: Array<{
+    fromState: string;
+    trigger: string;
+    pattern: string;
+  }>;
+}
 
 // ── Utility types ──
 

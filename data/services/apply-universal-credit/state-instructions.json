@@ -1,0 +1,56 @@
+{
+  "version": "1.0.0",
+  "instructions": {
+    "not-started": "The citizen has just started their Universal Credit application.\n\nCRITICAL — IDENTITY IS ALREADY VERIFIED:\nThe citizen is already authenticated via GOV.UK One Login. Identity verification is COMPLETE.\nDo NOT mention identity verification, One Login, or \"verifying who you are\" — it is DONE.\nDo NOT ask the citizen to verify their identity. Do NOT say \"first I need to verify your identity.\"\n\nWHAT TO DO IN THIS RESPONSE:\n1. Welcome them warmly\n2. Briefly explain what Universal Credit is (1-2 sentences)\n3. Present the eligibility results from the POLICY EVALUATION section above — explain whether they are eligible and why\n4. If eligible, explain that you need their consent to share certain data with DWP before proceeding\n5. Tell them that interactive consent cards will appear below for them to review and approve\n\nSet \"stateTransition\" to \"check-eligibility\" in the JSON block.\nDo NOT skip ahead — do not mention housing, bank details, or submission yet.\nDo NOT include any tasks in the JSON block — the eligibility check is automatic, not a task.",
+    "identity-verified": "Identity has already been verified via GOV.UK One Login — do NOT mention identity verification again.\nCheck eligibility and present the results using the POLICY EVALUATION section above.\nIf eligible, explain that consent is needed next — interactive consent cards will appear below.\nSet \"stateTransition\" to \"check-eligibility\" in the JSON block.\nDo NOT include any tasks in the JSON block.\nDo NOT discuss housing, bank details, or any later steps yet.",
+    "eligibility-checked": "Eligibility has already been checked and results were presented.\nThe citizen is now reviewing consent cards that appeared below your previous message.\n\nIf the citizen's message contains consent decisions (granted/denied) OR indicates agreement to proceed (e.g. \"yes\", \"go ahead\", \"I consent\", \"proceed\"):\n  - Acknowledge their consent, thank them\n  - Present their personal details for confirmation using ACTUAL data from the DATA ON FILE section: full name, DOB, NI number, address\n  - Ask \"Does everything look correct?\"\n  - Set \"stateTransition\" to \"grant-consent\" in the JSON block\n\nIf the citizen asks a question or provides other information:\n  - Answer their question helpfully\n  - Gently remind them to review and approve the consent cards below before proceeding\n  - Do NOT set a stateTransition\n\nDo NOT re-explain eligibility — it's already done.\nDo NOT mention identity verification — it's already done.\nDo NOT discuss housing, bank details, income, or any later steps yet.\nDo NOT include any tasks in the JSON block.",
+    "consent-given": "Consent has been granted and personal details have been confirmed from records.\nThank the citizen for granting consent. Confirm you have their personal details on file (name, DOB, NI number, address — list them briefly).\nExplain that a housing details form will appear below for them to fill in.\nDo NOT include any tasks in the JSON block — the system provides the housing card automatically.\nDo NOT discuss bank details, income, or submission yet.",
+    "personal-details-collected": "Personal details are confirmed from records.\nNow you need their housing details to calculate any housing support.\n\nCHECK THE USER'S MESSAGE FIRST:\nIf the user's message already contains housing details (e.g. \"I am a private renter\", \"I pay £400 rent\", \"council tenant\", \"homeowner\"):\n  - Acknowledge the housing data they provided\n  - Confirm the employment data on file from the DATA ON FILE section above (status, previous employer, end date)\n  - Mention that a bank account selection will come next\n  - Set \"stateTransition\" to \"collect-housing-details\" in the JSON block\n\nIf the user's message does NOT contain housing details:\n  - Explain you need their housing situation (tenure type and rent amount)\n  - An interactive card will appear below for them to fill in\n  - Do NOT set a stateTransition — wait for their housing data\n\nDo NOT include any tasks in the JSON block.\nDo NOT discuss submission yet.",
+    "housing-details-collected": "Housing details have been collected.\nThe system has automatically confirmed the employment and income data on file.\nAn interactive bank account card will appear for the citizen to select a payment account.\nBriefly acknowledge the housing data, confirm the employment details on record (status, employer, end date), and tell them to choose their bank account using the card below.\nDo NOT include any tasks in the JSON block — the system provides the bank card automatically.\nDo NOT discuss submission or payment amounts yet.",
+    "income-details-collected": "Income and employment details confirmed.\nNow explain you need a bank account for UC payments.\nAn interactive card will appear for them to select a saved account or enter a new one.\nDo NOT include any tasks in the JSON block — the system provides the card automatically.\nIf the user's message already contains bank details (sort code, account number), acknowledge and set \"stateTransition\" to \"verify-bank-details\" in the JSON block.\nOtherwise, briefly explain what's needed and STOP. Do not transition until bank data arrives.\nDo NOT discuss submission or payment amounts yet.",
+    "bank-details-verified": "Bank details verified. Now present a COMPLETE SUMMARY of everything collected:\n- Personal details (name, DOB, NI number, address)\n- Housing (tenure type, rent amount)\n- Employment (status, previous employer)\n- Bank account (bank name, last 4 digits only — do NOT show full sort code/account number)\nAsk: \"Shall I submit your Universal Credit application now?\"\nWhen the citizen confirms, set \"stateTransition\" to \"submit-claim\" in the JSON block.\nDo NOT fabricate any payment amounts or dates.",
+    "claim-submitted": "The claim has been submitted successfully!\nTell the citizen:\n- Their claim is now with DWP for processing\n- The standard assessment period is 5 weeks before the first payment\n- They will receive an exact payment calculation from DWP\n- They will need to attend an interview at their local Jobcentre Plus\n- They should set up their UC online journal (link will be in their confirmation email)\nDo NOT fabricate specific payment amounts, exact dates, or reference numbers — say \"DWP will confirm these details\".\nSet \"stateTransition\" to \"schedule-interview\" in the JSON block.\nDo NOT set any other transitions.",
+    "awaiting-interview": "An interview is being arranged. Tell the citizen:\n- They will be contacted by their local Jobcentre Plus to schedule an initial interview\n- What to bring: photo ID, bank statements, tenancy agreement, proof of housing costs\n- What to expect: discussion of their work search plans and claimant commitment\nSet \"stateTransition\" to \"activate-claim\" in the JSON block.\nDo NOT set any other transitions.",
+    "claim-active": "The UC claim is now active! Congratulate them warmly.\nExplain:\n- DWP will confirm their exact payment amount and date by post and in their UC journal\n- They must keep their UC journal updated with job search activity\n- They must report any changes in circumstances immediately\nThis is the FINAL message of the journey — do NOT ask follow-up questions or prompt for further input.\nEnd with a warm closing statement.\nDo NOT include any tasks in the JSON block.\nDo NOT fabricate payment amounts or dates.",
+    "rejected": "The application was not successful. Explain why clearly and sympathetically.\nMention:\n- Mandatory reconsideration: they can ask DWP to look at the decision again within 1 month\n- Appeal: they can appeal to an independent tribunal if reconsideration is unsuccessful\n- DWP helpline: 0800 328 5644 (Mon-Fri 8am-6pm)\nThis is the FINAL message — do NOT ask follow-up questions.\nDo NOT include any tasks in the JSON block.",
+    "handed-off": "This case has been referred to a human advisor for further review.\nExplain why, and provide:\n- DWP helpline: 0800 328 5644 (Mon-Fri 8am-6pm)\n- They can also visit their local Jobcentre Plus\nThis is the FINAL message — do NOT ask follow-up questions.\nDo NOT include any tasks in the JSON block."
+  },
+  "forcedTransitions": {
+    "not-started": "verify-identity",
+    "identity-verified": "check-eligibility",
+    "consent-given": "collect-personal-details",
+    "housing-details-collected": "collect-income-details"
+  },
+  "autoTransitions": [
+    {
+      "fromState": "eligibility-checked",
+      "trigger": "grant-consent",
+      "pattern": "I have reviewed all consent|consent.*granted|granted.*consent|please proceed|I consent|go ahead|yes.*proceed|agree|I've done it|done|let's go|ready|start|apply"
+    },
+    {
+      "fromState": "consent-given",
+      "trigger": "collect-personal-details",
+      "pattern": "everything.*correct|looks correct|details.*correct|yes.*correct|confirm|that's right|all correct"
+    },
+    {
+      "fromState": "personal-details-collected",
+      "trigger": "collect-housing-details",
+      "pattern": "housing details|private renter|council tenant|homeowner|living with family|tenure"
+    },
+    {
+      "fromState": "housing-details-collected",
+      "trigger": "collect-income-details",
+      "pattern": "yes|correct|that's right|confirm|looks good|all correct|no changes"
+    },
+    {
+      "fromState": "income-details-collected",
+      "trigger": "verify-bank-details",
+      "pattern": "sort code|account number|bank.*account|please use my"
+    },
+    {
+      "fromState": "bank-details-verified",
+      "trigger": "submit-claim",
+      "pattern": "yes|submit|go ahead|confirm|please submit"
+    }
+  ]
+}

@@ -1,13 +1,14 @@
 /**
- * ArtefactStore — Loads and manages the four artefact types per service
+ * ArtefactStore — Loads and manages the artefact types per service
  *
  * Each service has:
  *   1. manifest.json — CapabilityManifest
  *   2. policy.json — PolicyRuleset
  *   3. state-model.json — StateModelDefinition
  *   4. consent.json — ConsentModel
+ *   5. state-instructions.json — StateInstructions (per-state prompts + transition rules)
  *
- * The ArtefactStore loads all four from a service directory.
+ * The ArtefactStore loads all from a service directory.
  */
 
 import type {
@@ -15,6 +16,7 @@ import type {
   PolicyRuleset,
   StateModelDefinition,
   ConsentModel,
+  StateInstructions,
 } from "@als/schemas";
 
 export interface ServiceArtefacts {
@@ -22,6 +24,7 @@ export interface ServiceArtefacts {
   policy?: PolicyRuleset;
   stateModel?: StateModelDefinition;
   consent?: ConsentModel;
+  stateInstructions?: StateInstructions;
 }
 
 export class ArtefactStore {
@@ -81,6 +84,11 @@ export class ArtefactStore {
           artefacts.consent = JSON.parse(consentRaw);
         } catch { /* optional */ }
 
+        try {
+          const instrRaw = await fs.readFile(path.join(serviceDir, "state-instructions.json"), "utf-8");
+          artefacts.stateInstructions = JSON.parse(instrRaw);
+        } catch { /* optional */ }
+
         this.register(manifest.id, artefacts);
         loaded++;
       } catch {
@@ -117,6 +125,7 @@ export class ArtefactStore {
         policy: full.policy || undefined,
         stateModel: full.stateModel || undefined,
         consent: full.consent || undefined,
+        stateInstructions: (full as unknown as Record<string, unknown>).stateInstructions as ServiceArtefacts["stateInstructions"] || undefined,
       };
 
       this.register(full.id, artefacts);
