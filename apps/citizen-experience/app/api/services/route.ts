@@ -48,7 +48,7 @@ export async function GET() {
     }
 
     // Graph services (merged, deduped)
-    const allManifests = getAllServices();
+    const allManifests = await getAllServices();
     const fsIds = new Set(fsServices.map((s) => s.id));
 
     const graphServices = allManifests

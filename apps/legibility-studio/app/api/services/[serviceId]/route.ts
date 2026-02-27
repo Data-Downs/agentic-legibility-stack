@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getArtefactStore, getServiceArtefacts, analyzeGaps, invalidateArtefactStore, getServicesDirectory } from "@/lib/artefacts";
+import { getServiceArtefactStore } from "@/lib/service-store-init";
 
 /**
  * GET /api/services/[serviceId]
- * Returns all artefacts and gap analysis for a specific service.
+ * Returns all artefacts for a specific service (backward-compatible).
  */
 export async function GET(
   _request: NextRequest,
@@ -11,20 +11,25 @@ export async function GET(
 ) {
   try {
     const { serviceId } = await params;
-    const artefacts = await getServiceArtefacts(serviceId);
+    const store = await getServiceArtefactStore();
+    const service = await store.getService(serviceId);
 
-    if (!artefacts) {
+    if (!service) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
 
-    const gaps = analyzeGaps(artefacts);
+    const gaps = store.analyzeGaps(service);
 
     return NextResponse.json({
-      serviceId,
-      manifest: artefacts.manifest,
-      policy: artefacts.policy || null,
-      stateModel: artefacts.stateModel || null,
-      consent: artefacts.consent || null,
+      serviceId: service.id,
+      source: service.source,
+      manifest: service.manifest,
+      policy: service.policy || null,
+      stateModel: service.stateModel || null,
+      consent: service.consent || null,
+      generatedAt: service.generatedAt || null,
+      interactionType: service.interactionType || null,
+      govukUrl: service.govukUrl || null,
       gaps,
     });
   } catch (error) {
@@ -45,28 +50,17 @@ export async function PUT(
     const { serviceId } = await params;
     const body = await request.json();
 
-    const store = await getArtefactStore();
-    const existing = store.get(serviceId);
+    const store = await getServiceArtefactStore();
+    const updated = await store.updateService(serviceId, {
+      manifest: body.manifest ? { ...body.manifest, id: serviceId } : undefined,
+      policy: body.policy,
+      stateModel: body.stateModel,
+      consent: body.consent,
+    });
 
-    if (!existing) {
+    if (!updated) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
-
-    // Merge: keep the existing ID
-    const manifest = {
-      ...body.manifest,
-      id: serviceId,
-    };
-
-    const artefacts = {
-      manifest,
-      policy: body.policy || undefined,
-      stateModel: body.stateModel || undefined,
-      consent: body.consent || undefined,
-    };
-
-    await store.saveService(getServicesDirectory(), serviceId, artefacts);
-    invalidateArtefactStore();
 
     return NextResponse.json({ serviceId, updated: true });
   } catch (error) {
@@ -77,7 +71,6 @@ export async function PUT(
 
 /**
  * DELETE /api/services/[serviceId]
- * Deletes a service and its artefact files.
  */
 export async function DELETE(
   _request: NextRequest,
@@ -85,16 +78,12 @@ export async function DELETE(
 ) {
   try {
     const { serviceId } = await params;
+    const store = await getServiceArtefactStore();
+    const deleted = await store.deleteService(serviceId);
 
-    const store = await getArtefactStore();
-    const existing = store.get(serviceId);
-
-    if (!existing) {
+    if (!deleted) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
-
-    await store.deleteService(getServicesDirectory(), serviceId);
-    invalidateArtefactStore();
 
     return NextResponse.json({ deleted: true });
   } catch (error) {

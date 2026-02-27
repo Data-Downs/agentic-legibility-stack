@@ -298,6 +298,7 @@ export default function ServiceDetailPage({
   const [service, setService] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     fetch(`/api/services/${encodeURIComponent(serviceId)}`)
@@ -328,6 +329,25 @@ export default function ServiceDetailPage({
       setDeleting(false);
     }
   }, [serviceId, service, router]);
+
+  const handleGenerate = useCallback(async () => {
+    setGenerating(true);
+    try {
+      const response = await fetch(`/api/services/${encodeURIComponent(serviceId)}/generate`, { method: "POST" });
+      if (response.ok) {
+        // Refresh service data
+        const data = await fetch(`/api/services/${encodeURIComponent(serviceId)}`).then((r) => r.json());
+        setService(data);
+      } else {
+        const err = await response.json();
+        alert(err.error || "Generation failed");
+      }
+    } catch {
+      alert("Failed to generate artefacts");
+    } finally {
+      setGenerating(false);
+    }
+  }, [serviceId]);
 
   if (loading) {
     return <div className="text-center py-12 text-gray-500">Loading service...</div>;
@@ -361,7 +381,28 @@ export default function ServiceDetailPage({
       <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-2xl font-bold">{service.manifest.name}</h1>
-          <p className="text-gray-500 mt-1">{service.manifest.department}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-gray-500">{service.manifest.department}</p>
+            {service.source && (
+              <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                service.source === "full"
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-amber-100 text-amber-800"
+              }`}>
+                {service.source}
+              </span>
+            )}
+            {service.interactionType && (
+              <span className="text-[10px] font-medium text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded uppercase">
+                {service.interactionType.replace(/_/g, " ")}
+              </span>
+            )}
+            {service.generatedAt && (
+              <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded" title={service.generatedAt}>
+                Generated
+              </span>
+            )}
+          </div>
           <p className="mt-2 text-gray-700">{service.manifest.description}</p>
           <div className="flex gap-2 mt-3">
             <a
@@ -376,6 +417,15 @@ export default function ServiceDetailPage({
             >
               Edit service
             </a>
+            {service.source === "graph" && service.govukUrl && (
+              <button
+                onClick={handleGenerate}
+                disabled={generating}
+                className="bg-purple-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-purple-700 disabled:opacity-50"
+              >
+                {generating ? "Generating..." : "Generate from GOV.UK"}
+              </button>
+            )}
             <button
               onClick={handleDelete}
               disabled={deleting}

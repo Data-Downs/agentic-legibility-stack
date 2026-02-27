@@ -1,58 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getArtefactStore, analyzeGaps, invalidateArtefactStore, getServicesDirectory, listGraphServices, listLifeEvents } from "@/lib/artefacts";
-import { generateServiceId } from "@/lib/slugify";
+import { getServiceArtefactStore, getServiceGraphStore } from "@/lib/service-store-init";
 
 /**
  * GET /api/services
- * Returns all registered services: full artefact services + graph services.
+ * Returns all registered services (backward-compatible with existing Studio UI).
  */
 export async function GET() {
   try {
-    const store = await getArtefactStore();
-    const serviceIds = store.listServices();
+    const store = await getServiceArtefactStore();
+    const services = await store.listServices();
 
-    const fullServices = serviceIds.map((id) => {
-      const artefacts = store.get(id)!;
-      const gaps = analyzeGaps(artefacts);
-      const present = gaps.filter((g) => g.status === "present").length;
-      const total = gaps.length;
-
-      return {
-        id,
-        name: artefacts.manifest.name,
-        department: artefacts.manifest.department,
-        description: artefacts.manifest.description,
-        hasPolicy: !!artefacts.policy,
-        hasStateModel: !!artefacts.stateModel,
-        hasConsent: !!artefacts.consent,
-        promoted: !!artefacts.manifest.promoted,
-        completeness: Math.round((present / total) * 100),
-        gapCount: total - present,
-        source: "full" as const,
-      };
-    });
-
-    // Graph services that don't have full artefacts on disk
-    const graphServices = listGraphServices(serviceIds).map((gs) => ({
-      id: gs.id,
-      name: gs.name,
-      department: gs.department,
-      description: gs.description,
-      hasPolicy: false,
-      hasStateModel: false,
-      hasConsent: false,
-      promoted: false,
-      completeness: 0,
+    const mapped = services.map((s) => ({
+      id: s.id,
+      name: s.name,
+      department: s.department,
+      description: s.description,
+      hasPolicy: s.hasPolicy,
+      hasStateModel: s.hasStateModel,
+      hasConsent: s.hasConsent,
+      promoted: s.promoted,
+      completeness: s.source === "full" ? 50 : 0, // Approximate; full gap analysis via /api/v1/
       gapCount: 0,
-      source: "graph" as const,
-      serviceType: gs.serviceType,
-      govuk_url: gs.govuk_url,
+      source: s.source,
+      serviceType: s.serviceType,
+      govuk_url: s.govukUrl,
+      generatedAt: s.generatedAt,
+      interactionType: s.interactionType,
     }));
 
-    const services = [...fullServices, ...graphServices];
-    const lifeEvents = listLifeEvents();
+    const graphStore = await getServiceGraphStore();
+    const lifeEvents = await graphStore.getLifeEvents();
 
-    return NextResponse.json({ services, lifeEvents });
+    return NextResponse.json({
+      services: mapped,
+      lifeEvents: lifeEvents.map((e) => ({
+        id: e.id,
+        name: e.name,
+        icon: e.icon,
+        serviceIds: e.serviceIds,
+      })),
+    });
   } catch (error) {
     console.error("Error loading services:", error);
     return NextResponse.json({ error: "Failed to load services" }, { status: 500 });
@@ -61,13 +48,11 @@ export async function GET() {
 
 /**
  * POST /api/services
- * Creates a new service. Body must include manifest with name, department, description.
- * Optionally includes policy, stateModel, consent.
+ * Creates a new service (backward-compatible).
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-
     const name = body.manifest?.name;
     const department = body.manifest?.department;
     const description = body.manifest?.description;
@@ -79,37 +64,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const serviceId = generateServiceId(department, name);
+    const serviceId = body.manifest.id || `${slugify(department)}.${slugify(name)}`;
 
-    // Check for collisions
-    const store = await getArtefactStore();
-    if (store.get(serviceId)) {
+    const store = await getServiceArtefactStore();
+    const existing = await store.getService(serviceId);
+    if (existing) {
       return NextResponse.json(
         { error: `Service "${serviceId}" already exists` },
         { status: 409 }
       );
     }
 
-    // Build the manifest with generated ID
     const manifest = {
       ...body.manifest,
       id: serviceId,
       version: body.manifest.version || "1.0.0",
     };
 
-    const artefacts = {
+    await store.createService({
+      id: serviceId,
       manifest,
-      policy: body.policy || undefined,
-      stateModel: body.stateModel || undefined,
-      consent: body.consent || undefined,
-    };
-
-    await store.saveService(getServicesDirectory(), serviceId, artefacts);
-    invalidateArtefactStore();
+      policy: body.policy || null,
+      stateModel: body.stateModel || null,
+      consent: body.consent || null,
+      source: body.policy ? "full" : "graph",
+    });
 
     return NextResponse.json({ serviceId }, { status: 201 });
   } catch (error) {
     console.error("Error creating service:", error);
     return NextResponse.json({ error: "Failed to create service" }, { status: 500 });
   }
+}
+
+function slugify(text: string): string {
+  return text.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }

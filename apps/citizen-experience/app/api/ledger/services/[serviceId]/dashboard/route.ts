@@ -21,7 +21,7 @@ export async function GET(
     const dashboard = await store.getDashboard(decodeURIComponent(serviceId));
 
     // Attach the state model so Studio can render the progress flow
-    const stateModel = loadStateModel(decodeURIComponent(serviceId));
+    const stateModel = await loadStateModel(decodeURIComponent(serviceId));
 
     return NextResponse.json({ ...dashboard, stateModel }, { headers: corsHeaders });
   } catch (error) {

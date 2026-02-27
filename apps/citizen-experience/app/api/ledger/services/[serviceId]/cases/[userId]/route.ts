@@ -33,7 +33,7 @@ export async function GET(
     }
 
     const timeline = await store.getCaseTimeline(caseId);
-    const stateModel = loadStateModel(decodedService);
+    const stateModel = await loadStateModel(decodedService);
 
     return NextResponse.json({
       case: ledgerCase,
