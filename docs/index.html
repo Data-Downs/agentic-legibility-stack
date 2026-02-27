@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agentic Legibility Stack &mdash; V2 Platform</title>
-  <meta name="description" content="108 government services, 16 life events, deployed on Cloudflare Workers. A platform reference architecture for accountable AI agents in UK government.">
+  <meta name="description" content="110 government services with full artefact sets, 16 life events, deployed on Cloudflare Workers. A platform reference architecture for accountable AI agents in UK government.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -578,7 +578,7 @@
     <span class="hero-label">Platform Reference Architecture</span>
     <h1>Agentic Legibility Stack</h1>
     <p class="hero-subtitle">
-      108 government services, 16 life events, deployed on Cloudflare Workers.
+      110 government services &mdash; each with full machine-readable artefacts &mdash; across 16 life events, deployed on Cloudflare Workers.
       A reference architecture for accountable AI agents in UK government.
     </p>
     <p class="hero-desc">
@@ -612,7 +612,7 @@
   <div class="container">
     <div class="stat-grid">
       <div>
-        <div class="stat-number">108</div>
+        <div class="stat-number">110</div>
         <div class="stat-label">Government Services</div>
       </div>
       <div>
@@ -636,9 +636,9 @@
   <div class="container">
     <h2>From Prototype to Platform</h2>
     <p class="section-intro">
-      The V1 prototype proved the architecture with 4 services running locally.
-      V2 scales it to 108 services across 15 departments, deployed on Cloudflare Workers
-      with 3 D1 databases and a remote MCP server.
+      The V1 prototype proved the architecture with 4 hand-authored services running locally.
+      V2 scales it to 110 services across 15 departments, each with full machine-readable artefacts,
+      deployed on Cloudflare Workers with 3 D1 databases and a remote MCP server.
     </p>
 
     <table class="data-table" style="margin-bottom: 1.5rem;">
@@ -650,13 +650,14 @@
         </tr>
       </thead>
       <tbody>
-        <tr><td>Services</td><td>4 hand-authored</td><td><strong>108</strong> (4 full + 104 graph-only)</td></tr>
+        <tr><td>Services</td><td>4 hand-authored</td><td><strong>110</strong> (all with full artefact sets)</td></tr>
         <tr><td>Packages</td><td>7</td><td><strong>11</strong></td></tr>
         <tr><td>Databases</td><td>1 local SQLite</td><td><strong>3 D1 databases</strong></td></tr>
         <tr><td>Deployment</td><td>Local only</td><td><strong>Cloudflare Workers</strong></td></tr>
-        <tr><td>MCP Server</td><td>stdio (local)</td><td><strong>StreamableHTTP</strong> (remote)</td></tr>
+        <tr><td>MCP Server</td><td>stdio (local, 8 tools)</td><td><strong>220 tools</strong>, 440 resources, 220 prompts</td></tr>
         <tr><td>Personal Data</td><td>None</td><td><strong>3-tier model</strong> (verified/submitted/inferred)</td></tr>
         <tr><td>Service Storage</td><td>Filesystem JSON</td><td><strong>DB-backed store</strong> with gap analysis</td></tr>
+        <tr><td>Artefact Generation</td><td>Manual</td><td><strong>Auto-generated</strong> from GOV.UK content via LLM</td></tr>
       </tbody>
     </table>
 
@@ -672,7 +673,7 @@
   <div class="container">
     <h2>The Service Graph</h2>
     <p class="section-intro">
-      108 government services connected by 98 dependency edges across 16 life events.
+      110 government services connected by 98 dependency edges across 16 life events.
       The graph models how services relate: registering a birth <em>enables</em> applying for
       Child Benefit, which <em>requires</em> a National Insurance number.
     </p>
@@ -785,7 +786,8 @@
     <div class="callout">
       <strong>Department breakdown:</strong> HMRC (27 services), DWP (21), Local Authority (14),
       Home Office (6), HMCTS (6), NHS (5), GRO (5), DVLA (5), OPG (2), DVSA (2),
-      and 5 more departments with 1 service each.
+      and 5 more departments with 1 service each. All 110 services have full
+      machine-readable artefact sets (policy, state-model, consent).
     </div>
   </div>
 </section>
@@ -834,8 +836,8 @@
       <!-- Services -->
       <div class="diagram-row">
         <div class="diagram-box" style="border-left-color: #00703c; min-width: 260px;">
-          <strong>108 Government Services</strong>
-          <span>4 full artefact sets &bull; 104 graph-only</span>
+          <strong>110 Government Services</strong>
+          <span>All with full artefact sets (policy, state-model, consent)</span>
         </div>
       </div>
 
@@ -900,7 +902,7 @@
       <div class="card card-accent card-blue">
         <div class="card-tag">DB-Backed Catalog</div>
         <h3>Service Catalog</h3>
-        <p>All 108 services stored in D1. Supports CRUD operations, gap analysis (missing artefacts), auto-seeding from the service graph, and promoted service management.</p>
+        <p>All 110 services stored in D1 with full artefact sets. Supports CRUD operations, gap analysis, auto-seeding from the service graph, LLM-powered artefact generation, and promoted service management.</p>
         <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
           <code>ServiceArtefactStore</code> &bull; <code>ServiceGraphStore</code>
         </div>
@@ -940,19 +942,19 @@
 
     <div class="grid-3" style="margin-bottom: 2rem;">
       <div class="card" style="text-align: center;">
-        <div style="font-size: 2.5rem; font-weight: 700; color: #1d70b8;">122</div>
+        <div style="font-size: 2.5rem; font-weight: 700; color: #1d70b8;">440</div>
         <div style="font-size: 0.9rem; color: #505a5f; font-weight: 500;">Resources</div>
-        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Service manifests, policies, state models, consent definitions</p>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem;">4 per service: manifest, policy, state-model, consent</p>
       </div>
       <div class="card" style="text-align: center;">
-        <div style="font-size: 2.5rem; font-weight: 700; color: #00703c;">8</div>
+        <div style="font-size: 2.5rem; font-weight: 700; color: #00703c;">220</div>
         <div style="font-size: 0.9rem; color: #505a5f; font-weight: 500;">Tools</div>
-        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Search services, check eligibility, get artefacts, list life events</p>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem;">2 per service: check_eligibility (read) + advance_state (mutating)</p>
       </div>
       <div class="card" style="text-align: center;">
-        <div style="font-size: 2.5rem; font-weight: 700; color: #912b88;">114</div>
+        <div style="font-size: 2.5rem; font-weight: 700; color: #912b88;">220</div>
         <div style="font-size: 0.9rem; color: #505a5f; font-weight: 500;">Prompts</div>
-        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Pre-built conversation starters for each service and life event</p>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem;">2 per service: journey template + eligibility check template</p>
       </div>
     </div>
 
@@ -966,9 +968,17 @@
   }
 }</code></pre>
 
+    <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Local MCP Server (stdio)</h3>
+    <p style="color: #505a5f; margin-bottom: 0.75rem; font-size: 0.9rem;">
+      The local MCP server reads all 110 services directly from the service-store DB, exposing 220 tools,
+      440 resources, and 220 prompts via stdio transport. The citizen-experience chat connects to this
+      automatically on startup.
+    </p>
+
     <div class="callout">
-      The MCP server is served from the same Legibility Studio Worker.
-      It exposes the full service catalog as MCP resources, tools, and prompts over StreamableHTTP.
+      <strong>Two transports, one catalog.</strong> The remote MCP server (StreamableHTTP) runs from the
+      Legibility Studio Worker for external clients like Claude Desktop. The local MCP server (stdio)
+      reads from the DB for the citizen-experience chat. Both expose the same 110-service catalog.
       No API key required for read access.
     </div>
   </div>
@@ -980,7 +990,8 @@
     <h2>The 4-Artefact Contract</h2>
     <p class="section-intro">
       Every government service is formally defined by four machine-readable JSON files.
-      4 services have full artefact sets; the remaining 104 are graph-only with generated manifests.
+      All 110 services have complete artefact sets &mdash; 4 hand-authored as reference examples,
+      106 auto-generated from GOV.UK content using LLM-powered extraction.
     </p>
 
     <div class="grid-2">
@@ -1035,9 +1046,11 @@
     </div>
 
     <div class="callout">
-      Full artefact sets live in <code>data/services/{service-name}/</code>. Graph-only services
-      get auto-generated manifests from the service graph. The Studio's gap analysis tool identifies
-      which artefacts are missing for each service.
+      <strong>Auto-generation pipeline:</strong> The artefact generator fetches GOV.UK Content API pages,
+      combines them with CDDO Top 75 enrichment data (interaction type, login requirements, data collected),
+      and uses Claude to produce policy rules, state models, and consent definitions. Each service is classified
+      into one of 8 interaction types (license, register, portal, application, informational hub, appointment booker,
+      task list, payment service), which drives the state model template.
     </div>
   </div>
 </section>
@@ -1068,6 +1081,7 @@
         <h3>Legibility Studio <span class="wb-tag">Worker</span></h3>
         <ul>
           <li>Service catalog &amp; gap analysis</li>
+          <li>Artefact generation from GOV.UK</li>
           <li>Trace explorer &amp; case management</li>
           <li>Remote MCP server (<code>/mcp</code>)</li>
           <li>V1 REST API (<code>/api/v1/*</code>)</li>
@@ -1120,9 +1134,9 @@
         <tr><td><code>@als/identity</code></td><td>GOV.UK One Login and Wallet simulators</td></tr>
         <tr><td><code>@als/personal-data</code> <span class="badge-new">NEW</span></td><td>3-tier model: SubmittedStore, InferredStore, ServiceAccessStore, ConsentLedger</td></tr>
         <tr><td><code>@als/adapters</code></td><td>AnthropicAdapter, GOV.UK Content adapter, MCP client adapter</td></tr>
-        <tr><td><code>@als/mcp-server</code></td><td>MCP server (stdio + StreamableHTTP) exposing service artefacts as tools/resources</td></tr>
-        <tr><td><code>@als/service-graph</code> <span class="badge-new">NEW</span></td><td>108 services, 98 edges, 16 life events &mdash; graph traversal engine</td></tr>
-        <tr><td><code>@als/service-store</code> <span class="badge-new">NEW</span></td><td>DB-backed CRUD for services, gap analysis, auto-seeding from graph</td></tr>
+        <tr><td><code>@als/mcp-server</code></td><td>MCP server (stdio + StreamableHTTP) &mdash; 220 tools, 440 resources, 220 prompts from DB</td></tr>
+        <tr><td><code>@als/service-graph</code> <span class="badge-new">NEW</span></td><td>110 services, 98 edges, 16 life events &mdash; graph traversal engine</td></tr>
+        <tr><td><code>@als/service-store</code> <span class="badge-new">NEW</span></td><td>DB-backed CRUD for services, gap analysis, LLM artefact generation, auto-seeding from graph</td></tr>
       </tbody>
     </table>
 
@@ -1142,7 +1156,7 @@
           <td><code>legibility-studio</code></td>
           <td><code>:3101</code></td>
           <td><a href="https://als-studio.chris-8ab.workers.dev" target="_blank" rel="noopener">als-studio.&hellip;</a></td>
-          <td>Service catalog, trace explorer, gap analysis, MCP server</td>
+          <td>Service catalog, artefact generation, trace explorer, gap analysis, MCP server</td>
         </tr>
       </tbody>
     </table>
@@ -1222,7 +1236,7 @@
         <a href="https://github.com/datadowns/agentic-legibility-stack" target="_blank" rel="noopener">GitHub Repository</a>
         <p><a href="https://als-studio.chris-8ab.workers.dev" target="_blank" rel="noopener">Live Demo</a></p>
         <p><a href="v1/">V1 Documentation</a></p>
-        <p style="margin-top: 0.5rem; font-size: 0.8rem;">Branch: <code style="color: #b1b4b6;">v2/platform</code></p>
+        <p style="margin-top: 0.5rem; font-size: 0.8rem;">Branch: <code style="color: #b1b4b6;">main</code></p>
       </div>
     </div>
   </div>
