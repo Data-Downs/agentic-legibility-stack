@@ -9,6 +9,8 @@ interface GenericFormCardProps {
   onSubmit: (fields: Record<string, string | number | boolean>) => void;
   disabled?: boolean;
   prefillData?: Record<string, string | number | boolean>;
+  /** Field keys that are Tier 1 (verified) and should be rendered as read-only */
+  readonlyFields?: string[];
 }
 
 export function GenericFormCard({
@@ -16,7 +18,9 @@ export function GenericFormCard({
   onSubmit,
   disabled,
   prefillData,
+  readonlyFields,
 }: GenericFormCardProps) {
+  const readonlySet = new Set(readonlyFields || []);
   const [values, setValues] = useState<Record<string, string | number | boolean>>(() => {
     const initial: Record<string, string | number | boolean> = {};
     for (const field of definition.fields) {
@@ -77,17 +81,24 @@ export function GenericFormCard({
           );
         }
 
+        const isReadonly = readonlySet.has(field.key);
+
         return (
           <div key={field.key}>
             <label className="block text-sm font-semibold text-govuk-black mb-1.5">
               {field.label}
-              {field.required && <span className="text-red-500 ml-0.5">*</span>}
+              {field.required && !isReadonly && <span className="text-red-500 ml-0.5">*</span>}
+              {isReadonly && (
+                <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                  Verified
+                </span>
+              )}
             </label>
             <FieldRenderer
               field={field}
               value={values[field.key]}
               onChange={handleChange}
-              disabled={disabled}
+              disabled={disabled || isReadonly}
             />
           </div>
         );

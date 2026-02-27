@@ -2,7 +2,7 @@
  * Types for the service store — DB-backed service artefact storage.
  */
 
-import type { CapabilityManifest, PolicyRuleset, StateModelDefinition, ConsentModel } from "@als/schemas";
+import type { CapabilityManifest, PolicyRuleset, StateModelDefinition, ConsentModel, StateCardMapping } from "@als/schemas";
 
 /** A row in the services table */
 export interface ServiceRow {
@@ -22,6 +22,7 @@ export interface ServiceRow {
   policy_json: string | null;
   state_model_json: string | null;
   consent_json: string | null;
+  card_definitions_json: string | null;
   generated_at: string | null;
   interaction_type: string | null;
   created_at: string;
@@ -77,6 +78,7 @@ export interface ServiceWithArtefacts {
   policy: PolicyRuleset | null;
   stateModel: StateModelDefinition | null;
   consent: ConsentModel | null;
+  cardDefinitions: StateCardMapping[] | null;
   generatedAt: string | null;
   interactionType: string | null;
   createdAt: string;
@@ -97,6 +99,7 @@ export interface ServiceSummary {
   hasPolicy: boolean;
   hasStateModel: boolean;
   hasConsent: boolean;
+  hasCardDefinitions: boolean;
   generatedAt: string | null;
   interactionType: string | null;
 }

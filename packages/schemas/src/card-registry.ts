@@ -535,6 +535,29 @@ export function resolveCards(
 }
 
 /**
+ * Resolve cards with DB overrides taking priority over the static registry.
+ *
+ * Resolution chain:
+ * 1. Per-service DB overrides (serviceOverrides) for the given stateId
+ * 2. Static interaction-type registry (resolveCards)
+ */
+export function resolveCardsWithOverrides(
+  interactionType: string,
+  stateId: string,
+  serviceId?: string,
+  serviceOverrides?: StateCardMapping[] | null,
+): CardDefinition[] {
+  // 1. Check DB overrides first
+  if (serviceOverrides && serviceOverrides.length > 0) {
+    const override = serviceOverrides.find((m) => m.stateId === stateId);
+    if (override) return override.cards;
+  }
+
+  // 2. Fall back to static registry
+  return resolveCards(interactionType, stateId, serviceId);
+}
+
+/**
  * Infer interaction type from a service's serviceType field.
  * Duplicated here to avoid cross-package dependency on legibility-studio.
  */

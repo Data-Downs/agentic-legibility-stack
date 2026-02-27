@@ -53,6 +53,9 @@ export class ServiceArtefactStore {
     try {
       await this.db.exec(`ALTER TABLE services ADD COLUMN interaction_type TEXT`);
     } catch { /* column already exists */ }
+    try {
+      await this.db.exec(`ALTER TABLE services ADD COLUMN card_definitions_json TEXT`);
+    } catch { /* column already exists */ }
   }
 
   /** Get a single service with full artefacts */
@@ -67,7 +70,7 @@ export class ServiceArtefactStore {
 
   /** List services with optional filtering (returns summaries, no full JSON) */
   async listServices(filter?: ServiceFilter): Promise<ServiceSummary[]> {
-    let sql = "SELECT id, name, department, department_key, description, source, service_type, govuk_url, promoted, proactive, gated, generated_at, interaction_type, policy_json IS NOT NULL as has_policy, state_model_json IS NOT NULL as has_state_model, consent_json IS NOT NULL as has_consent FROM services WHERE 1=1";
+    let sql = "SELECT id, name, department, department_key, description, source, service_type, govuk_url, promoted, proactive, gated, generated_at, interaction_type, policy_json IS NOT NULL as has_policy, state_model_json IS NOT NULL as has_state_model, consent_json IS NOT NULL as has_consent, card_definitions_json IS NOT NULL as has_card_definitions FROM services WHERE 1=1";
     const params: unknown[] = [];
 
     if (filter?.department) {
@@ -94,7 +97,7 @@ export class ServiceArtefactStore {
 
     sql += " ORDER BY name ASC";
 
-    const rows = await this.db.all<ServiceRow & { has_policy: number; has_state_model: number; has_consent: number; generated_at: string | null; interaction_type: string | null }>(
+    const rows = await this.db.all<ServiceRow & { has_policy: number; has_state_model: number; has_consent: number; has_card_definitions: number; generated_at: string | null; interaction_type: string | null }>(
       sql,
       ...params
     );
@@ -112,6 +115,7 @@ export class ServiceArtefactStore {
       hasPolicy: !!row.has_policy,
       hasStateModel: !!row.has_state_model,
       hasConsent: !!row.has_consent,
+      hasCardDefinitions: !!row.has_card_definitions,
       generatedAt: row.generated_at || null,
       interactionType: row.interaction_type || null,
     }));
@@ -124,6 +128,7 @@ export class ServiceArtefactStore {
     policy?: Record<string, unknown> | null;
     stateModel?: Record<string, unknown> | null;
     consent?: Record<string, unknown> | null;
+    cardDefinitions?: Array<Record<string, unknown>> | null;
     source?: "full" | "graph";
     departmentKey?: string;
   }): Promise<void> {
@@ -131,8 +136,8 @@ export class ServiceArtefactStore {
     const deptKey = data.departmentKey || this.slugify(m.department || "");
 
     await this.db.run(
-      `INSERT INTO services (id, name, department, department_key, description, source, service_type, govuk_url, eligibility_summary, promoted, proactive, gated, manifest_json, policy_json, state_model_json, consent_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO services (id, name, department, department_key, description, source, service_type, govuk_url, eligibility_summary, promoted, proactive, gated, manifest_json, policy_json, state_model_json, consent_json, card_definitions_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       data.id,
       m.name,
       m.department,
@@ -148,7 +153,8 @@ export class ServiceArtefactStore {
       JSON.stringify(m),
       data.policy ? JSON.stringify(data.policy) : null,
       data.stateModel ? JSON.stringify(data.stateModel) : null,
-      data.consent ? JSON.stringify(data.consent) : null
+      data.consent ? JSON.stringify(data.consent) : null,
+      data.cardDefinitions ? JSON.stringify(data.cardDefinitions) : null
     );
   }
 
@@ -160,6 +166,7 @@ export class ServiceArtefactStore {
       policy?: Record<string, unknown> | null;
       stateModel?: Record<string, unknown> | null;
       consent?: Record<string, unknown> | null;
+      cardDefinitions?: Array<Record<string, unknown>> | null;
       source?: "full" | "graph";
       generatedAt?: string;
       interactionType?: string;
@@ -177,6 +184,7 @@ export class ServiceArtefactStore {
         service_type = ?, govuk_url = ?, eligibility_summary = ?,
         promoted = ?, proactive = ?, gated = ?,
         manifest_json = ?, policy_json = ?, state_model_json = ?, consent_json = ?,
+        card_definitions_json = ?,
         generated_at = ?, interaction_type = ?,
         updated_at = datetime('now')
        WHERE id = ?`,
@@ -212,6 +220,13 @@ export class ServiceArtefactStore {
           : null
         : existing.consent
           ? JSON.stringify(existing.consent)
+          : null,
+      data.cardDefinitions !== undefined
+        ? data.cardDefinitions
+          ? JSON.stringify(data.cardDefinitions)
+          : null
+        : existing.cardDefinitions
+          ? JSON.stringify(existing.cardDefinitions)
           : null,
       data.generatedAt !== undefined ? data.generatedAt : existing.generatedAt,
       data.interactionType !== undefined ? data.interactionType : existing.interactionType,
@@ -332,6 +347,7 @@ export class ServiceArtefactStore {
       policy: row.policy_json ? JSON.parse(row.policy_json) : null,
       stateModel: row.state_model_json ? JSON.parse(row.state_model_json) : null,
       consent: row.consent_json ? JSON.parse(row.consent_json) : null,
+      cardDefinitions: row.card_definitions_json ? JSON.parse(row.card_definitions_json) : null,
       generatedAt: row.generated_at || null,
       interactionType: row.interaction_type || null,
       createdAt: row.created_at,

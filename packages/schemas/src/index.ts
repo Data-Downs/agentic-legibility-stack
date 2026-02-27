@@ -381,6 +381,7 @@ export type {
 
 export {
   resolveCards,
+  resolveCardsWithOverrides,
   inferInteractionType,
   INTERACTION_TYPES,
 } from "./card-registry";

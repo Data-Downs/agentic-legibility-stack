@@ -69,6 +69,10 @@ export interface CardRequest {
   stateId: string;
   /** Full card spec for rendering */
   definition: CardDefinition;
+  /** Pre-filled values from consented personal data (Tier 1 + Tier 2) */
+  prefillData?: Record<string, string | number | boolean>;
+  /** Field keys that are Tier 1 (verified) and should be rendered as read-only */
+  readonlyFields?: string[];
 }
 
 /** Sent from client to card-submit API */

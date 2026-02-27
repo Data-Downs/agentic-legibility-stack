@@ -574,6 +574,16 @@ export async function getServiceArtefact(
   return SERVICE_DATA[slug]?.[type] ?? null;
 }
 
+/** Get card definitions (DB overrides) for a service — Studio API only, no bundled fallback */
+export async function getCardDefinitions(serviceId: string): Promise<Array<Record<string, unknown>> | null> {
+  const client = await getServiceClient();
+  if (!client) return null;
+  const service = await client.getService(serviceId);
+  if (!service) return null;
+  const defs = service.cardDefinitions;
+  return Array.isArray(defs) ? defs as Array<Record<string, unknown>> : null;
+}
+
 /** Get persona data by persona ID */
 export function getPersonaData(personaId: string): Record<string, unknown> | null {
   return PERSONA_DATA[personaId] ?? null;

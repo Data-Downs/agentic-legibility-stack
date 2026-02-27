@@ -163,6 +163,8 @@ export function CardHost({ cardRequests, onAllSubmitted, disabled }: CardHostPro
                       definition={card.definition}
                       onSubmit={(fields) => handleCardSubmit(card, fields)}
                       disabled={disabled || isSubmittingCard}
+                      prefillData={card.prefillData}
+                      readonlyFields={card.readonlyFields}
                     />
                   )}
                 </div>

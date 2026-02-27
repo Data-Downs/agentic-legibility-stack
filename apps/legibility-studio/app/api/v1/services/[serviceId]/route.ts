@@ -39,6 +39,7 @@ export async function GET(
       policy: service.policy,
       stateModel: service.stateModel,
       consent: service.consent,
+      cardDefinitions: service.cardDefinitions,
       gaps,
     });
   } catch (error) {
@@ -65,6 +66,7 @@ export async function PUT(
       policy: body.policy,
       stateModel: body.stateModel,
       consent: body.consent,
+      cardDefinitions: body.cardDefinitions,
     });
 
     if (!updated) {

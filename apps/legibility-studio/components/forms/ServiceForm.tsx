@@ -4,6 +4,7 @@ import { useState } from "react";
 import FormField from "./FormField";
 import DynamicList from "./DynamicList";
 import KeyValueEditor, { type SchemaField } from "./KeyValueEditor";
+import CardDefinitionsEditor, { type StateCardMappingItem, emptyMapping } from "./CardDefinitionsEditor";
 
 // ── Types ──
 
@@ -87,6 +88,10 @@ export interface ServiceFormData {
   states: StateItem[];
   transitions: TransitionItem[];
 
+  // Card Definitions
+  enableCardDefinitions: boolean;
+  cardDefinitions: StateCardMappingItem[];
+
   // Consent
   enableConsent: boolean;
   consentGrants: ConsentGrant[];
@@ -109,6 +114,7 @@ function emptyFormData(): ServiceFormData {
     escalationPhone: "", openingHours: "", departmentQueue: "",
     enablePolicy: false, policyRules: [], explanationTemplate: "", edgeCases: [],
     enableStateModel: false, states: [], transitions: [],
+    enableCardDefinitions: false, cardDefinitions: [],
     enableConsent: false, consentGrants: [],
     revocationMechanism: "", revocationEffect: "",
     delegationAgentIdentity: "", delegationScopes: "", delegationLimitations: "",
@@ -121,6 +127,7 @@ export function apiDataToFormData(data: any): ServiceFormData {
   const p = data.policy;
   const sm = data.stateModel;
   const c = data.consent;
+  const cd = data.cardDefinitions;
 
   // Convert input_schema properties to SchemaField[]
   const inputFields: SchemaField[] = [];
@@ -188,6 +195,26 @@ export function apiDataToFormData(data: any): ServiceFormData {
       trigger: t.trigger || "",
       condition: t.condition || "",
     })) || [],
+    enableCardDefinitions: Array.isArray(cd) && cd.length > 0,
+    cardDefinitions: Array.isArray(cd) ? cd.map((mapping: Record<string, unknown>) => ({
+      stateId: (mapping.stateId as string) || "",
+      cards: Array.isArray(mapping.cards) ? (mapping.cards as Array<Record<string, unknown>>).map((card) => ({
+        cardType: (card.cardType as string) || "",
+        title: (card.title as string) || "",
+        description: (card.description as string) || "",
+        submitLabel: (card.submitLabel as string) || "Confirm",
+        dataCategory: (card.dataCategory as string) || "",
+        fields: Array.isArray(card.fields) ? (card.fields as Array<Record<string, unknown>>).map((f) => ({
+          key: (f.key as string) || "",
+          label: (f.label as string) || "",
+          type: (f.type as string) || "text",
+          required: !!f.required,
+          placeholder: (f.placeholder as string) || "",
+          category: (f.category as string) || "",
+          prefillFrom: (f.prefillFrom as string) || "",
+        })) : [],
+      })) : [],
+    })) : [],
     enableConsent: !!c,
     consentGrants: c?.grants?.map((g: Record<string, unknown>) => ({
       description: (g.description as string) || "",
@@ -317,6 +344,35 @@ export function formDataToApiPayload(data: ServiceFormData) {
         ...(t.condition ? { condition: t.condition } : {}),
       })),
     };
+  }
+
+  // Card Definitions
+  if (data.enableCardDefinitions && data.cardDefinitions.length > 0) {
+    payload.cardDefinitions = data.cardDefinitions
+      .filter((m) => m.stateId)
+      .map((m) => ({
+        stateId: m.stateId,
+        cards: m.cards
+          .filter((c) => c.cardType)
+          .map((c) => ({
+            cardType: c.cardType,
+            title: c.title,
+            description: c.description || undefined,
+            submitLabel: c.submitLabel || undefined,
+            dataCategory: c.dataCategory,
+            fields: c.fields
+              .filter((f) => f.key)
+              .map((f) => ({
+                key: f.key,
+                label: f.label,
+                type: f.type,
+                ...(f.required ? { required: true } : {}),
+                ...(f.placeholder ? { placeholder: f.placeholder } : {}),
+                ...(f.category ? { category: f.category } : {}),
+                ...(f.prefillFrom ? { prefillFrom: f.prefillFrom } : {}),
+              })),
+          })),
+      }));
   }
 
   // Consent
@@ -651,6 +707,18 @@ export default function ServiceForm({
               <input type="text" value={transition.condition} onChange={(e) => onChange({ ...transition, condition: e.target.value })} placeholder="Condition (optional)" className={inputClass} />
             </div>
           )}
+        />
+      </ToggleSection>
+
+      {/* Card Definitions */}
+      <ToggleSection title="Card Definitions (per-state overrides)" enabled={form.enableCardDefinitions} onToggle={(v) => update("enableCardDefinitions", v)}>
+        <p className="text-xs text-gray-500 mb-3">
+          Override the default card registry for specific states. Each state mapping defines which form cards appear when the service transitions to that state.
+        </p>
+        <CardDefinitionsEditor
+          mappings={form.cardDefinitions}
+          onChange={(mappings) => update("cardDefinitions", mappings)}
+          stateIds={form.states.filter((s) => s.id).map((s) => s.id)}
         />
       </ToggleSection>
 

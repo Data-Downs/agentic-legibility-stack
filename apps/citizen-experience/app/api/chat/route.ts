@@ -13,9 +13,10 @@ import type { LLMAdapter, LLMChatResult, OrchestratorOutput } from "@als/runtime
 import { AnthropicAdapter } from "@als/adapters";
 import type { AnthropicChatInput, AnthropicChatOutput } from "@als/adapters";
 import type { InvocationContext, PolicyRuleset, StateModelDefinition, StateInstructions, CardRequest, TemplateContext } from "@als/schemas";
-import { resolveCards, inferInteractionType, INSTRUCTION_TEMPLATE_REGISTRY, resolveTemplateInstructions, templateToStateModel } from "@als/schemas";
+import { resolveCardsWithOverrides, inferInteractionType, INSTRUCTION_TEMPLATE_REGISTRY, resolveTemplateInstructions, templateToStateModel } from "@als/schemas";
+import type { StateCardMapping } from "@als/schemas";
 import { getTraceEmitter, getReceiptGenerator } from "@/lib/evidence";
-import { getServiceArtefact, getPersonaData, getPersonaMapping, getPromptFile, getAnyManifest, getGraphNode } from "@/lib/service-data";
+import { getServiceArtefact, getPersonaData, getPersonaMapping, getPromptFile, getAnyManifest, getGraphNode, getCardDefinitions } from "@/lib/service-data";
 import { getInferredStore, getServiceAccessStore, getSubmittedStore } from "@/lib/personal-data-store";
 
 // ── AnthropicAdapter — the ONLY Anthropic SDK usage ──
@@ -683,7 +684,7 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
 
   // ── Dynamic Card Resolution ──
   // Resolve structured form cards based on (interactionType, currentState).
-  // Cards are data-driven from the card registry — no hardcoded housing/bank detection.
+  // Resolution chain: per-service DB overrides → static card registry.
   let cardRequests: CardRequest[] = [];
 
   if (result.ucState) {
@@ -694,8 +695,15 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
     const serviceTypeForCards = graphNodeForCards?.serviceType ?? null;
     const interactionType = inferInteractionType(serviceTypeForCards);
 
-    // Resolve cards for the current state
-    const cardDefs = resolveCards(interactionType, postTransitionState, serviceId);
+    // Load DB card overrides (from Studio)
+    let dbCardOverrides: StateCardMapping[] | null = null;
+    try {
+      const raw = await getCardDefinitions(serviceId);
+      if (raw) dbCardOverrides = raw as unknown as StateCardMapping[];
+    } catch { /* Studio unavailable — fall through to static registry */ }
+
+    // Resolve cards: DB overrides first, then static registry
+    const cardDefs = resolveCardsWithOverrides(interactionType, postTransitionState, serviceId, dbCardOverrides);
     if (cardDefs.length > 0) {
       cardRequests = cardDefs.map((def) => ({
         cardType: def.cardType,
@@ -719,6 +727,64 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
       const text = `${t.description} ${t.detail}`;
       return !ELIGIBILITY_KEYWORDS.test(text);
     });
+
+    // ── Consent-driven pre-fill ──
+    // If cards were resolved and the user has granted consent, pre-fill fields
+    // with data already on file (Tier 1 verified + Tier 2 submitted).
+    if (cardRequests.length > 0) {
+      try {
+        const accessStore = await getServiceAccessStore();
+        const grants = await accessStore.getServiceFields(persona, serviceId);
+
+        if (grants.length > 0) {
+          const grantedFieldSet = new Set(grants.map(g => g.fieldKey));
+          const tier1GrantedFields = new Set(
+            grants.filter(g => g.dataTier === "tier1").map(g => g.fieldKey)
+          );
+
+          const submittedStore = await getSubmittedStore();
+          const allSubmitted = await submittedStore.getAll(persona);
+          const submittedMap = new Map<string, unknown>();
+          for (const field of allSubmitted) {
+            submittedMap.set(field.fieldKey, field.fieldValue);
+          }
+
+          for (const card of cardRequests) {
+            const prefillData: Record<string, string | number | boolean> = {};
+            const readonlyFields: string[] = [];
+
+            for (const field of card.definition.fields) {
+              const lookupKey = field.prefillFrom || field.key;
+              if (!grantedFieldSet.has(lookupKey)) continue;
+
+              const value = submittedMap.get(lookupKey);
+              if (value !== undefined && value !== null) {
+                // Flatten to primitive for form pre-fill
+                if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+                  prefillData[field.key] = value;
+                } else {
+                  prefillData[field.key] = String(value);
+                }
+
+                if (tier1GrantedFields.has(lookupKey)) {
+                  readonlyFields.push(field.key);
+                }
+              }
+            }
+
+            if (Object.keys(prefillData).length > 0) {
+              card.prefillData = prefillData;
+            }
+            if (readonlyFields.length > 0) {
+              card.readonlyFields = readonlyFields;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to build card pre-fill data:", err);
+        // Graceful degradation — cards render empty
+      }
+    }
   }
 
 
