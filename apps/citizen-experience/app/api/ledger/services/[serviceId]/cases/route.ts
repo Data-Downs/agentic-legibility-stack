@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLedgerStore } from "@/lib/ledger";
+import { getLedgerStore, normalizeLedgerServiceId } from "@/lib/ledger";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,14 +16,15 @@ export async function GET(
   { params }: { params: Promise<{ serviceId: string }> },
 ) {
   try {
-    const { serviceId } = await params;
+    const { serviceId: rawId } = await params;
+    const serviceId = await normalizeLedgerServiceId(decodeURIComponent(rawId));
     const url = new URL(request.url);
     const status = url.searchParams.get("status") || undefined;
     const page = parseInt(url.searchParams.get("page") || "1", 10);
     const limit = parseInt(url.searchParams.get("limit") || "20", 10);
 
     const store = await getLedgerStore();
-    const result = await store.listCases(decodeURIComponent(serviceId), {
+    const result = await store.listCases(serviceId, {
       status,
       page,
       limit,
