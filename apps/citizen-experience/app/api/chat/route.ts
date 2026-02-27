@@ -12,8 +12,8 @@ import {
 import type { LLMAdapter, LLMChatResult, OrchestratorOutput } from "@als/runtime";
 import { AnthropicAdapter } from "@als/adapters";
 import type { AnthropicChatInput, AnthropicChatOutput } from "@als/adapters";
-import type { InvocationContext, PolicyRuleset, StateModelDefinition, StateInstructions, CardRequest } from "@als/schemas";
-import { resolveCards, inferInteractionType } from "@als/schemas";
+import type { InvocationContext, PolicyRuleset, StateModelDefinition, StateInstructions, CardRequest, TemplateContext } from "@als/schemas";
+import { resolveCards, inferInteractionType, INSTRUCTION_TEMPLATE_REGISTRY, resolveTemplateInstructions, templateToStateModel } from "@als/schemas";
 import { getTraceEmitter, getReceiptGenerator } from "@/lib/evidence";
 import { getServiceArtefact, getPersonaData, getPersonaMapping, getPromptFile, getAnyManifest, getGraphNode } from "@/lib/service-data";
 import { getInferredStore, getServiceAccessStore, getSubmittedStore } from "@/lib/personal-data-store";
@@ -194,6 +194,17 @@ async function loadStateModel(serviceId: string): Promise<StateModelDefinition |
       return JSON.parse(raw);
     } catch { continue; }
   }
+
+  // Template fallback: infer interaction type from graph node → generate template state model
+  const graphNode = getGraphNode(serviceId);
+  if (graphNode) {
+    const interactionType = inferInteractionType(graphNode.serviceType) as keyof typeof INSTRUCTION_TEMPLATE_REGISTRY;
+    if (INSTRUCTION_TEMPLATE_REGISTRY[interactionType]) {
+      console.log(`   Using ${interactionType} template state model for ${serviceId}`);
+      return templateToStateModel(interactionType, serviceId);
+    }
+  }
+
   return null;
 }
 
@@ -214,8 +225,11 @@ async function loadConsentModel(serviceId: string): Promise<Record<string, unkno
 }
 
 async function loadStateInstructions(serviceId: string): Promise<StateInstructions | null> {
-  // State instructions are a new artefact type — load from filesystem only
-  // (not yet in service-store or bundled data)
+  // 1. Try bundled data (service-data.ts imports)
+  const bundled = await getServiceArtefact(serviceId, "stateInstructions");
+  if (bundled) return bundled as unknown as StateInstructions;
+
+  // 2. Try filesystem (hand-crafted JSON files)
   const slug = serviceDirSlug(serviceId);
   for (const base of [
     path.join(process.cwd(), "..", "..", "data", "services"),
@@ -226,6 +240,25 @@ async function loadStateInstructions(serviceId: string): Promise<StateInstructio
       return JSON.parse(raw);
     } catch { continue; }
   }
+
+  // 3. Template fallback: infer interaction type from graph node → resolve template
+  const graphNode = getGraphNode(serviceId);
+  if (graphNode) {
+    const interactionType = inferInteractionType(graphNode.serviceType) as keyof typeof INSTRUCTION_TEMPLATE_REGISTRY;
+    const template = INSTRUCTION_TEMPLATE_REGISTRY[interactionType];
+    if (template) {
+      const ctx: TemplateContext = {
+        serviceName: graphNode.name,
+        department: graphNode.dept,
+        govukUrl: graphNode.govuk_url,
+        eligibilitySummary: graphNode.eligibility.summary,
+        serviceId,
+      };
+      console.log(`   Using ${interactionType} template instructions for ${serviceId}`);
+      return resolveTemplateInstructions(template, ctx);
+    }
+  }
+
   return null;
 }
 

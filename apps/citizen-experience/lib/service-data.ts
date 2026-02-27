@@ -12,16 +12,19 @@ import ucManifest from "../../../data/services/apply-universal-credit/manifest.j
 import ucPolicy from "../../../data/services/apply-universal-credit/policy.json";
 import ucStateModel from "../../../data/services/apply-universal-credit/state-model.json";
 import ucConsent from "../../../data/services/apply-universal-credit/consent.json";
+import ucStateInstructions from "../../../data/services/apply-universal-credit/state-instructions.json";
 
 import dlManifest from "../../../data/services/renew-driving-licence/manifest.json";
 import dlPolicy from "../../../data/services/renew-driving-licence/policy.json";
 import dlStateModel from "../../../data/services/renew-driving-licence/state-model.json";
 import dlConsent from "../../../data/services/renew-driving-licence/consent.json";
+import dlStateInstructions from "../../../data/services/renew-driving-licence/state-instructions.json";
 
 import spManifest from "../../../data/services/check-state-pension/manifest.json";
 import spPolicy from "../../../data/services/check-state-pension/policy.json";
 import spStateModel from "../../../data/services/check-state-pension/state-model.json";
 import spConsent from "../../../data/services/check-state-pension/consent.json";
+import spStateInstructions from "../../../data/services/check-state-pension/state-instructions.json";
 
 import robotManifest from "../../../data/services/become-a-robot/manifest.json";
 import robotPolicy from "../../../data/services/become-a-robot/policy.json";
@@ -507,18 +510,21 @@ const SERVICE_DATA: Record<string, ServiceArtefacts> = {
     policy: ucPolicy as unknown as Record<string, unknown>,
     stateModel: ucStateModel as unknown as Record<string, unknown>,
     consent: ucConsent as unknown as Record<string, unknown>,
+    stateInstructions: ucStateInstructions as unknown as Record<string, unknown>,
   },
   "renew-driving-licence": {
     manifest: dlManifest as unknown as Record<string, unknown>,
     policy: dlPolicy as unknown as Record<string, unknown>,
     stateModel: dlStateModel as unknown as Record<string, unknown>,
     consent: dlConsent as unknown as Record<string, unknown>,
+    stateInstructions: dlStateInstructions as unknown as Record<string, unknown>,
   },
   "check-state-pension": {
     manifest: spManifest as unknown as Record<string, unknown>,
     policy: spPolicy as unknown as Record<string, unknown>,
     stateModel: spStateModel as unknown as Record<string, unknown>,
     consent: spConsent as unknown as Record<string, unknown>,
+    stateInstructions: spStateInstructions as unknown as Record<string, unknown>,
   },
   "become-a-robot": {
     manifest: robotManifest as unknown as Record<string, unknown>,

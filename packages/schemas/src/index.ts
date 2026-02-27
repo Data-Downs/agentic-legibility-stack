@@ -430,6 +430,19 @@ export interface StateInstructions {
   }>;
 }
 
+// ── State Instruction Templates ──
+
+export {
+  INSTRUCTION_TEMPLATE_REGISTRY,
+  resolveTemplateInstructions,
+  templateToStateModel,
+} from "./state-instruction-templates";
+
+export type {
+  TemplateContext,
+  StateInstructionTemplate,
+} from "./state-instruction-templates";
+
 // ── Utility types ──
 
 export interface JsonSchema {

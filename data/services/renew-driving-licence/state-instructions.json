@@ -1,0 +1,48 @@
+{
+  "version": "1.0.0",
+  "instructions": {
+    "not-started": "The citizen has just started their driving licence renewal.\n\nCRITICAL — IDENTITY IS ALREADY VERIFIED:\nThe citizen is already authenticated via GOV.UK One Login. Identity verification is COMPLETE.\nDo NOT mention identity verification, One Login, or \"verifying who you are\" — it is DONE.\nDo NOT ask the citizen to verify their identity.\n\nWHAT TO DO IN THIS RESPONSE:\n1. Welcome them warmly\n2. Briefly explain the driving licence renewal process (photocard renewal, costs £14, takes up to 3 weeks)\n3. Present the eligibility results from the POLICY EVALUATION section above — explain whether they are eligible and why\n4. If eligible, explain that you need their consent to share certain data with DVLA before proceeding\n5. Tell them that interactive consent cards will appear below for them to review and approve\n\nSet \"stateTransition\" to \"check-eligibility\" in the JSON block.\nDo NOT skip ahead — do not mention photos, payment, or delivery yet.\nDo NOT include any tasks in the JSON block — the eligibility check is automatic, not a task.",
+    "identity-verified": "Identity has already been verified via GOV.UK One Login — do NOT mention identity verification again.\nCheck eligibility and present the results using the POLICY EVALUATION section above.\nIf eligible, explain that consent is needed next — interactive consent cards will appear below.\nSet \"stateTransition\" to \"check-eligibility\" in the JSON block.\nDo NOT include any tasks in the JSON block.\nDo NOT discuss photos, payment, or delivery yet.",
+    "eligibility-checked": "Eligibility has already been checked and results were presented.\nThe citizen is now reviewing consent cards that appeared below your previous message.\n\nIf the citizen's message contains consent decisions (granted/denied) OR indicates agreement to proceed (e.g. \"yes\", \"go ahead\", \"I consent\", \"proceed\"):\n  - Acknowledge their consent, thank them\n  - Present their personal details for confirmation using ACTUAL data from the DATA ON FILE section: full name, DOB, driving licence number, address\n  - Ask \"Does everything look correct?\"\n  - Set \"stateTransition\" to \"grant-consent\" in the JSON block\n\nIf the citizen asks a question or provides other information:\n  - Answer their question helpfully\n  - Gently remind them to review and approve the consent cards below before proceeding\n  - Do NOT set a stateTransition\n\nDo NOT re-explain eligibility — it's already done.\nDo NOT mention identity verification — it's already done.\nDo NOT discuss photos, payment, or delivery yet.\nDo NOT include any tasks in the JSON block.",
+    "consent-given": "Consent has been granted and personal details have been confirmed from DVLA records.\nThank the citizen for granting consent. Confirm you have their details on file (name, DOB, licence number, address — list them briefly).\nExplain that DVLA will use their most recent passport photo for the new licence.\nIf the citizen doesn't have a recent passport or wants to use a different photo, mention they can upload one.\nAsk: \"Shall I proceed with your passport photo, or would you prefer to submit a different one?\"\nDo NOT include any tasks in the JSON block.\nDo NOT discuss payment or delivery yet.",
+    "details-confirmed": "The citizen's personal details have been confirmed.\nNow handle the photo for their new licence.\n\nCHECK THE USER'S MESSAGE:\nIf they confirmed using passport photo (\"yes\", \"use passport photo\", \"that's fine\"):\n  - Confirm you'll use the passport photo from HMPO records\n  - Set \"stateTransition\" to \"submit-photo\" in the JSON block\n\nIf they want to submit a different photo:\n  - Explain the photo requirements (plain expression, no glasses, white background, recent)\n  - Ask them to upload or describe their photo\n  - When they confirm, set \"stateTransition\" to \"submit-photo\"\n\nDo NOT discuss payment or delivery yet.\nDo NOT include any tasks in the JSON block.",
+    "photo-submitted": "The photo has been submitted.\nNow explain the £14 fee for the licence renewal.\nA payment form will appear below for the citizen to enter their payment details.\nSay: \"The driving licence renewal fee is £14. A payment form will appear below.\"\nDo NOT include any tasks in the JSON block — the system provides the payment card automatically.\nDo NOT discuss delivery yet.",
+    "payment-made": "Payment of £14 has been processed. Now present a COMPLETE SUMMARY of the renewal:\n- Personal details (name, DOB, licence number, address)\n- Photo source (passport photo or uploaded)\n- Payment: £14 confirmed\nAsk: \"Shall I submit your driving licence renewal to DVLA now?\"\nWhen the citizen confirms, set \"stateTransition\" to \"submit-application\" in the JSON block.\nDo NOT fabricate reference numbers or exact delivery dates.",
+    "application-submitted": "The renewal application has been submitted to DVLA!\nTell the citizen:\n- Their application is now with DVLA for processing\n- A new photocard licence will be posted to their registered address\n- It typically takes up to 3 weeks to arrive\n- Their current licence remains valid until the new one arrives\n- They will receive a confirmation email from DVLA\n- DVLA reference number will be in the confirmation — do NOT make one up\nSet \"stateTransition\" to \"complete\" in the JSON block.",
+    "completed": "The driving licence renewal is complete! Congratulate them.\nSummarise:\n- Application submitted to DVLA\n- £14 fee paid\n- New licence will arrive within 3 weeks\n- Old licence valid until new one arrives\n- If it doesn't arrive, contact DVLA on 0300 790 6801\nThis is the FINAL message — do NOT ask follow-up questions.\nDo NOT include any tasks in the JSON block.",
+    "rejected": "The licence renewal was not successful. Explain why clearly and sympathetically.\nMention:\n- They can contact DVLA to understand the decision: 0300 790 6801 (Mon-Fri 8am-7pm, Sat 8am-2pm)\n- They may need to apply in a different way (e.g. by post if there's a medical condition)\n- GOV.UK page: https://www.gov.uk/renew-driving-licence\nThis is the FINAL message — do NOT ask follow-up questions.\nDo NOT include any tasks in the JSON block.",
+    "handed-off": "This case has been referred to a human advisor at DVLA for further review.\nExplain why, and provide:\n- DVLA contact: 0300 790 6801 (Mon-Fri 8am-7pm, Sat 8am-2pm)\n- They can also apply by post\n- GOV.UK page: https://www.gov.uk/renew-driving-licence\nThis is the FINAL message — do NOT ask follow-up questions.\nDo NOT include any tasks in the JSON block."
+  },
+  "forcedTransitions": {
+    "not-started": "verify-identity",
+    "identity-verified": "check-eligibility",
+    "consent-given": "confirm-details"
+  },
+  "autoTransitions": [
+    {
+      "fromState": "eligibility-checked",
+      "trigger": "grant-consent",
+      "pattern": "I have reviewed all consent|consent.*granted|granted.*consent|please proceed|I consent|go ahead|yes.*proceed|agree|done|let's go|ready|start|renew"
+    },
+    {
+      "fromState": "consent-given",
+      "trigger": "confirm-details",
+      "pattern": "everything.*correct|looks correct|details.*correct|yes.*correct|confirm|that's right|all correct"
+    },
+    {
+      "fromState": "details-confirmed",
+      "trigger": "submit-photo",
+      "pattern": "yes|passport photo|use.*passport|that's fine|go ahead|proceed"
+    },
+    {
+      "fromState": "photo-submitted",
+      "trigger": "make-payment",
+      "pattern": "pay|£14|card|debit|credit|direct debit"
+    },
+    {
+      "fromState": "payment-made",
+      "trigger": "submit-application",
+      "pattern": "yes|submit|go ahead|confirm|please submit"
+    }
+  ]
+}
