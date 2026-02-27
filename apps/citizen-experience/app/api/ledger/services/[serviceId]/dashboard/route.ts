@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLedgerStore, loadStateModel } from "@/lib/ledger";
+import { getLedgerStore, loadStateModel, normalizeLedgerServiceId } from "@/lib/ledger";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,12 +16,14 @@ export async function GET(
   { params }: { params: Promise<{ serviceId: string }> },
 ) {
   try {
-    const { serviceId } = await params;
+    const { serviceId: rawId } = await params;
+    const serviceId = await normalizeLedgerServiceId(decodeURIComponent(rawId));
     const store = await getLedgerStore();
-    const dashboard = await store.getDashboard(decodeURIComponent(serviceId));
+    const dashboard = await store.getDashboard(serviceId);
 
     // Attach the state model so Studio can render the progress flow
-    const stateModel = await loadStateModel(decodeURIComponent(serviceId));
+    // Try both the normalized ID and the raw ID for state model lookup
+    const stateModel = await loadStateModel(serviceId) ?? await loadStateModel(decodeURIComponent(rawId));
 
     return NextResponse.json({ ...dashboard, stateModel }, { headers: corsHeaders });
   } catch (error) {

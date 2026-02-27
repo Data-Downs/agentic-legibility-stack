@@ -143,6 +143,7 @@ export interface ChatApiResponse {
   };
   ucState?: UCStateInfo;
   consentRequests?: ConsentGrant[];
+  cardRequests?: import("@als/schemas").CardRequest[];
 }
 
 export interface Conversation {

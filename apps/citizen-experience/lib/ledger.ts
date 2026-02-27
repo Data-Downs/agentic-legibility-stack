@@ -47,3 +47,33 @@ export async function getTotalStates(serviceId: string): Promise<number> {
 export async function getLedgerStore(): Promise<CaseStore> {
   return getCaseStore();
 }
+
+/**
+ * Map from service-store ID format (dwp-universal-credit) to the legacy
+ * dot-separated format used in trace/case data (dwp.apply-universal-credit).
+ */
+const SERVICE_STORE_TO_LEGACY: Record<string, string> = {
+  "dwp-universal-credit": "dwp.apply-universal-credit",
+  "dvla-renew-driving-licence": "dvla.renew-driving-licence",
+  "dwp-check-state-pension": "dwp.check-state-pension",
+};
+
+/**
+ * Normalize a serviceId for ledger queries. The service-store uses hyphenated IDs
+ * (e.g. "dwp-universal-credit") while the cases table uses legacy dot-separated IDs
+ * (e.g. "dwp.apply-universal-credit"). This tries the input first, then the legacy mapping.
+ */
+export async function normalizeLedgerServiceId(serviceId: string): Promise<string> {
+  const store = await getLedgerStore();
+  // Try as-is first
+  const dashboard = await store.getDashboard(serviceId);
+  if (dashboard.totalCases > 0) return serviceId;
+  // Try legacy mapping
+  const legacy = SERVICE_STORE_TO_LEGACY[serviceId];
+  if (legacy) return legacy;
+  // Try converting hyphen format to dot format (dept-slug → dept.slug)
+  const dotted = serviceId.replace("-", ".");
+  const dottedDash = await store.getDashboard(dotted);
+  if (dottedDash.totalCases > 0) return dotted;
+  return serviceId;
+}

@@ -12,6 +12,7 @@ import type {
   UCStateInfo,
   ConsentGrant,
 } from "./types";
+import type { CardRequest } from "@als/schemas";
 import { PERSONA_DEFAULT_SERVICE } from "./types";
 
 interface AppStore {
@@ -63,6 +64,10 @@ interface AppStore {
   taskCompletions: Record<string, string>;
   tasksSubmitted: boolean;
 
+  // Dynamic Cards
+  pendingCards: CardRequest[];
+  cardsSubmitted: boolean;
+
   // Personal Data Dashboard
   settingsPaneOpen: boolean;
   personaSelectorOpen: boolean;
@@ -84,6 +89,7 @@ interface AppStore {
   setTaskCompletion: (taskId: string, message: string) => void;
   clearTaskCompletion: (taskId: string) => void;
   submitTasks: () => Promise<void>;
+  submitCardsSummary: (summaryMessage: string) => Promise<void>;
   setSettingsPaneOpen: (open: boolean) => void;
   setPersonaSelectorOpen: (open: boolean) => void;
 }
@@ -170,6 +176,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   lastResponseTasks: [],
   taskCompletions: {},
   tasksSubmitted: false,
+  pendingCards: [],
+  cardsSubmitted: false,
   settingsPaneOpen: false,
   personaSelectorOpen: false,
 
@@ -277,6 +285,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       lastResponseTasks: [],
       taskCompletions: {},
       tasksSubmitted: false,
+      pendingCards: [],
+      cardsSubmitted: false,
     });
     if (service !== undefined) {
       set({ currentService: service });
@@ -415,6 +425,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
         // Reset task tracking when new tasks arrive
         taskCompletions: (data.tasks && data.tasks.length > 0) ? {} : state.taskCompletions,
         tasksSubmitted: (data.tasks && data.tasks.length > 0) ? false : state.tasksSubmitted,
+        // Update pending cards from response
+        pendingCards: data.cardRequests ?? [],
+        cardsSubmitted: (data.cardRequests && data.cardRequests.length > 0) ? false : state.cardsSubmitted,
         // Reset consent tracking when state changes (new consent batch may appear)
         consentDecisions: (data.ucState?.currentState !== state.ucState)
           ? {}
@@ -505,6 +518,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     set({ tasksSubmitted: true });
     await state.sendMessage(lines.join("\n\n"));
+  },
+
+  submitCardsSummary: async (summaryMessage: string) => {
+    set({ cardsSubmitted: true });
+    await get().sendMessage(summaryMessage);
   },
 
   setReasoning: (reasoning: string) => {

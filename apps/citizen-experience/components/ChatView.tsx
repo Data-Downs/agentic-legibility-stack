@@ -10,6 +10,7 @@ import { ConsentPanel } from "./ConsentCard";
 import { ConsentSummaryCard } from "./ConsentSummaryCard";
 import { StateProgressTracker } from "./StateProgressTracker";
 import { JourneyCompleteCard } from "./JourneyCompleteCard";
+import { CardHost } from "./cards/CardHost";
 
 const TERMINAL_STATES = new Set(["claim-active", "rejected", "handed-off"]);
 
@@ -42,6 +43,8 @@ export function ChatView() {
   const taskCompletions = useAppStore((s) => s.taskCompletions);
   const tasksSubmitted = useAppStore((s) => s.tasksSubmitted);
   const currentService = useAppStore((s) => s.currentService);
+  const pendingCards = useAppStore((s) => s.pendingCards);
+  const cardsSubmitted = useAppStore((s) => s.cardsSubmitted);
   const lastAssistantRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -60,9 +63,12 @@ export function ChatView() {
 
   // Whether to show task cards (after the last assistant message)
   const showTasks = !isLoading && lastResponseTasks.length > 0 && !tasksSubmitted;
-  // Whether to show consent cards (after tasks are done or when no tasks)
+  // Whether to show dynamic form cards
+  const showCards = !isLoading && pendingCards.length > 0 && !cardsSubmitted;
+  // Whether to show consent cards (after tasks/cards are done or when none exist)
   const showConsent = !isLoading && pendingConsent.length > 0 && !consentSubmitted &&
-    (lastResponseTasks.length === 0 || tasksSubmitted);
+    (lastResponseTasks.length === 0 || tasksSubmitted) &&
+    (pendingCards.length === 0 || cardsSubmitted);
 
   // Scroll to the top of the last assistant message when new content arrives
   const scrollToLastAssistant = () => {
@@ -75,12 +81,12 @@ export function ChatView() {
   };
 
   useEffect(() => {
-    if (!isLoading && (showTasks || showConsent)) {
+    if (!isLoading && (showTasks || showCards || showConsent)) {
       scrollToEnd();
     } else {
       scrollToLastAssistant();
     }
-  }, [conversationHistory, isLoading, activeHandoff, ucState, showTasks, showConsent]);
+  }, [conversationHistory, isLoading, activeHandoff, ucState, showTasks, showCards, showConsent]);
 
   useEffect(() => {
     if (allTasksCompleted && !tasksSubmitted) {
@@ -158,6 +164,17 @@ export function ChatView() {
             </div>
           );
         })}
+
+        {/* Dynamic form cards — rendered when chat API returns cardRequests */}
+        {showCards && (
+          <div className="max-w-[85%] mt-1">
+            <CardHost
+              cardRequests={pendingCards}
+              onAllSubmitted={(msg) => useAppStore.getState().submitCardsSummary(msg)}
+              disabled={isLoading}
+            />
+          </div>
+        )}
 
         {/* Task cards — rendered outside the message loop for reliability */}
         {showTasks && (
