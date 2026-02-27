@@ -92,6 +92,41 @@ export class ArtefactStore {
     return loaded;
   }
 
+  /**
+   * Load artefacts from the service-store DB.
+   * Requires a path to the SQLite database file.
+   * Only loads services that have at least a policy (i.e. "full" services).
+   */
+  async loadFromServiceStoreDb(dbPath: string): Promise<number> {
+    const { SqliteAdapter } = await import("@als/evidence/sqlite");
+    const { ServiceArtefactStore } = await import("@als/service-store");
+
+    const adapter = await SqliteAdapter.create(dbPath);
+    const store = new ServiceArtefactStore(adapter);
+    await store.init();
+
+    const services = await store.listServices();
+    let loaded = 0;
+
+    for (const summary of services) {
+      const full = await store.getService(summary.id);
+      if (!full || !full.manifest) continue;
+
+      const artefacts: ServiceArtefacts = {
+        manifest: full.manifest,
+        policy: full.policy || undefined,
+        stateModel: full.stateModel || undefined,
+        consent: full.consent || undefined,
+      };
+
+      this.register(full.id, artefacts);
+      loaded++;
+    }
+
+    console.log(`[ArtefactStore] Loaded ${loaded} service artefact sets from DB: ${dbPath}`);
+    return loaded;
+  }
+
   /** Extract directory name from a service ID (e.g. "dvla.renew-driving-licence" → "renew-driving-licence") */
   static slugFromId(serviceId: string): string {
     const parts = serviceId.split(".");

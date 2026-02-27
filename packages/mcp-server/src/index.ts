@@ -11,17 +11,32 @@
  */
 
 import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer } from "./server";
+
+const __dirname = typeof import.meta.dirname === "string"
+  ? import.meta.dirname
+  : path.dirname(fileURLToPath(import.meta.url));
 
 async function main() {
   const servicesDir =
     process.env.SERVICES_DIR ||
-    path.resolve(import.meta.dirname, "../../../data/services");
+    path.resolve(__dirname, "../../../data/services");
 
-  console.error(`[MCP Server] Loading services from: ${servicesDir}`);
+  // Try service-store DB first (contains all 110+ services with generated artefacts)
+  const dbPath =
+    process.env.SERVICE_STORE_DB_PATH ||
+    path.resolve(__dirname, "../../../data/services.db");
 
-  const { server, toolCount, resourceCount, promptCount, serviceCount } = await createServer(servicesDir);
+  const dbExists = fs.existsSync(dbPath);
+  console.error(`[MCP Server] Loading services from: ${dbExists ? `DB (${dbPath})` : servicesDir}`);
+
+  const { server, toolCount, resourceCount, promptCount, serviceCount } = await createServer(
+    servicesDir,
+    dbExists ? { dbPath } : undefined
+  );
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

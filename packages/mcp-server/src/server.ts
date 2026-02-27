@@ -29,7 +29,7 @@ const TOOL_ZOD_SCHEMAS: Record<string, Record<string, z.ZodType>> = {
   },
 };
 
-export async function createServer(servicesDir: string): Promise<{
+export async function createServer(servicesDir: string, options?: { dbPath?: string }): Promise<{
   server: McpServer;
   toolCount: number;
   resourceCount: number;
@@ -37,7 +37,20 @@ export async function createServer(servicesDir: string): Promise<{
   serviceCount: number;
 }> {
   const store = new ArtefactStore();
-  const serviceCount = await store.loadFromDirectory(servicesDir);
+  let serviceCount = 0;
+
+  // Prefer DB if available, fall back to filesystem
+  if (options?.dbPath) {
+    try {
+      serviceCount = await store.loadFromServiceStoreDb(options.dbPath);
+      console.error(`[MCP Server] Loaded ${serviceCount} services from DB`);
+    } catch (err) {
+      console.error(`[MCP Server] DB load failed, falling back to filesystem:`, err);
+      serviceCount = await store.loadFromDirectory(servicesDir);
+    }
+  } else {
+    serviceCount = await store.loadFromDirectory(servicesDir);
+  }
 
   const mcpServer = new McpServer(
     { name: "als-service-tools", version: "0.2.0" },
