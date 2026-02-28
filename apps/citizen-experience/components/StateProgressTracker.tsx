@@ -1,11 +1,14 @@
 "use client";
 
+import { getAllTerminalStateIds, generateMilestonesForType } from "@als/schemas";
+import type { InteractionType } from "@als/schemas";
 import type { ServiceType } from "@/lib/types";
 
 interface StateProgressProps {
   currentState: string;
   stateHistory: string[];
   service: ServiceType | null;
+  interactionType?: string;
 }
 
 interface Milestone {
@@ -52,7 +55,7 @@ const FALLBACK_CONFIG = {
   ],
 };
 
-const TERMINAL_STATES = ["claim-active", "completed", "rejected", "handed-off"];
+const TERMINAL_STATES = [...getAllTerminalStateIds()];
 
 // Human-readable labels for all known states across services
 const STATE_LABELS: Record<string, string> = {
@@ -94,12 +97,23 @@ function getMilestoneStatus(
   return "future";
 }
 
-export function StateProgressTracker({ currentState, stateHistory, service }: StateProgressProps) {
-  if (TERMINAL_STATES.includes(currentState) && currentState !== "claim-active" && currentState !== "completed") {
-    return null; // Don't show progress for rejected/handed-off
+const SUCCESS_TERMINALS = new Set(["claim-active", "completed", "issued", "registered", "all-steps-complete", "attended", "referred-to-service"]);
+
+export function StateProgressTracker({ currentState, stateHistory, service, interactionType }: StateProgressProps) {
+  // Don't show progress for failure/handoff terminals
+  if (TERMINAL_STATES.includes(currentState) && !SUCCESS_TERMINALS.has(currentState)) {
+    return null;
   }
 
-  const config = (service && SERVICE_MILESTONES[service]) || FALLBACK_CONFIG;
+  // Resolution chain: per-service → template-derived → fallback
+  let config;
+  if (service && SERVICE_MILESTONES[service]) {
+    config = SERVICE_MILESTONES[service];
+  } else if (interactionType) {
+    config = generateMilestonesForType(interactionType as InteractionType);
+  } else {
+    config = FALLBACK_CONFIG;
+  }
 
   return (
     <div className="bg-white border-b border-govuk-mid-grey px-4 py-3">

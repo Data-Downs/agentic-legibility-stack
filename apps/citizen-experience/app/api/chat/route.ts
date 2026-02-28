@@ -481,6 +481,7 @@ interface ChatInput {
 
 type ChatOutput = OrchestratorOutput & {
   cardRequests?: CardRequest[];
+  interactionType?: string;
 };
 
 async function chatHandler(input: unknown): Promise<ChatOutput> {
@@ -687,13 +688,14 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   // Resolution chain: per-service DB overrides → static card registry.
   let cardRequests: CardRequest[] = [];
 
+  // Determine interaction type from graph node (hoisted for return value)
+  const graphNodeForCards = serviceId ? getGraphNode(serviceId) : null;
+  const serviceTypeForCards = graphNodeForCards?.serviceType ?? null;
+  const resolvedInteractionType = inferInteractionType(serviceTypeForCards);
+
   if (result.ucState) {
     const postTransitionState = result.ucState.currentState;
-
-    // Determine interaction type from graph node or fallback
-    const graphNodeForCards = serviceId ? getGraphNode(serviceId) : null;
-    const serviceTypeForCards = graphNodeForCards?.serviceType ?? null;
-    const interactionType = inferInteractionType(serviceTypeForCards);
+    const interactionType = resolvedInteractionType;
 
     // Load DB card overrides (from Studio)
     let dbCardOverrides: StateCardMapping[] | null = null;
@@ -795,6 +797,7 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   return {
     ...result,
     cardRequests: cardRequests.length > 0 ? cardRequests : undefined,
+    interactionType: resolvedInteractionType,
   };
 }
 

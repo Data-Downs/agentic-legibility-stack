@@ -144,6 +144,7 @@ export interface ChatApiResponse {
   ucState?: UCStateInfo;
   consentRequests?: ConsentGrant[];
   cardRequests?: import("@als/schemas").CardRequest[];
+  interactionType?: string;
 }
 
 export interface Conversation {
@@ -155,6 +156,12 @@ export interface Conversation {
   createdAt: string;
   updatedAt: string;
   messages: ChatMessage[];
+  /** Persisted state machine state */
+  ucState?: string;
+  /** Persisted state machine history */
+  ucStateHistory?: string[];
+  /** Persisted interaction type (for dynamic milestones) */
+  interactionType?: string;
 }
 
 export interface StoredTask {

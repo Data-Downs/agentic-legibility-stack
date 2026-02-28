@@ -486,6 +486,185 @@ This is the FINAL message — do NOT ask follow-up questions.`,
   autoTransitions: [],
 };
 
+// ── Terminal State Configuration ──
+
+export interface TerminalStateConfig {
+  /** SVG path data for the icon */
+  icon: string;
+  /** Display title (e.g. "Application complete") */
+  title: string;
+  /** Short description for the receipt card */
+  description: string;
+  /** Next steps text shown to the citizen */
+  nextSteps: string;
+  /** Border/accent color (GOV.UK palette) */
+  borderColor: string;
+  /** Tailwind border class */
+  borderClass: string;
+  /** Box shadow style */
+  shadowStyle: string;
+  /** Tailwind icon background class */
+  iconBgClass: string;
+  /** Tailwind title text class */
+  titleClass: string;
+  /** Whether this is a "success" terminal (show related services) */
+  isSuccess: boolean;
+}
+
+export const TERMINAL_STATE_CONFIG: Record<string, TerminalStateConfig> = {
+  // ── Success terminals ──
+  "completed": {
+    icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+    title: "Service complete",
+    description: "Your request has been processed successfully.",
+    nextSteps: "You will receive official confirmation from the relevant department.",
+    borderColor: "#00703c",
+    borderClass: "border-green-200",
+    shadowStyle: "0 2px 8px rgba(0,112,60,0.08)",
+    iconBgClass: "bg-green-100",
+    titleClass: "text-green-700",
+    isSuccess: true,
+  },
+  "claim-active": {
+    icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+    title: "Application complete",
+    description: "Your claim is now active and being processed.",
+    nextSteps: "DWP will contact you with next steps. Check your journal regularly.",
+    borderColor: "#00703c",
+    borderClass: "border-green-200",
+    shadowStyle: "0 2px 8px rgba(0,112,60,0.08)",
+    iconBgClass: "bg-green-100",
+    titleClass: "text-green-700",
+    isSuccess: true,
+  },
+  "issued": {
+    icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+    title: "Licence issued",
+    description: "Your licence has been issued successfully.",
+    nextSteps: "The licence will be sent to your registered address.",
+    borderColor: "#00703c",
+    borderClass: "border-green-200",
+    shadowStyle: "0 2px 8px rgba(0,112,60,0.08)",
+    iconBgClass: "bg-green-100",
+    titleClass: "text-green-700",
+    isSuccess: true,
+  },
+  "registered": {
+    icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+    title: "Registration complete",
+    description: "Your registration has been confirmed.",
+    nextSteps: "You will receive official confirmation of your registration.",
+    borderColor: "#00703c",
+    borderClass: "border-green-200",
+    shadowStyle: "0 2px 8px rgba(0,112,60,0.08)",
+    iconBgClass: "bg-green-100",
+    titleClass: "text-green-700",
+    isSuccess: true,
+  },
+  "all-steps-complete": {
+    icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+    title: "All steps complete",
+    description: "You have successfully completed all required steps.",
+    nextSteps: "No further action is needed from you at this time.",
+    borderColor: "#00703c",
+    borderClass: "border-green-200",
+    shadowStyle: "0 2px 8px rgba(0,112,60,0.08)",
+    iconBgClass: "bg-green-100",
+    titleClass: "text-green-700",
+    isSuccess: true,
+  },
+  "attended": {
+    icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+    title: "Appointment complete",
+    description: "Your appointment has been attended successfully.",
+    nextSteps: "Any follow-up actions will be communicated by the department.",
+    borderColor: "#00703c",
+    borderClass: "border-green-200",
+    shadowStyle: "0 2px 8px rgba(0,112,60,0.08)",
+    iconBgClass: "bg-green-100",
+    titleClass: "text-green-700",
+    isSuccess: true,
+  },
+  "referred-to-service": {
+    icon: "M13 7l5 5m0 0l-5 5m5-5H6",
+    title: "Referred to service",
+    description: "You have been referred to the appropriate service.",
+    nextSteps: "Follow the link provided to continue with the referred service.",
+    borderColor: "#1d70b8",
+    borderClass: "border-blue-200",
+    shadowStyle: "0 2px 8px rgba(29,112,184,0.08)",
+    iconBgClass: "bg-blue-100",
+    titleClass: "text-blue-700",
+    isSuccess: true,
+  },
+  // ── Failure/rejection terminals ──
+  "rejected": {
+    icon: "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
+    title: "Application unsuccessful",
+    description: "Unfortunately your application was not successful.",
+    nextSteps: "You may be able to request a review of the decision or contact the department directly.",
+    borderColor: "#d4351c",
+    borderClass: "border-red-200",
+    shadowStyle: "0 2px 8px rgba(212,53,28,0.08)",
+    iconBgClass: "bg-red-100",
+    titleClass: "text-red-700",
+    isSuccess: false,
+  },
+  "refused": {
+    icon: "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
+    title: "Licence refused",
+    description: "Your licence application was not successful.",
+    nextSteps: "You may be able to request a review of the decision or contact the department directly.",
+    borderColor: "#d4351c",
+    borderClass: "border-red-200",
+    shadowStyle: "0 2px 8px rgba(212,53,28,0.08)",
+    iconBgClass: "bg-red-100",
+    titleClass: "text-red-700",
+    isSuccess: false,
+  },
+  "cancelled": {
+    icon: "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
+    title: "Appointment cancelled",
+    description: "Your appointment has been cancelled.",
+    nextSteps: "You can rebook your appointment when you are ready.",
+    borderColor: "#d4351c",
+    borderClass: "border-red-200",
+    shadowStyle: "0 2px 8px rgba(212,53,28,0.08)",
+    iconBgClass: "bg-red-100",
+    titleClass: "text-red-700",
+    isSuccess: false,
+  },
+  // ── Handoff terminal ──
+  "handed-off": {
+    icon: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z",
+    title: "Referred to advisor",
+    description: "This case has been referred to a human advisor for further review.",
+    nextSteps: "A member of staff will be in touch. Please have your reference number ready.",
+    borderColor: "#f47738",
+    borderClass: "border-orange-200",
+    shadowStyle: "0 2px 8px rgba(244,119,56,0.08)",
+    iconBgClass: "bg-orange-100",
+    titleClass: "text-orange-700",
+    isSuccess: false,
+  },
+};
+
+/**
+ * Compute the union of all terminal state IDs from STATE_MODEL_TEMPLATES.
+ * Also includes any state in TERMINAL_STATE_CONFIG for belt-and-braces coverage.
+ */
+export function getAllTerminalStateIds(): Set<string> {
+  const ids = new Set<string>(Object.keys(TERMINAL_STATE_CONFIG));
+  for (const template of Object.values(STATE_MODEL_TEMPLATES)) {
+    for (const state of template.states) {
+      if (state.type === "terminal") {
+        ids.add(state.id);
+      }
+    }
+  }
+  return ids;
+}
+
 // ── Registry: interaction type → template ──
 
 export const INSTRUCTION_TEMPLATE_REGISTRY: Record<InteractionType, StateInstructionTemplate> = {
@@ -724,5 +903,98 @@ export function templateToStateModel(
     version: "1.0.0",
     states: template.states.map((s) => ({ ...s })),
     transitions: template.transitions.map((t) => ({ ...t })),
+  };
+}
+
+// ── Dynamic milestone generation from templates ──
+
+export interface MilestoneDefinition {
+  label: string;
+  states: string[];
+}
+
+export interface ServiceMilestoneConfig {
+  title: string;
+  milestones: MilestoneDefinition[];
+}
+
+export const INTERACTION_TYPE_TITLES: Record<InteractionType, string> = {
+  application: "Application Progress",
+  license: "Licence Application",
+  register: "Registration Progress",
+  portal: "Account Access",
+  payment_service: "Payment Progress",
+  appointment_booker: "Appointment Booking",
+  task_list: "Task Progress",
+  informational_hub: "Information Lookup",
+};
+
+/** Human-readable labels for template state IDs */
+const TEMPLATE_STATE_LABELS: Record<string, string> = {
+  "not-started": "Start",
+  "identity-verified": "Identity",
+  "eligibility-checked": "Eligibility",
+  "consent-given": "Consent",
+  "details-submitted": "Details",
+  "details-confirmed": "Details",
+  "assessment": "Assessment",
+  "decision": "Decision",
+  "completed": "Complete",
+  "registered": "Registered",
+  "issued": "Issued",
+  "payment-made": "Payment",
+  "amount-calculated": "Amount",
+  "slot-selected": "Slot",
+  "booking-confirmed": "Booked",
+  "attended": "Attended",
+  "account-accessed": "Account",
+  "action-performed": "Action",
+  "browsing": "Browsing",
+  "information-provided": "Info",
+  "step-1-complete": "Step 1",
+  "step-2-complete": "Step 2",
+  "step-3-complete": "Step 3",
+  "all-steps-complete": "Complete",
+  "referred-to-service": "Referred",
+  "photo-submitted": "Photo",
+  "application-submitted": "Submit",
+  "claim-submitted": "Submit",
+};
+
+/**
+ * Generate milestone config for a StateProgressTracker from an interaction type template.
+ * Groups non-terminal states into labeled milestones.
+ */
+export function generateMilestonesForType(interactionType: InteractionType): ServiceMilestoneConfig {
+  const template = STATE_MODEL_TEMPLATES[interactionType];
+  if (!template) {
+    return {
+      title: "Progress",
+      milestones: [
+        { label: "Start", states: ["not-started"] },
+        { label: "Complete", states: ["completed"] },
+      ],
+    };
+  }
+
+  const terminalIds = new Set<string>();
+  const failureTerminals = new Set(["rejected", "refused", "cancelled", "handed-off"]);
+  for (const s of template.states) {
+    if (s.type === "terminal" && failureTerminals.has(s.id)) {
+      terminalIds.add(s.id);
+    }
+  }
+
+  const milestones: MilestoneDefinition[] = [];
+  for (const s of template.states) {
+    // Skip failure/handoff terminals — they don't appear as progress milestones
+    if (terminalIds.has(s.id)) continue;
+    const label = TEMPLATE_STATE_LABELS[s.id] || s.id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    milestones.push({ label, states: [s.id] });
+  }
+
+  return {
+    title: INTERACTION_TYPE_TITLES[interactionType] || "Progress",
+    milestones,
   };
 }

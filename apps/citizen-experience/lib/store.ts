@@ -13,6 +13,7 @@ import type {
   ConsentGrant,
 } from "./types";
 import type { CardRequest } from "@als/schemas";
+import { getAllTerminalStateIds } from "@als/schemas";
 import { PERSONA_DEFAULT_SERVICE } from "./types";
 
 interface AppStore {
@@ -63,6 +64,9 @@ interface AppStore {
   }>;
   taskCompletions: Record<string, string>;
   tasksSubmitted: boolean;
+
+  // Interaction type (from chat API — used for dynamic milestones)
+  interactionType: string | null;
 
   // Dynamic Cards
   pendingCards: CardRequest[];
@@ -176,6 +180,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   lastResponseTasks: [],
   taskCompletions: {},
   tasksSubmitted: false,
+  interactionType: null,
   pendingCards: [],
   cardsSubmitted: false,
   settingsPaneOpen: false,
@@ -279,6 +284,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       ucState: null,
       ucStateHistory: [],
       lastUcStateInfo: null,
+      interactionType: null,
       pendingConsent: [],
       consentDecisions: {},
       consentSubmitted: false,
@@ -306,12 +312,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
         activeConversationId: conv.id,
         activeConversation: conv,
         conversationHistory: conv.messages,
+        ucState: conv.ucState ?? null,
+        ucStateHistory: conv.ucStateHistory ?? [],
+        interactionType: conv.interactionType ?? null,
       });
     }
   },
 
   sendMessage: async (text: string) => {
-    const TERMINAL_STATES = new Set(["claim-active", "rejected", "handed-off"]);
+    const TERMINAL_STATES = getAllTerminalStateIds();
     const state = get();
     if (!state.persona || !state.personaData || state.isLoading) return;
     if (state.ucState && TERMINAL_STATES.has(state.ucState)) return;
@@ -386,6 +395,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
         conversation.title = data.conversationTitle;
       }
 
+      // Persist state machine progress on the conversation
+      conversation.ucState = data.ucState?.currentState ?? state.ucState ?? undefined;
+      conversation.ucStateHistory = data.ucState?.stateHistory ?? state.ucStateHistory ?? undefined;
+      conversation.interactionType = data.interactionType ?? state.interactionType ?? undefined;
+
       saveConversation(state.persona, conversation);
 
       // Save tasks
@@ -425,6 +439,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
         // Reset task tracking when new tasks arrive
         taskCompletions: (data.tasks && data.tasks.length > 0) ? {} : state.taskCompletions,
         tasksSubmitted: (data.tasks && data.tasks.length > 0) ? false : state.tasksSubmitted,
+        // Interaction type (for dynamic milestones)
+        interactionType: data.interactionType ?? state.interactionType,
         // Update pending cards from response
         pendingCards: data.cardRequests ?? [],
         cardsSubmitted: (data.cardRequests && data.cardRequests.length > 0) ? false : state.cardsSubmitted,

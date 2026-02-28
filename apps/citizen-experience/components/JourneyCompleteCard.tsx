@@ -1,48 +1,44 @@
 "use client";
 
 import { useAppStore } from "@/lib/store";
+import { TERMINAL_STATE_CONFIG } from "@als/schemas";
+import type { TerminalStateConfig } from "@als/schemas";
 
 interface JourneyCompleteCardProps {
-  state: "claim-active" | "rejected" | "handed-off";
+  state: string;
+  serviceName?: string;
+  serviceId?: string;
 }
 
-const STATE_CONFIG: Record<string, { icon: string; title: string; borderColor: string; borderClass: string; shadowStyle: string; iconBgClass: string; titleClass: string }> = {
-  "claim-active": {
-    icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
-    title: "Application complete",
-    borderColor: "#00703c",
-    borderClass: "border-green-200",
-    shadowStyle: "0 2px 8px rgba(0,112,60,0.08)",
-    iconBgClass: "bg-green-100",
-    titleClass: "text-green-700",
-  },
-  rejected: {
-    icon: "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
-    title: "Application unsuccessful",
-    borderColor: "#d4351c",
-    borderClass: "border-red-200",
-    shadowStyle: "0 2px 8px rgba(212,53,28,0.08)",
-    iconBgClass: "bg-red-100",
-    titleClass: "text-red-700",
-  },
-  "handed-off": {
-    icon: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z",
-    title: "Referred to advisor",
-    borderColor: "#f47738",
-    borderClass: "border-orange-200",
-    shadowStyle: "0 2px 8px rgba(244,119,56,0.08)",
-    iconBgClass: "bg-orange-100",
-    titleClass: "text-orange-700",
-  },
-};
+/** Generate a deterministic reference number from a conversation ID */
+function generateReference(conversationId: string | null): string {
+  if (!conversationId) return "GOV-0000-0000";
+  let hash = 0;
+  for (let i = 0; i < conversationId.length; i++) {
+    hash = ((hash << 5) - hash + conversationId.charCodeAt(i)) | 0;
+  }
+  const abs = Math.abs(hash);
+  const upper = ((abs >> 16) & 0xffff).toString(16).toUpperCase().padStart(4, "0");
+  const lower = (abs & 0xffff).toString(16).toUpperCase().padStart(4, "0");
+  return `GOV-${upper}-${lower}`;
+}
 
-export function JourneyCompleteCard({ state }: JourneyCompleteCardProps) {
+const FALLBACK_CONFIG: TerminalStateConfig = TERMINAL_STATE_CONFIG["completed"];
+
+export function JourneyCompleteCard({ state, serviceName, serviceId }: JourneyCompleteCardProps) {
   const navigateTo = useAppStore((s) => s.navigateTo);
   const startNewConversation = useAppStore((s) => s.startNewConversation);
+  const activeConversationId = useAppStore((s) => s.activeConversationId);
 
-  const config = STATE_CONFIG[state] || STATE_CONFIG["claim-active"];
+  const config = TERMINAL_STATE_CONFIG[state] || FALLBACK_CONFIG;
+  const reference = generateReference(activeConversationId);
 
-  const handleSave = () => {
+  // Use service-specific title if a serviceName is provided
+  const displayTitle = serviceName
+    ? `${serviceName} — ${config.title.toLowerCase()}`
+    : config.title;
+
+  const handleReturnToDashboard = () => {
     startNewConversation(null);
     navigateTo("dashboard");
   };
@@ -53,6 +49,7 @@ export function JourneyCompleteCard({ state }: JourneyCompleteCardProps) {
       style={{ boxShadow: config.shadowStyle }}
     >
       <div className="px-5 py-5">
+        {/* Header */}
         <div className="flex items-center gap-2.5 mb-3">
           <span className={`w-7 h-7 rounded-full ${config.iconBgClass} flex items-center justify-center shrink-0`}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={config.borderColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -60,20 +57,37 @@ export function JourneyCompleteCard({ state }: JourneyCompleteCardProps) {
             </svg>
           </span>
           <span className={`text-sm font-bold ${config.titleClass}`}>
-            {config.title}
+            {displayTitle}
           </span>
         </div>
 
-        <p className="text-sm text-govuk-dark-grey mb-5">
-          This conversation has ended. Your details have been recorded.
+        {/* Reference number */}
+        <div className="mb-3 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+            Reference
+          </span>
+          <p className="text-sm font-mono font-bold text-govuk-black mt-0.5">
+            {reference}
+          </p>
+        </div>
+
+        {/* Description */}
+        <p className="text-sm text-govuk-dark-grey mb-2">
+          {config.description}
         </p>
 
+        {/* Next steps */}
+        <p className="text-xs text-govuk-dark-grey mb-5">
+          <span className="font-semibold">Next steps:</span> {config.nextSteps}
+        </p>
+
+        {/* Return to dashboard button */}
         <button
-          onClick={handleSave}
+          onClick={handleReturnToDashboard}
           className="w-full py-3 rounded-xl font-bold text-sm text-white transition-colors hover:opacity-90"
           style={{ backgroundColor: config.borderColor }}
         >
-          Save application details
+          Return to dashboard
         </button>
       </div>
     </div>

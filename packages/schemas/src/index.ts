@@ -435,6 +435,10 @@ export interface StateInstructions {
 
 export {
   INSTRUCTION_TEMPLATE_REGISTRY,
+  TERMINAL_STATE_CONFIG,
+  INTERACTION_TYPE_TITLES,
+  getAllTerminalStateIds,
+  generateMilestonesForType,
   resolveTemplateInstructions,
   templateToStateModel,
 } from "./state-instruction-templates";
@@ -442,6 +446,9 @@ export {
 export type {
   TemplateContext,
   StateInstructionTemplate,
+  TerminalStateConfig,
+  MilestoneDefinition,
+  ServiceMilestoneConfig,
 } from "./state-instruction-templates";
 
 // ── Utility types ──

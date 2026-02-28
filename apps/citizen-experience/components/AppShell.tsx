@@ -10,8 +10,9 @@ import { ReasoningFab } from "./ReasoningPanel";
 import { AppHeader } from "./AppHeader";
 import { PersonaSelectorOverlay } from "./PersonaSelectorOverlay";
 import { PersonalDataDashboard } from "./personal-data/PersonalDataDashboard";
+import { getAllTerminalStateIds } from "@als/schemas";
 
-const TERMINAL_STATES = new Set(["claim-active", "rejected", "handed-off"]);
+const TERMINAL_STATES = getAllTerminalStateIds();
 
 export function AppShell() {
   const currentView = useAppStore((s) => s.currentView);

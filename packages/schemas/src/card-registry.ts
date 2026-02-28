@@ -402,17 +402,142 @@ const DECISION_HELPER_CARD: CardDefinition = {
   dataCategory: "informational",
 };
 
-// ── Interaction Type → State → Cards Mappings ──
+// ── Template Card Definitions (generic, per-interaction-type) ──
+
+const APPLICATION_ELIGIBILITY_CARD: CardDefinition = {
+  cardType: "application-eligibility",
+  title: "Your circumstances",
+  description: "We need some details to assess your application.",
+  fields: [
+    {
+      key: "employment_status",
+      label: "Employment status",
+      type: "radio",
+      required: true,
+      category: "employment",
+      options: [
+        { value: "employed", label: "Employed" },
+        { value: "self_employed", label: "Self-employed" },
+        { value: "unemployed", label: "Unemployed" },
+        { value: "retired", label: "Retired" },
+        { value: "student", label: "Student" },
+        { value: "unable_to_work", label: "Unable to work" },
+      ],
+    },
+    {
+      key: "monthly_income",
+      label: "Monthly household income (£)",
+      type: "currency",
+      required: false,
+      placeholder: "e.g. 1200",
+      category: "financial",
+      validation: { min: 0 },
+      showWhen: { field: "employment_status", values: ["employed", "self_employed"] },
+    },
+  ],
+  submitLabel: "Confirm details",
+  dataCategory: "employment",
+};
+
+const REGISTRATION_EVENT_CARD: CardDefinition = {
+  cardType: "registration-event",
+  title: "Event details",
+  description: "Provide the details of the event you are registering.",
+  fields: [
+    {
+      key: "event_date",
+      label: "Date of event",
+      type: "date",
+      required: true,
+      category: "registration",
+    },
+    {
+      key: "event_location",
+      label: "Location",
+      type: "text",
+      required: true,
+      placeholder: "e.g. St Mary's Hospital, London",
+      category: "registration",
+    },
+    {
+      key: "additional_notes",
+      label: "Additional information",
+      type: "text",
+      required: false,
+      placeholder: "Any other relevant details",
+      category: "registration",
+    },
+  ],
+  submitLabel: "Submit registration details",
+  dataCategory: "registration",
+};
+
+/**
+ * Template card registry — interaction-type-appropriate cards for graph services.
+ * These are more generic than the static registry (which is tuned for hand-crafted services).
+ */
+const TEMPLATE_CARD_REGISTRY: InteractionCardSet[] = [
+  {
+    interactionType: "application",
+    mappings: [
+      { stateId: "details-submitted", cards: [APPLICATION_ELIGIBILITY_CARD] },
+    ],
+  },
+  {
+    interactionType: "register",
+    mappings: [
+      { stateId: "details-submitted", cards: [REGISTRATION_EVENT_CARD] },
+    ],
+  },
+  {
+    interactionType: "license",
+    mappings: [
+      { stateId: "details-confirmed", cards: [LICENSE_DETAILS_CARD] },
+      { stateId: "payment-made", cards: [PAYMENT_CARD] },
+    ],
+  },
+  {
+    interactionType: "payment_service",
+    mappings: [
+      { stateId: "amount-calculated", cards: [PAYMENT_AMOUNT_CARD] },
+      { stateId: "payment-made", cards: [PAYMENT_CARD] },
+    ],
+  },
+  {
+    interactionType: "appointment_booker",
+    mappings: [
+      { stateId: "slot-selected", cards: [SLOT_PICKER_CARD] },
+    ],
+  },
+  {
+    interactionType: "portal",
+    mappings: [
+      { stateId: "action-performed", cards: [PORTAL_ACTION_CARD] },
+    ],
+  },
+  {
+    interactionType: "task_list",
+    mappings: [
+      { stateId: "step-1-complete", cards: [CHECKLIST_PROGRESS_CARD] },
+      { stateId: "step-2-complete", cards: [CHECKLIST_PROGRESS_CARD] },
+      { stateId: "step-3-complete", cards: [CHECKLIST_PROGRESS_CARD] },
+    ],
+  },
+  {
+    interactionType: "informational_hub",
+    mappings: [
+      { stateId: "information-provided", cards: [DECISION_HELPER_CARD] },
+    ],
+  },
+];
+
+// ── Static Interaction Type → State → Cards Mappings (hand-crafted services) ──
 
 const CARD_REGISTRY: InteractionCardSet[] = [
   {
     interactionType: "application",
     mappings: [
-      {
-        stateId: "details-submitted",
-        cards: [HOUSEHOLD_DETAILS_CARD, FINANCIAL_DETAILS_CARD, BANK_ACCOUNT_CARD],
-      },
-      // Legacy UC states (existing state models use these)
+      // UC-specific states (hand-crafted state model — uses these unique state IDs)
       {
         stateId: "personal-details-collected",
         cards: [HOUSEHOLD_DETAILS_CARD],
@@ -510,36 +635,36 @@ const CARD_REGISTRY: InteractionCardSet[] = [
 
 // ── Resolver ──
 
+/** Look up cards from a registry array */
+function findInRegistry(registry: InteractionCardSet[], interactionType: string, stateId: string): CardDefinition[] | null {
+  const cardSet = registry.find((cs) => cs.interactionType === interactionType);
+  if (!cardSet) return null;
+  const mapping = cardSet.mappings.find((m) => m.stateId === stateId);
+  return mapping ? mapping.cards : null;
+}
+
 /**
  * Resolve which cards to show for a given interaction type and state.
- *
- * @param interactionType - The interaction type of the service
- * @param stateId - The current or just-transitioned-to state
- * @param serviceId - The service ID (for future per-service overrides)
- * @returns CardDefinition[] to render, empty if no cards for this state
+ * Uses only the static registry (for backward compatibility).
  */
 export function resolveCards(
   interactionType: string,
   stateId: string,
   _serviceId?: string,
 ): CardDefinition[] {
-  const cardSet = CARD_REGISTRY.find(
-    (cs) => cs.interactionType === interactionType,
-  );
-  if (!cardSet) return [];
-
-  const mapping = cardSet.mappings.find((m) => m.stateId === stateId);
-  if (!mapping) return [];
-
-  return mapping.cards;
+  return findInRegistry(CARD_REGISTRY, interactionType, stateId) ?? [];
 }
 
 /**
- * Resolve cards with DB overrides taking priority over the static registry.
+ * Resolve cards with 3-level resolution chain:
  *
- * Resolution chain:
- * 1. Per-service DB overrides (serviceOverrides) for the given stateId
- * 2. Static interaction-type registry (resolveCards)
+ * 1. Per-service DB overrides (from Studio)
+ * 2. Template cards (interaction-type-appropriate for graph services)
+ * 3. Static registry fallback (hand-crafted service cards)
+ *
+ * The 3 hand-crafted services (UC, driving, pension) hit level 3 because
+ * they don't have DB overrides and their static registry entries are
+ * more specific than template cards.
  */
 export function resolveCardsWithOverrides(
   interactionType: string,
@@ -547,14 +672,18 @@ export function resolveCardsWithOverrides(
   serviceId?: string,
   serviceOverrides?: StateCardMapping[] | null,
 ): CardDefinition[] {
-  // 1. Check DB overrides first
+  // 1. Per-service DB overrides
   if (serviceOverrides && serviceOverrides.length > 0) {
     const override = serviceOverrides.find((m) => m.stateId === stateId);
     if (override) return override.cards;
   }
 
-  // 2. Fall back to static registry
-  return resolveCards(interactionType, stateId, serviceId);
+  // 2. Static registry (hand-crafted service-specific cards — UC, driving, pension)
+  const staticCards = findInRegistry(CARD_REGISTRY, interactionType, stateId);
+  if (staticCards) return staticCards;
+
+  // 3. Template cards fallback (generic interaction-type-appropriate for graph services)
+  return findInRegistry(TEMPLATE_CARD_REGISTRY, interactionType, stateId) ?? [];
 }
 
 /**
@@ -570,10 +699,14 @@ export function inferInteractionType(serviceType: string | null | undefined): In
     obligation: "payment_service",
     licence: "license",
     license: "license",
+    document: "license",
     information: "informational_hub",
     appointment: "appointment_booker",
+    test: "appointment_booker",
     payment: "payment_service",
     tax: "payment_service",
+    grant: "application",
+    entitlement: "application",
     portal: "portal",
   };
 

@@ -11,8 +11,10 @@ import { ConsentSummaryCard } from "./ConsentSummaryCard";
 import { StateProgressTracker } from "./StateProgressTracker";
 import { JourneyCompleteCard } from "./JourneyCompleteCard";
 import { CardHost } from "./cards/CardHost";
+import { RelatedServicesCard } from "./RelatedServicesCard";
+import { getAllTerminalStateIds, TERMINAL_STATE_CONFIG } from "@als/schemas";
 
-const TERMINAL_STATES = new Set(["claim-active", "rejected", "handed-off"]);
+const TERMINAL_STATES = getAllTerminalStateIds();
 
 function TypingIndicator() {
   return (
@@ -43,6 +45,8 @@ export function ChatView() {
   const taskCompletions = useAppStore((s) => s.taskCompletions);
   const tasksSubmitted = useAppStore((s) => s.tasksSubmitted);
   const currentService = useAppStore((s) => s.currentService);
+  const serviceName = useAppStore((s) => s.serviceName);
+  const interactionType = useAppStore((s) => s.interactionType);
   const pendingCards = useAppStore((s) => s.pendingCards);
   const cardsSubmitted = useAppStore((s) => s.cardsSubmitted);
   const lastAssistantRef = useRef<HTMLDivElement>(null);
@@ -114,6 +118,7 @@ export function ChatView() {
           currentState={ucState}
           stateHistory={ucStateHistory}
           service={currentService}
+          interactionType={interactionType ?? undefined}
         />
       )}
 
@@ -253,7 +258,15 @@ export function ChatView() {
         {/* Journey complete card — shown when state is terminal */}
         {!isLoading && ucState && TERMINAL_STATES.has(ucState) && (
           <div className="max-w-[85%] mt-1">
-            <JourneyCompleteCard state={ucState as "claim-active" | "rejected" | "handed-off"} />
+            <JourneyCompleteCard
+              state={ucState}
+              serviceName={serviceName ?? undefined}
+              serviceId={currentService ?? undefined}
+            />
+            {/* Related services — only for success terminals */}
+            {currentService && TERMINAL_STATE_CONFIG[ucState]?.isSuccess && (
+              <RelatedServicesCard serviceId={currentService} />
+            )}
           </div>
         )}
 
