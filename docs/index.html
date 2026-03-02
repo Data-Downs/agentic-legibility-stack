@@ -1166,15 +1166,33 @@
       33 UK government APIs.
     </p>
 
+    <div class="grid-3" style="margin-bottom: 2rem;">
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 2.5rem; font-weight: 700; color: #1d70b8;">220</div>
+        <div style="font-size: 0.9rem; color: #505a5f; font-weight: 500;">Tools</div>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem;">2 per service: check_eligibility (read) + advance_state (mutating)</p>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 2.5rem; font-weight: 700; color: #00703c;">440</div>
+        <div style="font-size: 0.9rem; color: #505a5f; font-weight: 500;">Resources</div>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem;">4 per service: manifest, policy, state-model, consent as JSON</p>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 2.5rem; font-weight: 700; color: #912b88;">440</div>
+        <div style="font-size: 0.9rem; color: #505a5f; font-weight: 500;">Prompts</div>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem;">4 per service: journey guide, eligibility check, and more</p>
+      </div>
+    </div>
+
     <div class="grid-2" style="margin-bottom: 2rem;">
       <div class="card card-accent card-blue">
-        <h3>Local MCP Server</h3>
-        <p>Reads from the service-store DB. Exposes per-service tools
-          (<code>_check_eligibility</code>, <code>_advance_state</code>),
-          resources (manifest, policy, state-model, consent per service),
-          and prompts (journey template, eligibility check).</p>
+        <h3>ALS Service Catalog (Remote)</h3>
+        <p>110 UK government services exposed via StreamableHTTP MCP transport.
+          Per-service tools (<code>_check_eligibility</code>, <code>_advance_state</code>),
+          resources (manifest, policy, state-model, consent),
+          and prompts (journey guide, eligibility check). Public, no API key required.</p>
         <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
-          stdio transport &bull; Auto-connects on chat startup
+          StreamableHTTP &bull; Cloudflare Workers &bull; Open CORS
         </div>
       </div>
       <div class="card card-accent card-green">
@@ -1188,15 +1206,15 @@
       </div>
     </div>
 
-    <h3 style="margin-bottom: 0.75rem;">Claude Desktop Configuration</h3>
+    <h3 style="margin-bottom: 0.75rem;">Connect from Claude Desktop or Claude Code</h3>
     <p style="color: #505a5f; margin-bottom: 0.75rem; font-size: 0.9rem;">
-      Connect Claude Desktop to the remote service catalog:
+      Add this to your MCP configuration to connect to the live service catalog. No API key needed.
     </p>
     <pre class="code-block"><code>{
   <span class="kw">"mcpServers"</span>: {
     <span class="kw">"als-govuk"</span>: {
       <span class="kw">"type"</span>: <span class="str">"streamable-http"</span>,
-      <span class="kw">"url"</span>: <span class="str">"https://als-studio.chris-8ab.workers.dev/mcp"</span>
+      <span class="kw">"url"</span>: <span class="str">"https://als-studio.chris-8ab.workers.dev/api/mcp"</span>
     }
   }
 }</code></pre>
@@ -1224,7 +1242,7 @@
         <tr><td><code>@als/identity</code></td><td>GOV.UK One Login and Wallet simulators</td></tr>
         <tr><td><code>@als/personal-data</code></td><td>3-tier model: VerifiedStore, SubmittedStore, InferredStore, ServiceAccessStore, ConsentLedger</td></tr>
         <tr><td><code>@als/adapters</code></td><td>AnthropicAdapter (sole SDK holder), McpAdapter, GovukContentAdapter</td></tr>
-        <tr><td><code>@als/mcp-server</code></td><td>MCP server (stdio + StreamableHTTP) &mdash; per-service tools, resources, and prompts from DB</td></tr>
+        <tr><td><code>@als/mcp-server</code></td><td>MCP server (stdio + StreamableHTTP) &mdash; 220 tools, 440 resources, 440 prompts from DB</td></tr>
         <tr><td><code>@als/service-graph</code></td><td>108 services, 98 edges, 16 life events &mdash; ServiceGraphEngine with BFS traversal</td></tr>
         <tr><td><code>@als/service-store</code></td><td>DB-backed CRUD for services, gap analysis, LLM artefact generation, auto-seeding from graph</td></tr>
       </tbody>
@@ -1374,7 +1392,7 @@
   <span class="kw">"mcpServers"</span>: {
     <span class="kw">"als-govuk"</span>: {
       <span class="kw">"type"</span>: <span class="str">"streamable-http"</span>,
-      <span class="kw">"url"</span>: <span class="str">"https://als-studio.chris-8ab.workers.dev/mcp"</span>
+      <span class="kw">"url"</span>: <span class="str">"https://als-studio.chris-8ab.workers.dev/api/mcp"</span>
     }
   }
 }</code></pre>
