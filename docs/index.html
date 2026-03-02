@@ -1157,9 +1157,9 @@
   <div class="container">
     <h2>MCP Integration</h2>
     <p class="section-intro">
-      The citizen-experience chat connects to two MCP sources: a <strong>local server</strong> exposing
-      service artefacts as tools, and the <strong>GOV.UK MCP server</strong> providing live access to
-      33 UK government APIs.
+      The platform exposes two MCP servers: the <strong>ALS Service Catalog</strong> running on Cloudflare Workers
+      with 110 UK government services as tools, and the <strong>GOV.UK MCP server</strong> providing live access to
+      33 UK government APIs. Both are public &mdash; no download or local setup required.
     </p>
 
     <div class="grid-3" style="margin-bottom: 2rem;">
@@ -1243,7 +1243,7 @@
         <tr><td><code>@als/identity</code></td><td>GOV.UK One Login and Wallet simulators</td></tr>
         <tr><td><code>@als/personal-data</code></td><td>3-tier model: VerifiedStore, SubmittedStore, InferredStore, ServiceAccessStore, ConsentLedger</td></tr>
         <tr><td><code>@als/adapters</code></td><td>AnthropicAdapter (sole SDK holder), McpAdapter, GovukContentAdapter</td></tr>
-        <tr><td><code>@als/mcp-server</code></td><td>MCP server (stdio + StreamableHTTP) &mdash; 220 tools, 440 resources, 220 prompts from DB</td></tr>
+        <tr><td><code>@als/mcp-server</code></td><td>Public MCP server on Cloudflare Workers &mdash; 220 tools, 440 resources, 220 prompts</td></tr>
         <tr><td><code>@als/service-graph</code></td><td>108 services, 98 edges, 16 life events &mdash; ServiceGraphEngine with BFS traversal</td></tr>
         <tr><td><code>@als/service-store</code></td><td>DB-backed CRUD for services, gap analysis, LLM artefact generation, auto-seeding from graph</td></tr>
       </tbody>
@@ -1360,7 +1360,7 @@
         <tr><td>Personal Data</td><td>None</td><td><strong>3-tier model</strong> (verified/submitted/inferred)</td></tr>
         <tr><td>State Model</td><td>3 hardcoded services</td><td><strong>8 interaction type templates</strong> + per-service overrides</td></tr>
         <tr><td>Progress</td><td>Ephemeral</td><td><strong>Persistent</strong> across conversation switches</td></tr>
-        <tr><td>MCP</td><td>stdio, 8 tools</td><td><strong>Local + GOV.UK MCP</strong> (33 live APIs)</td></tr>
+        <tr><td>MCP</td><td>stdio, 8 tools</td><td><strong>Public MCP server</strong> (220 tools) + GOV.UK MCP (33 live APIs)</td></tr>
       </tbody>
     </table>
 
