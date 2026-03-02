@@ -162,6 +162,12 @@ export interface Conversation {
   ucStateHistory?: string[];
   /** Persisted interaction type (for dynamic milestones) */
   interactionType?: string;
+  /** Persisted tasks from the last API response */
+  tasks?: AgentTask[];
+  /** Persisted task completion messages */
+  taskCompletions?: Record<string, string>;
+  /** Whether tasks were submitted */
+  tasksSubmitted?: boolean;
 }
 
 export interface StoredTask {
@@ -253,6 +259,12 @@ export interface LifeEventService {
 
 /** Default service for each persona — used when no service is explicitly selected */
 export const PERSONA_DEFAULT_SERVICE: Record<string, ServiceType> = {
+  "sarah-chen": "family",
+  "mohammed-al-rashid": "benefits",
+  "margaret-thompson": "family",
+  "david-evans": "driving",
+  "priya-sharma": "benefits",
+  // Legacy mappings
   "emma-liam": "driving",
   rajesh: "driving",
   margaret: "family",

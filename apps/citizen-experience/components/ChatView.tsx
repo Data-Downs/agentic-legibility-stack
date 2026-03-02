@@ -13,6 +13,7 @@ import { JourneyCompleteCard } from "./JourneyCompleteCard";
 import { CardHost } from "./cards/CardHost";
 import { RelatedServicesCard } from "./RelatedServicesCard";
 import { getAllTerminalStateIds, TERMINAL_STATE_CONFIG } from "@als/schemas";
+import { QuickReplies } from "./QuickReplies";
 
 const TERMINAL_STATES = getAllTerminalStateIds();
 
@@ -110,6 +111,15 @@ export function ChatView() {
     -1,
   );
 
+  // Show quick replies when the last message is from the assistant and nothing
+  // else is blocking (no tasks, cards, consent, loading, or terminal state)
+  const lastMsg = conversationHistory[conversationHistory.length - 1];
+  const showQuickReplies = !isLoading &&
+    lastMsg?.role === "assistant" &&
+    typeof lastMsg.content === "string" &&
+    !showTasks && !showCards && !showConsent &&
+    !(ucState && TERMINAL_STATES.has(ucState));
+
   return (
     <div className="flex flex-col h-full">
       {/* State Progress Tracker — shown when in a UC journey */}
@@ -169,6 +179,15 @@ export function ChatView() {
             </div>
           );
         })}
+
+        {/* Quick reply buttons — detected from bulleted choices in assistant message */}
+        {showQuickReplies && (
+          <QuickReplies
+            messageText={lastMsg.content as string}
+            onSelect={(reply) => useAppStore.getState().sendMessage(reply)}
+            disabled={isLoading}
+          />
+        )}
 
         {/* Dynamic form cards — rendered when chat API returns cardRequests */}
         {showCards && (

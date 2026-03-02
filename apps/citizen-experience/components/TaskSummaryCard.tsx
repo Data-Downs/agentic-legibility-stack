@@ -35,15 +35,15 @@ export function TaskSummaryCard({
             </svg>
           </span>
           <span className="text-sm font-bold text-blue-700">
-            Ready to submit
+            Ready to continue
           </span>
           <span className="text-xs text-govuk-dark-grey ml-auto">
-            {completedCount} {completedCount === 1 ? "item" : "items"} completed
+            {completedCount} {completedCount === 1 ? "action" : "actions"} confirmed
           </span>
         </div>
 
         <p className="text-sm text-govuk-dark-grey mb-4">
-          Review your details before submitting.
+          Confirm these actions to proceed to the next step.
         </p>
 
         {/* Summary rows */}
@@ -105,7 +105,7 @@ export function TaskSummaryCard({
                 Submitting...
               </span>
             ) : (
-              "Submit all details"
+              "Continue"
             )}
           </button>
         </div>

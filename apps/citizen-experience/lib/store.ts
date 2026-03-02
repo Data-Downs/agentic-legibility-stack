@@ -157,7 +157,7 @@ export { getConversations, getTasks, saveTasks };
 export const useAppStore = create<AppStore>((set, get) => ({
   persona: null,
   agent: "dot",
-  serviceMode: "json",
+  serviceMode: "mcp",
   personaData: null,
   enrichedData: null,
   currentView: "persona-picker",
@@ -315,6 +315,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         ucState: conv.ucState ?? null,
         ucStateHistory: conv.ucStateHistory ?? [],
         interactionType: conv.interactionType ?? null,
+        // Restore persisted tasks
+        lastResponseTasks: conv.tasks ?? [],
+        taskCompletions: conv.taskCompletions ?? {},
+        tasksSubmitted: conv.tasksSubmitted ?? false,
       });
     }
   },
@@ -399,6 +403,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
       conversation.ucState = data.ucState?.currentState ?? state.ucState ?? undefined;
       conversation.ucStateHistory = data.ucState?.stateHistory ?? state.ucStateHistory ?? undefined;
       conversation.interactionType = data.interactionType ?? state.interactionType ?? undefined;
+
+      // Persist tasks on the conversation
+      if (data.tasks && data.tasks.length > 0) {
+        conversation.tasks = data.tasks;
+        conversation.taskCompletions = {};
+        conversation.tasksSubmitted = false;
+      } else {
+        // Keep existing task state
+        conversation.tasks = state.activeConversation?.tasks;
+        conversation.taskCompletions = state.taskCompletions;
+        conversation.tasksSubmitted = state.tasksSubmitted;
+      }
 
       saveConversation(state.persona, conversation);
 
@@ -505,17 +521,30 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   setTaskCompletion: (taskId: string, message: string) => {
-    set((s) => ({
-      taskCompletions: { ...s.taskCompletions, [taskId]: message },
-    }));
+    const state = get();
+    const updatedCompletions = { ...state.taskCompletions, [taskId]: message };
+    set({ taskCompletions: updatedCompletions });
+
+    // Persist to conversation
+    if (state.persona && state.activeConversation) {
+      const conv = { ...state.activeConversation, taskCompletions: updatedCompletions };
+      saveConversation(state.persona, conv);
+      set({ activeConversation: conv });
+    }
   },
 
   clearTaskCompletion: (taskId: string) => {
-    set((s) => {
-      const updated = { ...s.taskCompletions };
-      delete updated[taskId];
-      return { taskCompletions: updated };
-    });
+    const state = get();
+    const updatedCompletions = { ...state.taskCompletions };
+    delete updatedCompletions[taskId];
+    set({ taskCompletions: updatedCompletions });
+
+    // Persist to conversation
+    if (state.persona && state.activeConversation) {
+      const conv = { ...state.activeConversation, taskCompletions: updatedCompletions };
+      saveConversation(state.persona, conv);
+      set({ activeConversation: conv });
+    }
   },
 
   submitTasks: async () => {
@@ -533,6 +562,27 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (lines.length === 0) return;
 
     set({ tasksSubmitted: true });
+
+    // Persist submitted state to conversation
+    if (state.persona && state.activeConversation) {
+      const conv = { ...state.activeConversation, tasksSubmitted: true };
+      saveConversation(state.persona, conv);
+      set({ activeConversation: conv });
+    }
+
+    // Also update StoredTask statuses to "completed"
+    if (state.persona) {
+      const storedTasks = getTasks(state.persona);
+      const completedIds = new Set(Object.keys(taskCompletions));
+      for (const st of storedTasks) {
+        if (completedIds.has(st.id)) {
+          st.status = "completed";
+          st.updatedAt = new Date().toISOString();
+        }
+      }
+      saveTasks(state.persona, storedTasks);
+    }
+
     await state.sendMessage(lines.join("\n\n"));
   },
 

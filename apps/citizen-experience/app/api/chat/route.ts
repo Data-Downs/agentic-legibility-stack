@@ -730,6 +730,14 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
       return !ELIGIBILITY_KEYWORDS.test(text);
     });
 
+    // Strip overly generic tasks that don't collect data or prompt useful action.
+    // Tasks like "Complete X application" or "Submit your claim" are noise — the
+    // actual data collection happens through structured cards at the right states.
+    const GENERIC_TASK_KEYWORDS = /^complete\b|^submit\b|^finish\b|^fill in\b|^provide (your |all )?details|^apply for\b|^start (your |the )?application/i;
+    result.tasks = result.tasks.filter(t => {
+      return !GENERIC_TASK_KEYWORDS.test(t.description.trim());
+    });
+
     // ── Consent-driven pre-fill ──
     // If cards were resolved and the user has granted consent, pre-fill fields
     // with data already on file (Tier 1 verified + Tier 2 submitted).
