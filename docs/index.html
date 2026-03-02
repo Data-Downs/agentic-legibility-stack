@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agentic Legibility Stack &mdash; V2 Platform</title>
-  <meta name="description" content="110 government services with full artefact sets, 16 life events, deployed on Cloudflare Workers. A platform reference architecture for accountable AI agents in UK government.">
+  <meta name="description" content="108 government services with full artefact sets, 16 life events, deployed on Cloudflare Workers. A platform reference architecture for accountable AI agents in UK government.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -190,6 +190,7 @@
     .card-green { border-left-color: #00703c; }
     .card-orange { border-left-color: #f47738; }
     .card-purple { border-left-color: #912b88; }
+    .card-teal { border-left-color: #0b7285; }
 
     .card h3 { margin-bottom: 0.5rem; }
     .card p { color: #505a5f; font-size: 0.95rem; }
@@ -270,7 +271,7 @@
 
     /* ── Architecture Diagram ── */
     .diagram {
-      max-width: 660px;
+      max-width: 720px;
       margin: 2rem auto;
       font-size: 0.85rem;
     }
@@ -475,31 +476,6 @@
       border: 1px solid #e0dfde;
     }
 
-    /* ── Badge NEW ── */
-    .badge-new {
-      display: inline-block;
-      background: #00703c;
-      color: #fff;
-      font-size: 0.6rem;
-      font-weight: 700;
-      padding: 0.1rem 0.35rem;
-      border-radius: 2px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      vertical-align: middle;
-      margin-left: 0.35rem;
-    }
-
-    /* ── Version banner ── */
-    .version-banner {
-      background: #1d70b8;
-      color: #fff;
-      padding: 0.5rem 1rem;
-      text-align: center;
-      font-size: 0.8rem;
-    }
-    .version-banner a { color: #fff; text-decoration: underline; font-weight: 600; }
-
     /* ── Getting started ── */
     .steps { counter-reset: step; list-style: none; padding: 0; }
     .steps li {
@@ -533,6 +509,47 @@
       font-size: 0.85rem;
     }
 
+    /* ── Orchestrator Flow ── */
+    .orch-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      max-width: 540px;
+      margin: 2rem auto;
+    }
+    .orch-step {
+      background: #fff;
+      border: 1px solid #b1b4b6;
+      border-left: 4px solid;
+      padding: 0.5rem 1.25rem;
+      border-radius: 2px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .orch-step .step-num {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fff;
+      background: #505a5f;
+      width: 1.4rem;
+      height: 1.4rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .orch-step strong { font-size: 0.85rem; }
+    .orch-step span { font-size: 0.75rem; color: #505a5f; }
+    .orch-connector {
+      width: 2px;
+      height: 16px;
+      background: #b1b4b6;
+    }
+
     /* ── Footer ── */
     .footer {
       background: #0b0c0c;
@@ -560,11 +577,12 @@
   <div class="container">
     <span class="nav-brand">Agentic Legibility Stack</span>
     <ul class="nav-links">
+      <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#citizen-ux">Citizen UX</a></li>
       <li><a href="#graph">Graph</a></li>
       <li><a href="#architecture">Architecture</a></li>
       <li><a href="#data-planes">Data Planes</a></li>
       <li><a href="#mcp">MCP</a></li>
-      <li><a href="#deployment">Deployment</a></li>
       <li><a href="#packages">Packages</a></li>
       <li><a href="#try-it">Try It</a></li>
       <li><a href="v1/" class="nav-v1">V1 Docs</a></li>
@@ -578,14 +596,13 @@
     <span class="hero-label">Platform Reference Architecture</span>
     <h1>Agentic Legibility Stack</h1>
     <p class="hero-subtitle">
-      110 government services &mdash; each with full machine-readable artefacts &mdash; across 16 life events, deployed on Cloudflare Workers.
+      108 government services &mdash; each with full machine-readable artefacts &mdash; across 16 life events.
       A reference architecture for accountable AI agents in UK government.
     </p>
     <p class="hero-desc">
-      A Turborepo monorepo with 2 Next.js apps and 11 shared packages, demonstrating how
-      AI agents could interact with government services while maintaining transparency,
-      accountability, and citizen control. Every action is traced, every consent is recorded,
-      every decision is auditable.
+      A Turborepo monorepo with 2 Next.js apps and 10 shared packages. Citizens describe a life situation,
+      the AI agent triages them to the right service, then guides them through it &mdash; collecting data via
+      structured cards, enforcing policy rules, tracking consent, and producing an auditable trace of every action.
     </p>
     <div class="hero-actions">
       <a href="https://als-studio.chris-8ab.workers.dev" class="btn btn-primary" target="_blank" rel="noopener">Try the Live Demo</a>
@@ -600,8 +617,9 @@
       <span class="badge">Turborepo</span>
       <span class="badge">Cloudflare Workers</span>
       <span class="badge">D1</span>
-      <span class="badge">Claude API</span>
+      <span class="badge">Claude Sonnet 4.5</span>
       <span class="badge">MCP</span>
+      <span class="badge">GOV.UK APIs</span>
       <span class="badge">React 19</span>
     </div>
   </div>
@@ -612,7 +630,7 @@
   <div class="container">
     <div class="stat-grid">
       <div>
-        <div class="stat-number">110</div>
+        <div class="stat-number">108</div>
         <div class="stat-label">Government Services</div>
       </div>
       <div>
@@ -620,60 +638,206 @@
         <div class="stat-label">Life Events</div>
       </div>
       <div>
-        <div class="stat-number">15</div>
-        <div class="stat-label">Departments</div>
+        <div class="stat-number">8</div>
+        <div class="stat-label">Interaction Types</div>
       </div>
       <div>
-        <div class="stat-number">11</div>
-        <div class="stat-label">Packages</div>
+        <div class="stat-number">3</div>
+        <div class="stat-label">D1 Databases</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── From Prototype to Platform ── -->
-<section class="section section-alt" id="evolution">
+<!-- ── How It Works: The Orchestrator ── -->
+<section class="section section-alt" id="how-it-works">
   <div class="container">
-    <h2>From Prototype to Platform</h2>
+    <h2>How It Works</h2>
     <p class="section-intro">
-      The V1 prototype proved the architecture with 4 hand-authored services running locally.
-      V2 scales it to 110 services across 15 departments, each with full machine-readable artefacts,
-      deployed on Cloudflare Workers with 3 D1 databases and a remote MCP server.
+      A citizen describes their situation. A deterministic <strong>Orchestrator</strong> controls the conversation loop &mdash;
+      Claude handles language, but the Orchestrator enforces policy, validates state transitions, resolves cards,
+      and produces trace events. The LLM never touches the controls.
     </p>
 
-    <table class="data-table" style="margin-bottom: 1.5rem;">
-      <thead>
-        <tr>
-          <th>Dimension</th>
-          <th>V1 Prototype</th>
-          <th>V2 Platform</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>Services</td><td>4 hand-authored</td><td><strong>110</strong> (all with full artefact sets)</td></tr>
-        <tr><td>Packages</td><td>7</td><td><strong>11</strong></td></tr>
-        <tr><td>Databases</td><td>1 local SQLite</td><td><strong>3 D1 databases</strong></td></tr>
-        <tr><td>Deployment</td><td>Local only</td><td><strong>Cloudflare Workers</strong></td></tr>
-        <tr><td>MCP Server</td><td>stdio (local, 8 tools)</td><td><strong>220 tools</strong>, 440 resources, 220 prompts</td></tr>
-        <tr><td>Personal Data</td><td>None</td><td><strong>3-tier model</strong> (verified/submitted/inferred)</td></tr>
-        <tr><td>Service Storage</td><td>Filesystem JSON</td><td><strong>DB-backed store</strong> with gap analysis</td></tr>
-        <tr><td>Artefact Generation</td><td>Manual</td><td><strong>Auto-generated</strong> from GOV.UK content via LLM</td></tr>
-      </tbody>
-    </table>
+    <div class="orch-flow">
+      <div class="orch-step" style="border-left-color: #912b88;">
+        <span class="step-num" style="background: #912b88;">1</span>
+        <div><strong>Citizen sends a message</strong><br><span>Chat UI sends persona, scenario, conversation history, current state</span></div>
+      </div>
+      <div class="orch-connector"></div>
+      <div class="orch-step" style="border-left-color: #1d70b8;">
+        <span class="step-num" style="background: #1d70b8;">2</span>
+        <div><strong>Orchestrator loads artefacts</strong><br><span>Manifest, policy, state-model, consent, state-instructions, card definitions</span></div>
+      </div>
+      <div class="orch-connector"></div>
+      <div class="orch-step" style="border-left-color: #00703c;">
+        <span class="step-num" style="background: #00703c;">3</span>
+        <div><strong>Policy &amp; state evaluation</strong><br><span>PolicyEvaluator checks eligibility rules; StateMachine returns allowed transitions</span></div>
+      </div>
+      <div class="orch-connector"></div>
+      <div class="orch-step" style="border-left-color: #1d70b8;">
+        <span class="step-num" style="background: #1d70b8;">4</span>
+        <div><strong>LLM call via AnthropicAdapter</strong><br><span>Claude Sonnet 4.5 with extended thinking + tools (the <em>only</em> place the SDK is used)</span></div>
+      </div>
+      <div class="orch-connector"></div>
+      <div class="orch-step" style="border-left-color: #00703c;">
+        <span class="step-num" style="background: #00703c;">5</span>
+        <div><strong>Orchestrator validates the response</strong><br><span>Validates proposed state transition, extracts facts, resolves cards for new state</span></div>
+      </div>
+      <div class="orch-connector"></div>
+      <div class="orch-step" style="border-left-color: #f47738;">
+        <span class="step-num" style="background: #f47738;">6</span>
+        <div><strong>Trace events emitted</strong><br><span>llm.request, llm.response, policy.evaluated, state.transition, consent.granted &mdash; append-only</span></div>
+      </div>
+      <div class="orch-connector"></div>
+      <div class="orch-step" style="border-left-color: #912b88;">
+        <span class="step-num" style="background: #912b88;">7</span>
+        <div><strong>Response returned to citizen</strong><br><span>Text + state update + card requests + consent requests + tasks + quick-reply choices</span></div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top: 2rem;">
+      <div class="card card-accent card-blue">
+        <div class="card-tag">Service Strategy</div>
+        <h3>Two Modes</h3>
+        <p>
+          <strong>JSON mode:</strong> The Orchestrator evaluates policy and state inline using loaded artefacts.<br>
+          <strong>MCP mode:</strong> Tools are dispatched to the MCP server &mdash; <code>_check_eligibility</code> and <code>_advance_state</code> &mdash; plus live GOV.UK API tools.
+        </p>
+        <p style="margin-top: 0.5rem;">Same Orchestrator loop, pluggable intelligence.</p>
+      </div>
+      <div class="card card-accent card-green">
+        <div class="card-tag">Agent Personalities</div>
+        <h3>DOT &amp; MAX</h3>
+        <p>
+          <strong>DOT</strong> (default): Conversational and permission-based. Asks before acting, explains each step, lets the citizen control the pace.<br>
+          <strong>MAX</strong>: Autonomous and proactive. Pre-fills data from persona records, advances quickly, surfaces tasks upfront.
+        </p>
+        <p style="margin-top: 0.5rem;">Same Orchestrator &mdash; different system prompts.</p>
+      </div>
+    </div>
 
     <div class="callout">
-      The original V1 documentation is preserved at <a href="v1/">docs/v1/</a> &mdash; it covers the foundational
-      architecture, the 4-artefact pattern, the Evidence Plane, and the two agent personalities (DOT &amp; MAX).
+      <strong>Key invariants:</strong> All LLM calls go through a single <code>AnthropicAdapter</code> (no direct SDK usage elsewhere).
+      All service calls go through the <code>CapabilityInvoker</code> (policy, consent, and tracing enforced at one choke point).
+      The Orchestrator owns the state machine &mdash; Claude proposes transitions, but the Orchestrator validates them.
+    </div>
+  </div>
+</section>
+
+<!-- ── Citizen Experience UX ── -->
+<section class="section" id="citizen-ux">
+  <div class="container">
+    <h2>Citizen Experience</h2>
+    <p class="section-intro">
+      The chat interface does more than render text. Each conversation state triggers
+      structured UI elements &mdash; data-collection cards, consent terms, progress tracking,
+      quick-reply buttons &mdash; so citizens always know what's happening and what's needed next.
+    </p>
+
+    <div class="grid-3" style="margin-bottom: 2rem;">
+      <div class="card card-accent card-blue">
+        <div class="card-tag">Discovery</div>
+        <h3>Triage Mode</h3>
+        <p>No service pre-selected. The citizen describes their life situation
+          and the agent identifies the right service(s) through conversation.
+          Life events and the service graph power the discovery.</p>
+      </div>
+      <div class="card card-accent card-purple">
+        <div class="card-tag">Interaction</div>
+        <h3>Quick Replies</h3>
+        <p>When the LLM presents choices as bold options (bulleted or paragraph-style),
+          they're automatically detected and rendered as tappable pill buttons.
+          Clicking sends the choice as the citizen's response.</p>
+      </div>
+      <div class="card card-accent card-green">
+        <div class="card-tag">Data Collection</div>
+        <h3>Structured Cards</h3>
+        <p>Each service state can trigger a card with typed input fields (text, date, currency,
+          address, etc.). Fields are pre-filled from the citizen's personal data profile.
+          Submitted data goes to the Tier 2 store.</p>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-bottom: 2rem;">
+      <div class="card card-accent card-orange">
+        <div class="card-tag">Consent</div>
+        <h3>Consent Cards</h3>
+        <p>Before any data is shared with a service, the citizen sees exactly what will be
+          shared, from which tier, with whom, and why. They grant or deny each item individually.
+          Consent decisions are recorded in the Evidence Plane.</p>
+      </div>
+      <div class="card card-accent card-teal">
+        <div class="card-tag">Progress</div>
+        <h3>State Progress Tracker</h3>
+        <p>A visual progress bar driven by the service's state model. For hand-crafted services,
+          custom milestones are shown. For graph services, milestones are auto-generated from
+          state instruction templates (8 interaction types).</p>
+      </div>
+      <div class="card card-accent card-blue">
+        <div class="card-tag">Completion</div>
+        <h3>Terminal States &amp; Related Services</h3>
+        <p>When a journey reaches a terminal state (completed, registered, issued, rejected, etc.),
+          a receipt card appears with a reference number. For successful completions,
+          related services from the graph are suggested.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom: 1rem;">8 Interaction Types</h3>
+    <p style="color: #505a5f; margin-bottom: 1rem; font-size: 0.95rem;">
+      Every service is classified into one of 8 interaction types. Each type has a template that generates
+      state models, state instructions, milestones, and card definitions &mdash; so graph-only services get
+      a complete UX without hand-authoring.
+    </p>
+    <div class="grid-4">
+      <div class="card card-alt" style="padding: 0.75rem; text-align: center;">
+        <strong style="font-size: 0.85rem;">Application</strong>
+        <p style="font-size: 0.75rem;">Benefits, grants, permits</p>
+      </div>
+      <div class="card card-alt" style="padding: 0.75rem; text-align: center;">
+        <strong style="font-size: 0.85rem;">Registration</strong>
+        <p style="font-size: 0.75rem;">Birth, death, company</p>
+      </div>
+      <div class="card card-alt" style="padding: 0.75rem; text-align: center;">
+        <strong style="font-size: 0.85rem;">Licence</strong>
+        <p style="font-size: 0.75rem;">Driving, firearms, trade</p>
+      </div>
+      <div class="card card-alt" style="padding: 0.75rem; text-align: center;">
+        <strong style="font-size: 0.85rem;">Portal</strong>
+        <p style="font-size: 0.75rem;">Tax account, pension access</p>
+      </div>
+      <div class="card card-alt" style="padding: 0.75rem; text-align: center;">
+        <strong style="font-size: 0.85rem;">Appointment</strong>
+        <p style="font-size: 0.75rem;">Theory test, GP booking</p>
+      </div>
+      <div class="card card-alt" style="padding: 0.75rem; text-align: center;">
+        <strong style="font-size: 0.85rem;">Payment</strong>
+        <p style="font-size: 0.75rem;">Tax, fees, fines</p>
+      </div>
+      <div class="card card-alt" style="padding: 0.75rem; text-align: center;">
+        <strong style="font-size: 0.85rem;">Task List</strong>
+        <p style="font-size: 0.75rem;">Multi-step compliance</p>
+      </div>
+      <div class="card card-alt" style="padding: 0.75rem; text-align: center;">
+        <strong style="font-size: 0.85rem;">Info Hub</strong>
+        <p style="font-size: 0.75rem;">Guidance, calculators</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Persistent state:</strong> Conversation history, state machine progress, task completions,
+      and submitted data all survive conversation switching. A citizen can start Universal Credit,
+      switch to check their driving licence, and return to find their UC application exactly where they left it.
     </div>
   </div>
 </section>
 
 <!-- ── The Service Graph ── -->
-<section class="section" id="graph">
+<section class="section section-alt" id="graph">
   <div class="container">
     <h2>The Service Graph</h2>
     <p class="section-intro">
-      110 government services connected by 98 dependency edges across 16 life events.
+      108 government services connected by 98 dependency edges across 16 life events.
       The graph models how services relate: registering a birth <em>enables</em> applying for
       Child Benefit, which <em>requires</em> a National Insurance number.
     </p>
@@ -784,23 +948,22 @@
     </div>
 
     <div class="callout">
-      <strong>Department breakdown:</strong> HMRC (27 services), DWP (21), Local Authority (14),
+      <strong>Department breakdown:</strong> HMRC (27), DWP (21), Local Authority (14),
       Home Office (6), HMCTS (6), NHS (5), GRO (5), DVLA (5), OPG (2), DVSA (2),
-      and 5 more departments with 1 service each. All 110 services have full
-      machine-readable artefact sets (policy, state-model, consent).
+      and 5 more departments with 1 service each.
     </div>
   </div>
 </section>
 
 <!-- ── Architecture ── -->
-<section class="section section-alt" id="architecture">
+<section class="section" id="architecture">
   <div class="container">
     <h2>Architecture</h2>
     <p class="section-intro">
       The stack enforces two invariants: all service calls go through a single
       <strong>CapabilityInvoker</strong>, and all LLM calls go through the
-      <strong>AnthropicAdapter</strong>. These choke points are where policy, consent,
-      and tracing are enforced.
+      <strong>AnthropicAdapter</strong>. The <strong>Orchestrator</strong> sits between them &mdash;
+      a deterministic controller that owns the state machine, policy evaluation, and conversation loop.
     </p>
 
     <div class="diagram">
@@ -808,36 +971,56 @@
       <div class="diagram-row">
         <div class="diagram-box" style="border-left-color: #912b88;">
           <strong>Citizen</strong>
-          <span>Picks persona &amp; agent</span>
+          <span>Describes life situation</span>
+        </div>
+      </div>
+      <div class="diagram-arrow"></div>
+      <div class="diagram-label">Triage &rarr; service identified</div>
+
+      <!-- Chat API -->
+      <div class="diagram-row">
+        <div class="diagram-box" style="border-left-color: #1d70b8; min-width: 280px;">
+          <strong>Chat API + Orchestrator</strong>
+          <span>State machine &bull; Policy eval &bull; Card resolver &bull; Field collector</span>
         </div>
       </div>
       <div class="diagram-arrow"></div>
       <div class="diagram-label">Single LLM choke point</div>
 
-      <!-- AnthropicAdapter -->
+      <!-- Claude -->
       <div class="diagram-row">
         <div class="diagram-box" style="border-left-color: #1d70b8; background: #f0f6fc;">
-          <strong>AnthropicAdapter</strong>
-          <span>Claude + thinking</span>
+          <strong>Claude Sonnet 4.5</strong>
+          <span>Extended thinking &bull; Tool use &bull; Structured output</span>
         </div>
       </div>
       <div class="diagram-arrow"></div>
-      <div class="diagram-label">Single service choke point</div>
-
-      <!-- CapabilityInvoker -->
-      <div class="diagram-row">
-        <div class="diagram-box" style="border-left-color: #00703c; background: #f0faf4;">
-          <strong>CapabilityInvoker</strong>
-          <span>Policy &bull; Consent &bull; Trace &bull; Receipt</span>
-        </div>
-      </div>
-      <div class="diagram-arrow"></div>
+      <div class="diagram-label">Validated transition + extracted facts</div>
 
       <!-- Services -->
       <div class="diagram-row">
-        <div class="diagram-box" style="border-left-color: #00703c; min-width: 260px;">
-          <strong>110 Government Services</strong>
-          <span>All with full artefact sets (policy, state-model, consent)</span>
+        <div class="diagram-box" style="border-left-color: #00703c; min-width: 280px;">
+          <strong>108 Government Services</strong>
+          <span>Each with manifest &bull; policy &bull; state-model &bull; consent &bull; cards</span>
+        </div>
+      </div>
+
+      <!-- Response fan-out -->
+      <div style="display: flex; justify-content: center; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap;">
+        <div style="background: #f0f6fc; border: 1px solid #1d70b8; border-radius: 2px; padding: 0.4rem 0.7rem; font-size: 0.75rem; text-align: center;">
+          <strong>Text response</strong>
+        </div>
+        <div style="background: #f0faf4; border: 1px solid #00703c; border-radius: 2px; padding: 0.4rem 0.7rem; font-size: 0.75rem; text-align: center;">
+          <strong>State update</strong>
+        </div>
+        <div style="background: #fdf0fc; border: 1px solid #912b88; border-radius: 2px; padding: 0.4rem 0.7rem; font-size: 0.75rem; text-align: center;">
+          <strong>Card requests</strong>
+        </div>
+        <div style="background: #fff7f0; border: 1px solid #f47738; border-radius: 2px; padding: 0.4rem 0.7rem; font-size: 0.75rem; text-align: center;">
+          <strong>Consent requests</strong>
+        </div>
+        <div style="background: #f3f2f1; border: 1px solid #b1b4b6; border-radius: 2px; padding: 0.4rem 0.7rem; font-size: 0.75rem; text-align: center;">
+          <strong>Tasks</strong>
         </div>
       </div>
 
@@ -857,18 +1040,11 @@
         </div>
       </div>
     </div>
-
-    <p style="color: #505a5f; max-width: 700px; margin: 0 auto; text-align: center; font-size: 0.9rem;">
-      A citizen talks to an agent. The agent calls Claude via the AnthropicAdapter.
-      When it needs a government service, the call goes through the CapabilityInvoker, which evaluates
-      policy rules, checks consent, and produces a receipt. Three D1 databases sit underneath
-      everything &mdash; the Evidence Plane, Personal Data store, and Service Catalog.
-    </p>
   </div>
 </section>
 
 <!-- ── Three Data Planes ── -->
-<section class="section" id="data-planes">
+<section class="section section-alt" id="data-planes">
   <div class="container">
     <h2>Three Data Planes</h2>
     <p class="section-intro">
@@ -882,7 +1058,7 @@
         <h3>Evidence Plane</h3>
         <p>Records every action: LLM calls, policy evaluations, consent grants, service invocations, receipts, state transitions, and handoffs. Nothing is edited or deleted.</p>
         <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
-          <code>TraceStore</code> &bull; <code>CaseStore</code> &bull; <code>ReceiptGenerator</code>
+          <code>TraceStore</code> &bull; <code>CaseStore</code> &bull; <code>ReceiptGenerator</code> &bull; <code>ReplayEngine</code>
         </div>
       </div>
 
@@ -891,18 +1067,18 @@
         <h3>Personal Data Plane</h3>
         <p>
           <strong>Tier 1 &mdash; Verified:</strong> Read-only credentials from Wallet (NI number, licence).<br>
-          <strong>Tier 2 &mdash; Submitted:</strong> Editable data from persona (address, finances).<br>
+          <strong>Tier 2 &mdash; Submitted:</strong> Editable data from forms and cards (address, finances).<br>
           <strong>Tier 3 &mdash; Inferred:</strong> LLM-extracted facts from chat, deletable by citizen.
         </p>
         <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
-          <code>SubmittedStore</code> &bull; <code>InferredStore</code> &bull; <code>ConsentLedger</code>
+          <code>SubmittedStore</code> &bull; <code>InferredStore</code> &bull; <code>ServiceAccessStore</code> &bull; <code>ConsentLedger</code>
         </div>
       </div>
 
       <div class="card card-accent card-blue">
         <div class="card-tag">DB-Backed Catalog</div>
         <h3>Service Catalog</h3>
-        <p>All 110 services stored in D1 with full artefact sets. Supports CRUD operations, gap analysis, auto-seeding from the service graph, LLM-powered artefact generation, and promoted service management.</p>
+        <p>108 services stored in D1 with full artefact sets including card definitions. Supports CRUD operations, gap analysis, auto-seeding from the service graph, and LLM-powered artefact generation.</p>
         <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
           <code>ServiceArtefactStore</code> &bull; <code>ServiceGraphStore</code>
         </div>
@@ -920,45 +1096,102 @@
       <tbody>
         <tr><td><code>llm.request</code> / <code>llm.response</code></td><td>What was sent to and received from Claude</td></tr>
         <tr><td><code>policy.evaluated</code></td><td>Eligibility check results (rules passed, failed, edge cases)</td></tr>
-        <tr><td><code>consent.granted</code></td><td>What data was shared, with whom, and why</td></tr>
+        <tr><td><code>consent.granted</code> / <code>consent.denied</code></td><td>What data was shared, with whom, and why</td></tr>
+        <tr><td><code>state.transition</code></td><td>Movement through the service state model</td></tr>
         <tr><td><code>capability.invoked</code> / <code>capability.result</code></td><td>Service invocation with timing and outcome</td></tr>
         <tr><td><code>receipt.issued</code></td><td>Citizen-facing proof of what the agent did</td></tr>
-        <tr><td><code>state.transition</code></td><td>Movement through the service state model</td></tr>
         <tr><td><code>handoff.initiated</code></td><td>When and why escalation to a human was triggered</td></tr>
+        <tr><td><code>credential.presented</code></td><td>Identity verification via wallet credentials</td></tr>
       </tbody>
     </table>
+  </div>
+</section>
+
+<!-- ── The 4-Artefact Contract ── -->
+<section class="section" id="artefacts">
+  <div class="container">
+    <h2>The 5-Artefact Contract</h2>
+    <p class="section-intro">
+      Every government service is formally defined by five machine-readable JSON structures.
+      4 hand-authored services serve as reference examples; graph services have artefacts
+      auto-generated from templates and GOV.UK content.
+    </p>
+
+    <div class="grid-3" style="margin-bottom: 1.5rem;">
+      <div class="card card-accent card-blue">
+        <div class="card-tag">Capability Definition</div>
+        <h3>manifest.json &mdash; WHAT</h3>
+        <p>Service identity, inputs/outputs, SLAs, fees, redress pathways, and audit requirements.</p>
+      </div>
+      <div class="card card-accent card-green">
+        <div class="card-tag">Eligibility Rules</div>
+        <h3>policy.json &mdash; WHO</h3>
+        <p>Structured rules for eligibility with conditions, failure messages, and alternatives.</p>
+      </div>
+      <div class="card card-accent card-orange">
+        <div class="card-tag">State Transitions</div>
+        <h3>state-model.json &mdash; HOW</h3>
+        <p>Valid states and transitions. Terminal states trigger receipts and completion cards.</p>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card card-accent card-purple">
+        <div class="card-tag">Data Sharing</div>
+        <h3>consent.json &mdash; WHY</h3>
+        <p>What data is shared, from where, with whom, and for what purpose. Per-session, revocable.</p>
+      </div>
+      <div class="card card-accent card-teal">
+        <div class="card-tag">Data Collection</div>
+        <h3>card-definitions &mdash; COLLECT</h3>
+        <p>Typed field definitions per state (text, date, currency, address, etc.) with pre-fill sources, validation rules, and conditional visibility. Drives the structured card UI.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Auto-generation pipeline:</strong> The artefact generator fetches GOV.UK Content API pages,
+      combines them with CDDO Top 75 enrichment data (interaction type, login requirements, data collected),
+      and uses Claude to produce policy rules, state models, and consent definitions. Each service is classified
+      into one of 8 interaction types, which drives the state model template and card definitions.
+    </div>
   </div>
 </section>
 
 <!-- ── Remote MCP Server ── -->
 <section class="section section-alt" id="mcp">
   <div class="container">
-    <h2>Remote MCP Server</h2>
+    <h2>MCP Integration</h2>
     <p class="section-intro">
-      Connect any MCP-compatible client to the live service catalog.
-      The server runs as a stateless Cloudflare Worker using StreamableHTTP transport &mdash;
-      no local process required.
+      The citizen-experience chat connects to two MCP sources: a <strong>local server</strong> exposing
+      service artefacts as tools, and the <strong>GOV.UK MCP server</strong> providing live access to
+      33 UK government APIs.
     </p>
 
-    <div class="grid-3" style="margin-bottom: 2rem;">
-      <div class="card" style="text-align: center;">
-        <div style="font-size: 2.5rem; font-weight: 700; color: #1d70b8;">440</div>
-        <div style="font-size: 0.9rem; color: #505a5f; font-weight: 500;">Resources</div>
-        <p style="font-size: 0.8rem; margin-top: 0.5rem;">4 per service: manifest, policy, state-model, consent</p>
+    <div class="grid-2" style="margin-bottom: 2rem;">
+      <div class="card card-accent card-blue">
+        <h3>Local MCP Server</h3>
+        <p>Reads from the service-store DB. Exposes per-service tools
+          (<code>_check_eligibility</code>, <code>_advance_state</code>),
+          resources (manifest, policy, state-model, consent per service),
+          and prompts (journey template, eligibility check).</p>
+        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
+          stdio transport &bull; Auto-connects on chat startup
+        </div>
       </div>
-      <div class="card" style="text-align: center;">
-        <div style="font-size: 2.5rem; font-weight: 700; color: #00703c;">220</div>
-        <div style="font-size: 0.9rem; color: #505a5f; font-weight: 500;">Tools</div>
-        <p style="font-size: 0.8rem; margin-top: 0.5rem;">2 per service: check_eligibility (read) + advance_state (mutating)</p>
-      </div>
-      <div class="card" style="text-align: center;">
-        <div style="font-size: 2.5rem; font-weight: 700; color: #912b88;">220</div>
-        <div style="font-size: 0.9rem; color: #505a5f; font-weight: 500;">Prompts</div>
-        <p style="font-size: 0.8rem; margin-top: 0.5rem;">2 per service: journey template + eligibility check template</p>
+      <div class="card card-accent card-green">
+        <h3>GOV.UK MCP Server</h3>
+        <p>Live access to 33 UK government APIs: Companies House, flood monitoring, police data,
+          food safety, trade tariff, Hansard, heritage listings, postcodes, and more.
+          The chat agent can look up real data during conversations.</p>
+        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
+          StreamableHTTP transport &bull; No API key for read access
+        </div>
       </div>
     </div>
 
     <h3 style="margin-bottom: 0.75rem;">Claude Desktop Configuration</h3>
+    <p style="color: #505a5f; margin-bottom: 0.75rem; font-size: 0.9rem;">
+      Connect Claude Desktop to the remote service catalog:
+    </p>
     <pre class="code-block"><code>{
   <span class="kw">"mcpServers"</span>: {
     <span class="kw">"als-govuk"</span>: {
@@ -967,158 +1200,15 @@
     }
   }
 }</code></pre>
-
-    <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Local MCP Server (stdio)</h3>
-    <p style="color: #505a5f; margin-bottom: 0.75rem; font-size: 0.9rem;">
-      The local MCP server reads all 110 services directly from the service-store DB, exposing 220 tools,
-      440 resources, and 220 prompts via stdio transport. The citizen-experience chat connects to this
-      automatically on startup.
-    </p>
-
-    <div class="callout">
-      <strong>Two transports, one catalog.</strong> The remote MCP server (StreamableHTTP) runs from the
-      Legibility Studio Worker for external clients like Claude Desktop. The local MCP server (stdio)
-      reads from the DB for the citizen-experience chat. Both expose the same 110-service catalog.
-      No API key required for read access.
-    </div>
   </div>
 </section>
 
-<!-- ── The 4-Artefact Contract ── -->
-<section class="section" id="artefacts">
-  <div class="container">
-    <h2>The 4-Artefact Contract</h2>
-    <p class="section-intro">
-      Every government service is formally defined by four machine-readable JSON files.
-      All 110 services have complete artefact sets &mdash; 4 hand-authored as reference examples,
-      106 auto-generated from GOV.UK content using LLM-powered extraction.
-    </p>
-
-    <div class="grid-2">
-      <div class="card card-accent card-blue">
-        <div class="card-tag">Capability Definition</div>
-        <h3>manifest.json &mdash; WHAT</h3>
-        <p>Service identity, inputs/outputs, SLAs, fees, redress pathways, and audit requirements.</p>
-        <pre class="code-block"><code>{
-  <span class="kw">"id"</span>: <span class="str">"dvla.renew-driving-licence"</span>,
-  <span class="kw">"name"</span>: <span class="str">"Renew Driving Licence"</span>,
-  <span class="kw">"department"</span>: <span class="str">"DVLA"</span>,
-  <span class="kw">"constraints"</span>: { <span class="kw">"fee"</span>: <span class="str">"14 GBP"</span> }
-}</code></pre>
-      </div>
-      <div class="card card-accent card-green">
-        <div class="card-tag">Eligibility Rules</div>
-        <h3>policy.json &mdash; WHO</h3>
-        <p>Structured rules for eligibility with conditions, failure messages, and alternatives.</p>
-        <pre class="code-block"><code>{
-  <span class="kw">"rules"</span>: [{
-    <span class="kw">"condition"</span>: {
-      <span class="kw">"field"</span>: <span class="str">"age"</span>,
-      <span class="kw">"operator"</span>: <span class="str">">="</span>,
-      <span class="kw">"value"</span>: <span class="num">18</span>
-    }
-  }]
-}</code></pre>
-      </div>
-      <div class="card card-accent card-orange">
-        <div class="card-tag">State Transitions</div>
-        <h3>state-model.json &mdash; HOW</h3>
-        <p>Valid states and transitions. Terminal states require receipts.</p>
-        <pre class="code-block"><code>{
-  <span class="kw">"states"</span>: [<span class="str">"not-started"</span>,
-    <span class="str">"identity-verified"</span>,
-    <span class="str">"completed"</span>],
-  <span class="kw">"transitions"</span>: [...]
-}</code></pre>
-      </div>
-      <div class="card card-accent card-purple">
-        <div class="card-tag">Data Sharing</div>
-        <h3>consent.json &mdash; WHY</h3>
-        <p>What data is shared, from where, with whom, and for what purpose. Per-session, revocable.</p>
-        <pre class="code-block"><code>{
-  <span class="kw">"grants"</span>: [{
-    <span class="kw">"data_shared"</span>: [<span class="str">"full_name"</span>,
-      <span class="str">"ni_number"</span>],
-    <span class="kw">"purpose"</span>: <span class="str">"Confirm identity"</span>
-  }]
-}</code></pre>
-      </div>
-    </div>
-
-    <div class="callout">
-      <strong>Auto-generation pipeline:</strong> The artefact generator fetches GOV.UK Content API pages,
-      combines them with CDDO Top 75 enrichment data (interaction type, login requirements, data collected),
-      and uses Claude to produce policy rules, state models, and consent definitions. Each service is classified
-      into one of 8 interaction types (license, register, portal, application, informational hub, appointment booker,
-      task list, payment service), which drives the state model template.
-    </div>
-  </div>
-</section>
-
-<!-- ── Deployment Architecture ── -->
-<section class="section section-alt" id="deployment">
-  <div class="container">
-    <h2>Deployment Architecture</h2>
-    <p class="section-intro">
-      Two Cloudflare Workers with service bindings and 3 D1 databases.
-      The same codebase runs locally with SQLite via a <code>DatabaseAdapter</code> abstraction.
-    </p>
-
-    <div class="two-col-split" style="margin-bottom: 2rem;">
-      <div class="worker-box">
-        <h3>Citizen Experience <span class="wb-tag">Worker</span></h3>
-        <ul>
-          <li>Chat UI with persona picker</li>
-          <li>Personal data dashboard</li>
-          <li>Evidence API (<code>/api/traces</code>)</li>
-          <li>LLM calls via AnthropicAdapter</li>
-        </ul>
-        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
-          <strong>D1 Bindings:</strong> TRACES_DB, PERSONAL_DATA_DB
-        </div>
-      </div>
-      <div class="worker-box">
-        <h3>Legibility Studio <span class="wb-tag">Worker</span></h3>
-        <ul>
-          <li>Service catalog &amp; gap analysis</li>
-          <li>Artefact generation from GOV.UK</li>
-          <li>Trace explorer &amp; case management</li>
-          <li>Remote MCP server (<code>/mcp</code>)</li>
-          <li>V1 REST API (<code>/api/v1/*</code>)</li>
-        </ul>
-        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
-          <strong>D1 Binding:</strong> SERVICE_STORE_DB
-        </div>
-      </div>
-    </div>
-
-    <div class="worker-binding">
-      <span>citizen-experience</span>
-      <span class="binding-arrow">&larr; <span class="binding-label">Service Binding (STUDIO)</span> &rarr;</span>
-      <span>legibility-studio</span>
-    </div>
-
-    <div class="grid-2" style="margin-top: 1.5rem;">
-      <div class="card card-accent card-blue">
-        <h3>DatabaseAdapter Pattern</h3>
-        <p>A common async interface with two implementations: <code>SqliteAdapter</code> for local development
-          and <code>D1Adapter</code> for Cloudflare. The app detects its environment at startup and picks the right adapter.</p>
-      </div>
-      <div class="card card-accent card-green">
-        <h3>OpenNext on Workers</h3>
-        <p>Both apps use <code>@opennextjs/cloudflare</code> to compile Next.js 15 for the Workers runtime.
-          Static assets are served from Workers KV, server routes run on the edge.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── 11 Packages ── -->
+<!-- ── 10 Packages ── -->
 <section class="section" id="packages">
   <div class="container">
-    <h2>11 Packages</h2>
+    <h2>10 Packages</h2>
     <p class="section-intro">
-      The monorepo is organized as 2 Next.js applications and 11 shared packages.
+      The monorepo is organized as 2 Next.js applications and 10 shared packages.
       Each package has a single responsibility.
     </p>
 
@@ -1127,16 +1217,16 @@
         <tr><th>Package</th><th>Responsibility</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>@als/schemas</code></td><td>Shared TypeScript types and interfaces for all data structures</td></tr>
-        <tr><td><code>@als/runtime</code></td><td>CapabilityInvoker, ServiceRegistry, HandoffManager &mdash; the orchestration layer</td></tr>
-        <tr><td><code>@als/evidence</code></td><td>Trace store, receipt generator, DatabaseAdapter &mdash; the Evidence Plane</td></tr>
-        <tr><td><code>@als/legibility</code></td><td>PolicyEvaluator, StateMachine, ConsentManager &mdash; artefact interpretation</td></tr>
+        <tr><td><code>@als/schemas</code></td><td>Shared TypeScript types, card registry, state instruction templates, terminal state config</td></tr>
+        <tr><td><code>@als/runtime</code></td><td>Orchestrator (deterministic controller), CapabilityInvoker, JsonServiceStrategy, McpServiceStrategy</td></tr>
+        <tr><td><code>@als/evidence</code></td><td>TraceStore, CaseStore, ReceiptGenerator, ReplayEngine &mdash; the Evidence Plane</td></tr>
+        <tr><td><code>@als/legibility</code></td><td>StateMachine, PolicyEvaluator, ConsentManager, FieldCollector &mdash; artefact interpretation</td></tr>
         <tr><td><code>@als/identity</code></td><td>GOV.UK One Login and Wallet simulators</td></tr>
-        <tr><td><code>@als/personal-data</code> <span class="badge-new">NEW</span></td><td>3-tier model: SubmittedStore, InferredStore, ServiceAccessStore, ConsentLedger</td></tr>
-        <tr><td><code>@als/adapters</code></td><td>AnthropicAdapter, GOV.UK Content adapter, MCP client adapter</td></tr>
-        <tr><td><code>@als/mcp-server</code></td><td>MCP server (stdio + StreamableHTTP) &mdash; 220 tools, 440 resources, 220 prompts from DB</td></tr>
-        <tr><td><code>@als/service-graph</code> <span class="badge-new">NEW</span></td><td>110 services, 98 edges, 16 life events &mdash; graph traversal engine</td></tr>
-        <tr><td><code>@als/service-store</code> <span class="badge-new">NEW</span></td><td>DB-backed CRUD for services, gap analysis, LLM artefact generation, auto-seeding from graph</td></tr>
+        <tr><td><code>@als/personal-data</code></td><td>3-tier model: VerifiedStore, SubmittedStore, InferredStore, ServiceAccessStore, ConsentLedger</td></tr>
+        <tr><td><code>@als/adapters</code></td><td>AnthropicAdapter (sole SDK holder), McpAdapter, GovukContentAdapter</td></tr>
+        <tr><td><code>@als/mcp-server</code></td><td>MCP server (stdio + StreamableHTTP) &mdash; per-service tools, resources, and prompts from DB</td></tr>
+        <tr><td><code>@als/service-graph</code></td><td>108 services, 98 edges, 16 life events &mdash; ServiceGraphEngine with BFS traversal</td></tr>
+        <tr><td><code>@als/service-store</code></td><td>DB-backed CRUD for services, gap analysis, LLM artefact generation, auto-seeding from graph</td></tr>
       </tbody>
     </table>
 
@@ -1150,16 +1240,115 @@
           <td><code>citizen-experience</code></td>
           <td><code>:3100</code></td>
           <td><a href="https://als-citizen.chris-8ab.workers.dev" target="_blank" rel="noopener">als-citizen.&hellip;</a></td>
-          <td>Citizen-facing chat, personal data dashboard, evidence API</td>
+          <td>Citizen-facing chat with triage, structured cards, consent, personal data dashboard, evidence API</td>
         </tr>
         <tr>
           <td><code>legibility-studio</code></td>
           <td><code>:3101</code></td>
           <td><a href="https://als-studio.chris-8ab.workers.dev" target="_blank" rel="noopener">als-studio.&hellip;</a></td>
-          <td>Service catalog, artefact generation, trace explorer, gap analysis, MCP server</td>
+          <td>Service catalog, artefact generation, trace explorer, case ledger, gap analysis, MCP server</td>
         </tr>
       </tbody>
     </table>
+  </div>
+</section>
+
+<!-- ── Deployment Architecture ── -->
+<section class="section section-alt" id="deployment">
+  <div class="container">
+    <h2>Deployment</h2>
+    <p class="section-intro">
+      Two Cloudflare Workers with 3 D1 databases.
+      The same codebase runs locally with SQLite via a <code>DatabaseAdapter</code> abstraction.
+    </p>
+
+    <div class="two-col-split" style="margin-bottom: 2rem;">
+      <div class="worker-box">
+        <h3>Citizen Experience <span class="wb-tag">Worker</span></h3>
+        <ul>
+          <li>Chat UI with persona picker and triage</li>
+          <li>Structured card data collection</li>
+          <li>Personal data dashboard (3-tier)</li>
+          <li>Evidence API (<code>/api/traces</code>)</li>
+          <li>LLM calls via AnthropicAdapter</li>
+        </ul>
+        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
+          <strong>D1 Bindings:</strong> DB (traces), PERSONAL_DATA_DB
+        </div>
+      </div>
+      <div class="worker-box">
+        <h3>Legibility Studio <span class="wb-tag">Worker</span></h3>
+        <ul>
+          <li>Service catalog &amp; gap analysis</li>
+          <li>Artefact generation from GOV.UK</li>
+          <li>Trace explorer &amp; case ledger</li>
+          <li>Remote MCP server (<code>/mcp</code>)</li>
+          <li>V1 REST API (<code>/api/v1/*</code>)</li>
+        </ul>
+        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
+          <strong>D1 Binding:</strong> SERVICE_STORE_DB
+        </div>
+      </div>
+    </div>
+
+    <div class="worker-binding">
+      <span>citizen-experience</span>
+      <span class="binding-arrow">&larr; <span class="binding-label">STUDIO_API_URL</span> &rarr;</span>
+      <span>legibility-studio</span>
+    </div>
+
+    <div class="grid-2" style="margin-top: 1.5rem;">
+      <div class="card card-accent card-blue">
+        <h3>DatabaseAdapter Pattern</h3>
+        <p>A common async interface with two implementations: <code>SqliteAdapter</code> for local development
+          and <code>D1Adapter</code> for Cloudflare. The app detects its environment at startup and picks the right adapter.
+          All store methods are async &mdash; works natively with D1, wraps sync SQLite.</p>
+      </div>
+      <div class="card card-accent card-green">
+        <h3>OpenNext on Workers</h3>
+        <p>Both apps use <code>@opennextjs/cloudflare</code> to compile Next.js 15 for the Workers runtime.
+          Static assets are served from Workers KV, server routes run on the edge.
+          <code>better-sqlite3</code> is in <code>optionalDependencies</code> and excluded via <code>serverExternalPackages</code>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── From V1 to V2 ── -->
+<section class="section" id="evolution">
+  <div class="container">
+    <h2>From Prototype to Platform</h2>
+    <p class="section-intro">
+      The V1 prototype proved the architecture with 4 hand-authored services running locally.
+      V2 scales it to 108 services across 15 departments with a full citizen experience.
+    </p>
+
+    <table class="data-table" style="margin-bottom: 1.5rem;">
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>V1 Prototype</th>
+          <th>V2 Platform</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Services</td><td>4 hand-authored</td><td><strong>108</strong> (graph + hand-crafted)</td></tr>
+        <tr><td>Packages</td><td>7</td><td><strong>10</strong></td></tr>
+        <tr><td>Databases</td><td>1 local SQLite</td><td><strong>3 D1 databases</strong></td></tr>
+        <tr><td>Deployment</td><td>Local only</td><td><strong>Cloudflare Workers</strong></td></tr>
+        <tr><td>Service Discovery</td><td>Manual selection</td><td><strong>Triage via conversation</strong> + life event graph</td></tr>
+        <tr><td>Data Collection</td><td>Chat only</td><td><strong>Structured cards</strong> with typed fields + pre-fill</td></tr>
+        <tr><td>Personal Data</td><td>None</td><td><strong>3-tier model</strong> (verified/submitted/inferred)</td></tr>
+        <tr><td>State Model</td><td>3 hardcoded services</td><td><strong>8 interaction type templates</strong> + per-service overrides</td></tr>
+        <tr><td>Progress</td><td>Ephemeral</td><td><strong>Persistent</strong> across conversation switches</td></tr>
+        <tr><td>MCP</td><td>stdio, 8 tools</td><td><strong>Local + GOV.UK MCP</strong> (33 live APIs)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      The original V1 documentation is preserved at <a href="v1/">docs/v1/</a> &mdash; it covers the foundational
+      architecture, the 4-artefact pattern, the Evidence Plane, and the two agent personalities (DOT &amp; MAX).
+    </div>
   </div>
 </section>
 
@@ -1211,11 +1400,11 @@
             <code>npm run seed</code>
           </li>
           <li>Start both apps<br>
-            <code>npm run dev</code>
+            <code>npx turbo dev</code>
           </li>
           <li>Open the apps<br>
-            <a href="http://localhost:3100">localhost:3100</a> &bull;
-            <a href="http://localhost:3101">localhost:3101</a>
+            <a href="http://localhost:3100">localhost:3100</a> (Citizen) &bull;
+            <a href="http://localhost:3101">localhost:3101</a> (Studio)
           </li>
         </ol>
       </div>
