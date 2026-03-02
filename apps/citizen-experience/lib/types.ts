@@ -257,19 +257,6 @@ export interface LifeEventService {
   eligibility_summary: string;
 }
 
-/** Default service for each persona — used when no service is explicitly selected */
-export const PERSONA_DEFAULT_SERVICE: Record<string, ServiceType> = {
-  "sarah-chen": "family",
-  "mohammed-al-rashid": "benefits",
-  "margaret-thompson": "family",
-  "david-evans": "driving",
-  "priya-sharma": "benefits",
-  // Legacy mappings
-  "emma-liam": "driving",
-  rajesh: "driving",
-  margaret: "family",
-  priya: "benefits",
-};
 
 // Simulated "today" for demo — makes upcoming dates interesting
 export const DEMO_TODAY = new Date("2026-02-15");

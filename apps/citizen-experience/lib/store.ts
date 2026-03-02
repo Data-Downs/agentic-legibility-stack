@@ -14,7 +14,6 @@ import type {
 } from "./types";
 import type { CardRequest } from "@als/schemas";
 import { getAllTerminalStateIds } from "@als/schemas";
-import { PERSONA_DEFAULT_SERVICE } from "./types";
 
 interface AppStore {
   // Identity
@@ -329,13 +328,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!state.persona || !state.personaData || state.isLoading) return;
     if (state.ucState && TERMINAL_STATES.has(state.ucState)) return;
 
-    const service = state.currentService || PERSONA_DEFAULT_SERVICE[state.persona] || "driving";
+    const service = state.currentService;
     const LEGACY_SCENARIO_MAP: Record<string, string> = {
       driving: "driving",
       benefits: "benefits",
       family: "parenting",
     };
-    const scenario = LEGACY_SCENARIO_MAP[service] || service;
+    const scenario = service ? (LEGACY_SCENARIO_MAP[service] || service) : "triage";
     const isNewConversation = state.conversationHistory.length === 0;
 
     // Add user message to history
@@ -387,7 +386,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         : {
             id: conversationId,
             title: data.conversationTitle || "New conversation",
-            service,
+            service: service || "triage",
             agent: state.agent,
             scenario,
             createdAt: new Date().toISOString(),
@@ -425,7 +424,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           existingTasks.unshift({
             id: task.id,
             conversationId,
-            service,
+            service: service || "triage",
             description: task.description,
             detail: task.detail,
             type: task.type as "agent" | "user",
