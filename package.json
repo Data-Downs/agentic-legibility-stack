@@ -13,7 +13,8 @@
     "clean": "rm -rf apps/citizen-experience/.next apps/legibility-studio/.next",
     "seed": "npx tsx scripts/seed-traces.ts",
     "seed:ledger": "npx tsx scripts/seed-ledger.ts",
-    "seed:services": "npx tsx scripts/seed-service-store.ts"
+    "seed:services": "npx tsx scripts/seed-service-store.ts",
+    "push:d1": "npx tsx scripts/push-data-to-d1.ts --all"
   },
   "devDependencies": {
     "turbo": "^2.3.0",
