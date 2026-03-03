@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useAppStore } from "@/lib/store";
 import { TERMINAL_STATE_CONFIG } from "@als/schemas";
 import type { TerminalStateConfig } from "@als/schemas";
@@ -29,24 +30,46 @@ export function JourneyCompleteCard({ state, serviceName, serviceId }: JourneyCo
   const navigateTo = useAppStore((s) => s.navigateTo);
   const startNewConversation = useAppStore((s) => s.startNewConversation);
   const activeConversationId = useAppStore((s) => s.activeConversationId);
+  const activePlan = useAppStore((s) => s.activePlan);
+  const markServiceCompleted = useAppStore((s) => s.markServiceCompleted);
 
   const config = TERMINAL_STATE_CONFIG[state] || FALLBACK_CONFIG;
   const reference = generateReference(activeConversationId);
+
+  // Auto-complete service in active plan on success terminal
+  const didMarkRef = useRef(false);
+  useEffect(() => {
+    if (
+      !didMarkRef.current &&
+      activePlan &&
+      serviceId &&
+      config.isSuccess &&
+      activePlan.serviceProgress[serviceId] === "in_progress"
+    ) {
+      didMarkRef.current = true;
+      markServiceCompleted(serviceId);
+    }
+  }, [activePlan, serviceId, config.isSuccess, markServiceCompleted]);
 
   // Use service-specific title if a serviceName is provided
   const displayTitle = serviceName
     ? `${serviceName} — ${config.title.toLowerCase()}`
     : config.title;
 
-  const handleReturnToDashboard = () => {
-    startNewConversation(null);
-    navigateTo("dashboard");
+  const hasPlan = !!(activePlan && serviceId && activePlan.serviceProgress[serviceId]);
+
+  const handleReturn = () => {
+    if (hasPlan) {
+      navigateTo("plan");
+    } else {
+      startNewConversation(null);
+      navigateTo("dashboard");
+    }
   };
 
   return (
     <div
-      className={`my-3 rounded-2xl border ${config.borderClass} bg-white`}
-      style={{ boxShadow: config.shadowStyle }}
+      className={`my-3 rounded-2xl bg-white shadow-sm`}
     >
       <div className="px-5 py-5">
         {/* Header */}
@@ -81,13 +104,13 @@ export function JourneyCompleteCard({ state, serviceName, serviceId }: JourneyCo
           <span className="font-semibold">Next steps:</span> {config.nextSteps}
         </p>
 
-        {/* Return to dashboard button */}
+        {/* Return button */}
         <button
-          onClick={handleReturnToDashboard}
-          className="w-full py-3 rounded-xl font-bold text-sm text-white transition-colors hover:opacity-90"
+          onClick={handleReturn}
+          className="w-full py-3 rounded-full font-bold text-sm text-white transition-colors hover:opacity-90"
           style={{ backgroundColor: config.borderColor }}
         >
-          Return to dashboard
+          {hasPlan ? "Return to your plan" : "Return to dashboard"}
         </button>
       </div>
     </div>

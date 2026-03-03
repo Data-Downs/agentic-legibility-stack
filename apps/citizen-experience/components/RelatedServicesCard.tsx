@@ -39,7 +39,7 @@ export function RelatedServicesCard({ serviceId }: RelatedServicesCardProps) {
   };
 
   return (
-    <div className="my-3 rounded-2xl border border-blue-100 bg-white" style={{ boxShadow: "0 2px 8px rgba(29,112,184,0.06)" }}>
+    <div className="my-3 rounded-2xl bg-white shadow-sm">
       <div className="px-5 py-4">
         <div className="flex items-center gap-2 mb-3">
           <span className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center shrink-0">

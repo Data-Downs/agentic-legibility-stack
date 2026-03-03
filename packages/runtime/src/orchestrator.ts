@@ -96,6 +96,7 @@ export interface OrchestratorOutput {
     type: string;
     dueDate: string | null;
     dataNeeded: string[];
+    options: Array<{ value: string; label: string }>;
   }>;
   policyResult?: {
     eligible: boolean;
@@ -146,6 +147,7 @@ interface ParsedStructuredOutput {
     type: "agent" | "user";
     dueDate?: string;
     dataNeeded?: string[];
+    options?: Array<{ value: string; label: string }>;
   }>;
   extractedFacts?: FieldExtraction[];
 }
@@ -207,6 +209,17 @@ function parseStructuredOutput(responseText: string): {
       if (Array.isArray(task.dataNeeded)) {
         entry.dataNeeded = task.dataNeeded.filter((d): d is string => typeof d === "string").map(d => d.trim()).filter(Boolean);
       }
+      if (Array.isArray(task.options)) {
+        const validOpts: Array<{ value: string; label: string }> = [];
+        for (const opt of task.options.slice(0, 5)) {
+          if (typeof opt !== "object" || opt === null) continue;
+          const o = opt as Record<string, unknown>;
+          const value = typeof o.value === "string" ? o.value.trim() : "";
+          const label = typeof o.label === "string" ? o.label.trim() : "";
+          if (value && label) validOpts.push({ value, label });
+        }
+        if (validOpts.length > 0) entry.options = validOpts;
+      }
       validated.push(entry);
     }
     if (validated.length > 0) output.tasks = validated;
@@ -257,6 +270,7 @@ interface TaskEntry {
   type: string;
   dueDate: string | null;
   dataNeeded: string[];
+  options: Array<{ value: string; label: string }>;
 }
 
 function taskMatchesHousing(t: { dataNeeded: string[]; description: string; detail: string }) {
@@ -293,6 +307,7 @@ function injectDeterministicTasks(
       type: "user",
       dueDate: null,
       dataNeeded: ["tenure_type", "monthly_rent"],
+      options: [],
     });
     return stripEligibility(filtered);
   }
@@ -306,6 +321,7 @@ function injectDeterministicTasks(
       type: "user",
       dueDate: null,
       dataNeeded: ["sort_code", "account_number"],
+      options: [],
     });
     return stripEligibility(filtered);
   }
@@ -532,6 +548,7 @@ export class Orchestrator {
       type: t.type,
       dueDate: t.dueDate || null,
       dataNeeded: t.dataNeeded || [],
+      options: t.options || [],
     }));
 
     // ── 10. State Transitions ──
@@ -914,6 +931,7 @@ Each task object has these fields:
 - "type": "agent" (something you can do) or "user" (something the citizen must do)
 - "dueDate": optional, ISO date string YYYY-MM-DD (only when there is a genuine deadline)
 - "dataNeeded": optional array of persona data field names relevant to the task
+- "options": optional array of selectable choices, each with "value" and "label" (max 5). The UI renders checkboxes so the citizen can select multiple options at once. Therefore you MUST only list individual, distinct options — NEVER include combination/aggregate options like "Both X and Y" or "All of the above" since the citizen can simply tick multiple checkboxes. Use when the citizen needs to choose between distinct options (e.g. which benefit to apply for, which appointment slot to pick). Do NOT use for yes/no confirmations or free-text input.
 
 Rules:
 - Maximum 3 tasks per response
@@ -928,6 +946,26 @@ Format:
   "title": "Short title or null",
   "tasks": [],
   "stateTransition": "trigger-name or null"
+}
+\`\`\`
+
+Example with options (citizen can select one or more — no need for "both/all" combo options):
+\`\`\`json
+{
+  "title": null,
+  "tasks": [
+    {
+      "description": "Choose which benefit(s) to apply for",
+      "detail": "Select one or more benefits to get started",
+      "type": "user",
+      "options": [
+        { "value": "universal_credit", "label": "Universal Credit" },
+        { "value": "new_style_jsa", "label": "New Style Jobseeker's Allowance (JSA)" },
+        { "value": "income_jsa", "label": "Jobseeker's Allowance (income-based)" }
+      ]
+    }
+  ],
+  "stateTransition": null
 }
 \`\`\`
 

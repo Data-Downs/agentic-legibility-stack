@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAppStore, getConversations } from "@/lib/store";
+import { useAppStore, getConversations, getActivePlans } from "@/lib/store";
 import { DEMO_TODAY } from "@/lib/types";
-import type { ServiceType, PersonaData, LifeEventInfo, LifeEventService } from "@/lib/types";
+import type { ServiceType, PersonaData, LifeEventInfo, LifeEventService, ActivePlan } from "@/lib/types";
 
 const serviceIcons: Record<string, React.ReactNode> = {
   driving: (
@@ -122,8 +122,11 @@ export function Dashboard() {
   const persona = useAppStore((s) => s.persona);
   const navigateTo = useAppStore((s) => s.navigateTo);
   const startNewConversation = useAppStore((s) => s.startNewConversation);
+  const startPlan = useAppStore((s) => s.startPlan);
+  const loadPlan = useAppStore((s) => s.loadPlan);
   const [lifeEvents, setLifeEvents] = useState<LifeEventInfo[]>([]);
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
+  const [activePlans, setActivePlans] = useState<ActivePlan[]>([]);
 
   useEffect(() => {
     fetch("/api/life-events")
@@ -135,6 +138,12 @@ export function Dashboard() {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (persona) {
+      setActivePlans(getActivePlans(persona));
+    }
+  }, [persona]);
 
   if (!personaData) return null;
 
@@ -168,8 +177,8 @@ export function Dashboard() {
       </div>
 
       {/* Your details card */}
-      <div className="bg-white border border-govuk-mid-grey rounded-xl p-4 mb-4">
-        <h3 className="font-bold text-sm text-govuk-dark-grey uppercase tracking-wide mb-3">Your details</h3>
+      <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+        <h3 className="text-base text-govuk-black font-extrabold mb-3">Your details</h3>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <span className="text-govuk-dark-grey">Name</span>
@@ -192,8 +201,8 @@ export function Dashboard() {
 
       {/* Upcoming dates */}
       {upcomingDates.length > 0 && (
-        <div className="bg-white border border-govuk-mid-grey rounded-xl p-4 mb-4">
-          <h3 className="font-bold text-sm text-govuk-dark-grey uppercase tracking-wide mb-3">Upcoming dates</h3>
+        <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+          <h3 className="text-base text-govuk-black font-extrabold mb-3">Upcoming dates</h3>
           <div className="flex flex-col gap-2">
             {upcomingDates.map((item, i) => (
               <div key={i} className="flex items-center justify-between text-sm">
@@ -212,8 +221,8 @@ export function Dashboard() {
       )}
 
       {/* Quick-access service cards (backward compatible) */}
-      <h3 className="font-bold text-sm text-govuk-dark-grey uppercase tracking-wide mb-3">Services</h3>
-      <div className="flex flex-col gap-3 mb-6">
+      <h3 className="text-base text-govuk-black font-extrabold mb-3">Services</h3>
+      <div className="bg-white rounded-2xl shadow-sm mb-6 divide-y divide-gray-100">
         {QUICK_ACCESS.map(({ key, label }) => (
           <button
             key={key}
@@ -221,7 +230,7 @@ export function Dashboard() {
               startNewConversation(key, label);
               navigateTo("chat", key, label);
             }}
-            className="flex items-center gap-4 w-full p-4 bg-white border border-govuk-mid-grey rounded-xl hover:border-govuk-blue hover:shadow-sm transition-all text-left"
+            className="flex items-center gap-4 w-full p-4 hover:bg-gray-50 transition-all text-left first:rounded-t-2xl last:rounded-b-2xl"
           >
             <div className="w-10 h-10 rounded-lg bg-govuk-light-grey flex items-center justify-center text-govuk-dark-grey shrink-0">
               {serviceIcons[key]}
@@ -235,7 +244,7 @@ export function Dashboard() {
               </span>
             </div>
             <svg
-              className="shrink-0 text-govuk-mid-grey"
+              className="shrink-0 text-govuk-blue"
               width="20"
               height="20"
               viewBox="0 0 24 24"
@@ -249,19 +258,64 @@ export function Dashboard() {
         ))}
       </div>
 
+      {/* Active plans */}
+      {activePlans.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-base text-govuk-black font-extrabold mb-3">Your plans</h3>
+          <div className="flex flex-col gap-2">
+            {activePlans.map((ap) => {
+              const total = Object.keys(ap.serviceProgress).length;
+              const done = Object.values(ap.serviceProgress).filter(
+                (s) => s === "completed" || s === "skipped"
+              ).length;
+              const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+              return (
+                <button
+                  key={ap.id}
+                  onClick={() => {
+                    loadPlan(ap.id);
+                    navigateTo("plan");
+                  }}
+                  className="w-full text-left p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xl">{ap.lifeEventIcon}</span>
+                    <div className="flex-1 min-w-0">
+                      <strong className="block text-sm text-govuk-black">{ap.lifeEventName}</strong>
+                      <span className="text-xs text-govuk-dark-grey">
+                        {done} of {total} services &middot; {pct}%
+                      </span>
+                    </div>
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 shrink-0">
+                      Continue
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-govuk-green rounded-full transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Life events discovery */}
       {lifeEvents.length > 0 && (
         <div className="mb-6">
-          <h3 className="font-bold text-sm text-govuk-dark-grey uppercase tracking-wide mb-3">Life events</h3>
+          <h3 className="text-base text-govuk-black font-extrabold mb-3">Life events</h3>
           <div className="grid grid-cols-2 gap-2">
             {lifeEvents.map((le) => (
               <div key={le.id}>
                 <button
                   onClick={() => setExpandedEvent(expandedEvent === le.id ? null : le.id)}
-                  className={`w-full text-left p-3 rounded-xl border transition-all ${
+                  className={`w-full text-left p-3 rounded-2xl transition-all ${
                     expandedEvent === le.id
-                      ? "border-govuk-blue bg-blue-50 shadow-sm"
-                      : "border-govuk-mid-grey bg-white hover:border-govuk-blue hover:shadow-sm"
+                      ? "bg-blue-50 shadow-md ring-2 ring-govuk-blue"
+                      : "bg-white shadow-sm hover:shadow-md"
                   }`}
                 >
                   <div className="flex items-start gap-2">
@@ -282,8 +336,11 @@ export function Dashboard() {
           {expandedEvent && (() => {
             const le = lifeEvents.find((e) => e.id === expandedEvent);
             if (!le) return null;
+            const plan = le.plan;
+            const svcLookup = new Map(le.services.map((s) => [s.id, s]));
             return (
-              <div className="mt-3 bg-white border border-govuk-blue rounded-xl p-4">
+              <div className="mt-3 bg-white rounded-2xl shadow-sm p-4">
+                {/* Header */}
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h4 className="font-bold text-govuk-black">{le.icon} {le.name}</h4>
@@ -298,10 +355,106 @@ export function Dashboard() {
                     </svg>
                   </button>
                 </div>
-                <div className="flex flex-col gap-2">
-                  {le.services
-                    .filter((s) => !s.gated)
-                    .map((svc) => (
+
+                {plan && plan.groups.length > 0 ? (
+                  <>
+                    {/* Start / Continue plan button */}
+                    {(() => {
+                      const existingPlan = activePlans.find((p) => p.lifeEventId === le.id);
+                      return (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (existingPlan) {
+                              loadPlan(existingPlan.id);
+                              navigateTo("plan");
+                            } else {
+                              startPlan(le);
+                            }
+                          }}
+                          className="w-full mb-4 py-3 rounded-full font-bold text-sm text-white bg-govuk-blue hover:bg-blue-800 transition-colors"
+                        >
+                          {existingPlan ? "Continue this plan" : "Start this plan"}
+                        </button>
+                      );
+                    })()}
+
+                    {/* Plan summary */}
+                    <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                      <p className="text-xs font-bold text-govuk-dark-grey uppercase tracking-wide mb-2">Your plan</p>
+                      <ol className="list-decimal list-inside text-sm text-govuk-black space-y-0.5">
+                        {plan.groups.map((g, i) => (
+                          <li key={i} className="text-govuk-dark-grey">
+                            <span className="text-govuk-black font-medium">{g.label}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+
+                    {/* Grouped services */}
+                    <div className="flex flex-col">
+                      {plan.groups.map((group, gi) => (
+                        <div key={gi}>
+                          {/* Connector arrow between groups */}
+                          {gi > 0 && (
+                            <div className="flex justify-center py-1">
+                              <svg width="16" height="20" viewBox="0 0 16 20" fill="none" className="text-govuk-mid-grey">
+                                <path d="M8 0v16M4 12l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </div>
+                          )}
+
+                          {/* Group label */}
+                          <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${
+                            group.depth === 0 ? "text-green-700" : "text-govuk-dark-grey"
+                          }`}>
+                            {group.label}
+                          </p>
+
+                          {/* Service buttons */}
+                          <div className="flex flex-col gap-2">
+                            {group.serviceIds.map((svcId) => {
+                              const svc = svcLookup.get(svcId);
+                              if (!svc) return null;
+                              const isEntry = group.depth === 0;
+                              return (
+                                <button
+                                  key={svc.id}
+                                  onClick={() => handleStartGraphService(svc)}
+                                  className={`w-full text-left p-3 rounded-lg border transition-all hover:shadow-sm ${
+                                    isEntry
+                                      ? "border-green-300 bg-green-50 hover:border-green-500"
+                                      : "border-govuk-mid-grey bg-white hover:border-govuk-blue"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="min-w-0 flex-1">
+                                      <strong className="block text-sm text-govuk-black">{svc.name}</strong>
+                                      <span className="text-xs text-govuk-dark-grey">{svc.dept}</span>
+                                    </div>
+                                    <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ml-2 shrink-0 ${
+                                      svc.serviceType === "benefit" ? "bg-green-100 text-green-800" :
+                                      svc.serviceType === "obligation" ? "bg-amber-100 text-amber-800" :
+                                      svc.serviceType === "grant" ? "bg-purple-100 text-purple-800" :
+                                      svc.serviceType === "legal_process" ? "bg-red-100 text-red-800" :
+                                      "bg-blue-100 text-blue-800"
+                                    }`}>
+                                      {svc.serviceType}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-govuk-dark-grey mt-1 line-clamp-2">{svc.desc}</p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  /* Fallback: flat list (backward compat) */
+                  <div className="flex flex-col gap-2">
+                    {le.services.map((svc) => (
                       <button
                         key={svc.id}
                         onClick={() => handleStartGraphService(svc)}
@@ -324,12 +477,8 @@ export function Dashboard() {
                         <p className="text-xs text-govuk-dark-grey mt-1 line-clamp-2">{svc.desc}</p>
                       </button>
                     ))}
-                  {le.services.filter((s) => s.gated).length > 0 && (
-                    <p className="text-xs text-govuk-dark-grey mt-1">
-                      + {le.services.filter((s) => s.gated).length} more service{le.services.filter((s) => s.gated).length !== 1 ? "s" : ""} unlocked after prerequisites
-                    </p>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -339,7 +488,7 @@ export function Dashboard() {
       {/* Recent conversations */}
       {recentConversations.length > 0 && (
         <div className="mb-6">
-          <h3 className="font-bold text-sm text-govuk-dark-grey uppercase tracking-wide mb-3">Recent conversations</h3>
+          <h3 className="text-base text-govuk-black font-extrabold mb-3">Recent conversations</h3>
           <div className="flex flex-col gap-2">
             {recentConversations.map((conv) => (
               <button
@@ -348,7 +497,7 @@ export function Dashboard() {
                   useAppStore.getState().loadConversation(conv.id);
                   navigateTo("chat", conv.service as ServiceType);
                 }}
-                className="flex items-center gap-3 w-full p-3 bg-white border border-govuk-mid-grey rounded-lg hover:border-govuk-blue transition-colors text-left"
+                className="flex items-center gap-3 w-full p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-left"
               >
                 <div className="flex-1 min-w-0">
                   <span className="block text-sm font-medium truncate">{conv.title}</span>
@@ -363,7 +512,7 @@ export function Dashboard() {
       )}
 
       {/* Quick start */}
-      <div className="bg-govuk-light-grey rounded-xl p-4">
+      <div className="bg-white rounded-2xl shadow-sm p-4">
         <h3 className="font-bold text-sm mb-2">Quick start</h3>
         <p className="text-sm text-govuk-dark-grey mb-3">
           Tap a service card above to start chatting about that topic, or explore

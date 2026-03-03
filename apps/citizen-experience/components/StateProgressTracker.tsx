@@ -116,7 +116,7 @@ export function StateProgressTracker({ currentState, stateHistory, service, inte
   }
 
   return (
-    <div className="bg-white border-b border-govuk-mid-grey px-4 py-3">
+    <div className="bg-white shadow-sm px-4 py-3">
       {/* Current state label */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-[10px] font-bold uppercase tracking-wider text-govuk-dark-grey">

@@ -72,3 +72,16 @@ export interface LifeEvent {
   desc: string;
   entryNodes: string[];
 }
+
+export interface PlanGroup {
+  depth: number;
+  label: string;
+  prerequisiteIds: string[];
+  serviceIds: string[];
+}
+
+export interface LifeEventPlan {
+  entryServiceIds: string[];
+  groups: PlanGroup[];
+  edges: Array<{ from: string; to: string; type: 'REQUIRES' | 'ENABLES' }>;
+}

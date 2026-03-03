@@ -54,7 +54,7 @@ export function MessageInput() {
   };
 
   return (
-    <div className="border-t border-govuk-mid-grey bg-white px-4 py-3 safe-area-bottom">
+    <div className="border-t border-gray-200 bg-white px-4 py-3 mb-[60px]">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -72,7 +72,7 @@ export function MessageInput() {
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           rows={1}
-          className="flex-1 resize-none border border-govuk-mid-grey rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-govuk-yellow focus:border-govuk-black"
+          className="flex-1 resize-none border border-gray-200 rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-govuk-blue focus:border-govuk-blue bg-gray-50"
           aria-label="Message input"
         />
         <button

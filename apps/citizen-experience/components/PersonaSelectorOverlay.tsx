@@ -74,10 +74,10 @@ export function PersonaSelectorOverlay() {
                   setPersona(p.id);
                   setOpen(false);
                 }}
-                className={`flex items-center gap-3 w-full p-4 border rounded-xl text-left transition-all ${
+                className={`flex items-center gap-3 w-full p-4 rounded-2xl text-left transition-all ${
                   persona === p.id
-                    ? "border-govuk-blue bg-blue-50"
-                    : "border-govuk-mid-grey hover:border-govuk-blue"
+                    ? "ring-2 ring-govuk-blue bg-blue-50 shadow-sm"
+                    : "bg-white shadow-sm hover:shadow-md"
                 }`}
               >
                 <span

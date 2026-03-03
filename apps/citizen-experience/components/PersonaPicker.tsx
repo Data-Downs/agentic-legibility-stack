@@ -40,7 +40,7 @@ export function PersonaPicker() {
           <button
             key={p.id}
             onClick={() => setPersona(p.id)}
-            className="flex items-center gap-4 w-full p-4 bg-white border border-govuk-mid-grey rounded-xl hover:border-govuk-blue hover:shadow-sm transition-all text-left"
+            className="flex items-center gap-4 w-full p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-left"
           >
             <div
               className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
@@ -55,7 +55,7 @@ export function PersonaPicker() {
               <span className="text-sm text-govuk-dark-grey">{p.desc}</span>
             </div>
             <svg
-              className="shrink-0 text-govuk-mid-grey"
+              className="shrink-0 text-govuk-blue"
               width="20"
               height="20"
               viewBox="0 0 24 24"

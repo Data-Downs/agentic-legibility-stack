@@ -6,6 +6,7 @@ import { useAppStore } from "@/lib/store";
 import HandoffNotice from "./handoff/HandoffNotice";
 import { TaskCard } from "./TaskCard";
 import { TaskSummaryCard } from "./TaskSummaryCard";
+import { TaskReceiptCard } from "./TaskReceiptCard";
 import { ConsentPanel } from "./ConsentCard";
 import { ConsentSummaryCard } from "./ConsentSummaryCard";
 import { StateProgressTracker } from "./StateProgressTracker";
@@ -133,7 +134,7 @@ export function ChatView() {
       )}
 
       <div
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
+        className="flex-1 overflow-y-auto px-4 py-4 pb-20 space-y-4"
         role="log"
         aria-live="polite"
       >
@@ -162,6 +163,16 @@ export function ChatView() {
 
           const isUser = msg.role === "user";
           const isLastAssistant = idx === lastAssistantIdx;
+          const RECEIPT_PREFIX = "[TASK_RECEIPT]\n";
+          const isTaskReceipt = isUser && msg.content.startsWith(RECEIPT_PREFIX);
+
+          if (isTaskReceipt) {
+            return (
+              <div key={idx}>
+                <TaskReceiptCard content={msg.content.slice(RECEIPT_PREFIX.length)} />
+              </div>
+            );
+          }
 
           return (
             <div key={idx} ref={isLastAssistant ? lastAssistantRef : undefined}>
@@ -170,7 +181,7 @@ export function ChatView() {
                   className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                     isUser
                       ? "bg-govuk-blue text-white rounded-br-sm whitespace-pre-wrap"
-                      : "bg-govuk-light-grey text-govuk-black rounded-bl-sm prose prose-sm prose-neutral max-w-none"
+                      : "bg-white shadow-sm text-govuk-black rounded-bl-sm prose prose-sm prose-neutral max-w-none"
                   }`}
                 >
                   {isUser ? msg.content : <ReactMarkdown>{msg.content}</ReactMarkdown>}

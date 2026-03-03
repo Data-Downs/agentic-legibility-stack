@@ -39,10 +39,13 @@ export function AppHeader() {
     return () => clearInterval(interval);
   }, []);
 
+  const activePlan = useAppStore((s) => s.activePlan);
+
   const showBack =
     currentView === "detail" ||
     currentView === "chat" ||
-    currentView === "tasks";
+    currentView === "tasks" ||
+    currentView === "plan";
 
   const title = (() => {
     switch (currentView) {
@@ -56,28 +59,30 @@ export function AppHeader() {
         return serviceName || "Chat";
       case "tasks":
         return "To do";
+      case "plan":
+        return activePlan?.lifeEventName || "Your plan";
       default:
         return "AI Agent Simulator";
     }
   })();
 
   return (
-    <header className="bg-govuk-black sticky top-0 z-40" role="banner">
+    <header className="bg-govuk-blue sticky top-0 z-40" role="banner">
       <div className="max-w-[960px] mx-auto px-4 py-2 flex items-center gap-2">
         {/* Back button */}
         {showBack && (
           <button
             onClick={navigateBack}
-            className="text-white p-1 -ml-1"
+            className="text-white p-1.5 -ml-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
             aria-label="Go back"
           >
             <svg
-              width="22"
-              height="22"
+              width="18"
+              height="18"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
             >

@@ -11,6 +11,9 @@ import type {
   ChatApiResponse,
   UCStateInfo,
   ConsentGrant,
+  ActivePlan,
+  ServicePlanStatus,
+  LifeEventInfo,
 } from "./types";
 import type { CardRequest } from "@als/schemas";
 import { getAllTerminalStateIds } from "@als/schemas";
@@ -71,6 +74,10 @@ interface AppStore {
   pendingCards: CardRequest[];
   cardsSubmitted: boolean;
 
+  // Active plans
+  activePlanId: string | null;
+  activePlan: ActivePlan | null;
+
   // Personal Data Dashboard
   settingsPaneOpen: boolean;
   personaSelectorOpen: boolean;
@@ -95,6 +102,14 @@ interface AppStore {
   submitCardsSummary: (summaryMessage: string) => Promise<void>;
   setSettingsPaneOpen: (open: boolean) => void;
   setPersonaSelectorOpen: (open: boolean) => void;
+
+  // Plan actions
+  startPlan: (lifeEvent: LifeEventInfo) => void;
+  loadPlan: (planId: string) => void;
+  startServiceFromPlan: (serviceId: string, serviceName: string) => void;
+  markServiceInProgress: (serviceId: string, conversationId: string) => void;
+  markServiceCompleted: (serviceId: string) => void;
+  markServiceSkipped: (serviceId: string) => void;
 }
 
 // localStorage-backed conversation store
@@ -151,7 +166,40 @@ function getTasks(personaId: string): StoredTask[] {
   }
 }
 
-export { getConversations, getTasks, saveTasks };
+// localStorage-backed plan store
+function getActivePlans(personaId: string): ActivePlan[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(`plans_${personaId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveActivePlan(personaId: string, plan: ActivePlan) {
+  if (typeof window === "undefined") return;
+  const all = getActivePlans(personaId);
+  const index = all.findIndex((p) => p.id === plan.id);
+  if (index >= 0) {
+    all[index] = plan;
+  } else {
+    all.unshift(plan);
+  }
+  while (all.length > 10) all.pop();
+  try {
+    localStorage.setItem(`plans_${personaId}`, JSON.stringify(all));
+  } catch {
+    all.pop();
+    try {
+      localStorage.setItem(`plans_${personaId}`, JSON.stringify(all));
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+export { getConversations, getTasks, saveTasks, getActivePlans };
 
 export const useAppStore = create<AppStore>((set, get) => ({
   persona: null,
@@ -182,6 +230,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   interactionType: null,
   pendingCards: [],
   cardsSubmitted: false,
+  activePlanId: null,
+  activePlan: null,
   settingsPaneOpen: false,
   personaSelectorOpen: false,
 
@@ -582,7 +632,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       saveTasks(state.persona, storedTasks);
     }
 
-    await state.sendMessage(lines.join("\n\n"));
+    await state.sendMessage("[TASK_RECEIPT]\n" + lines.join("\n\n"));
   },
 
   submitCardsSummary: async (summaryMessage: string) => {
@@ -596,5 +646,168 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   clearReasoningBadge: () => {
     set({ hasNewReasoning: false });
+  },
+
+  // ── Plan actions ──
+
+  startPlan: (lifeEvent: LifeEventInfo) => {
+    const state = get();
+    if (!state.persona || !lifeEvent.plan) return;
+
+    // Check if a plan already exists for this life event
+    const existing = getActivePlans(state.persona).find(
+      (p) => p.lifeEventId === lifeEvent.id
+    );
+    if (existing) {
+      // Resume existing plan
+      set({ activePlanId: existing.id, activePlan: existing });
+      state.navigateTo("plan");
+      return;
+    }
+
+    const entryIds = new Set(lifeEvent.plan.entryServiceIds);
+    const serviceProgress: Record<string, ServicePlanStatus> = {};
+    for (const svc of lifeEvent.services) {
+      serviceProgress[svc.id] = entryIds.has(svc.id) ? "available" : "locked";
+    }
+
+    const plan: ActivePlan = {
+      id: `plan_${lifeEvent.id}_${Date.now()}`,
+      lifeEventId: lifeEvent.id,
+      lifeEventName: lifeEvent.name,
+      lifeEventIcon: lifeEvent.icon,
+      startedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      serviceProgress,
+      serviceConversations: {},
+      plan: lifeEvent.plan,
+      services: lifeEvent.services,
+    };
+
+    saveActivePlan(state.persona, plan);
+    set({ activePlanId: plan.id, activePlan: plan });
+    state.navigateTo("plan");
+  },
+
+  loadPlan: (planId: string) => {
+    const state = get();
+    if (!state.persona) return;
+    const plans = getActivePlans(state.persona);
+    const plan = plans.find((p) => p.id === planId);
+    if (plan) {
+      set({ activePlanId: plan.id, activePlan: plan });
+    }
+  },
+
+  startServiceFromPlan: (serviceId: string, serviceName: string) => {
+    const state = get();
+    if (!state.persona || !state.activePlan) return;
+
+    // 1. Start new conversation (synchronous state reset)
+    state.startNewConversation(serviceId as ServiceType, serviceName);
+
+    // 2. Create conversation ID and mark in-progress
+    const convId = `conv_${Date.now()}`;
+    state.markServiceInProgress(serviceId, convId);
+
+    // 3. Navigate to chat
+    state.navigateTo("chat", serviceId as ServiceType, serviceName);
+
+    // 4. Auto-send first message so the LLM responds immediately
+    state.sendMessage(`I'd like to start ${serviceName}.`);
+  },
+
+  markServiceInProgress: (serviceId: string, conversationId: string) => {
+    const state = get();
+    if (!state.persona || !state.activePlan) return;
+
+    const updated: ActivePlan = {
+      ...state.activePlan,
+      updatedAt: new Date().toISOString(),
+      serviceProgress: {
+        ...state.activePlan.serviceProgress,
+        [serviceId]: "in_progress",
+      },
+      serviceConversations: {
+        ...state.activePlan.serviceConversations,
+        [serviceId]: conversationId,
+      },
+    };
+
+    saveActivePlan(state.persona, updated);
+    set({ activePlan: updated });
+  },
+
+  markServiceCompleted: (serviceId: string) => {
+    const state = get();
+    if (!state.persona || !state.activePlan) return;
+
+    const progress = {
+      ...state.activePlan.serviceProgress,
+      [serviceId]: "completed" as ServicePlanStatus,
+    };
+
+    // Unlock pass: check downstream dependents
+    const edges = state.activePlan.plan.edges;
+    const downstreamIds = edges
+      .filter((e) => e.from === serviceId)
+      .map((e) => e.to);
+
+    for (const toId of downstreamIds) {
+      if (progress[toId] !== "locked") continue;
+      // Check if ALL prerequisites are completed or skipped
+      const prereqIds = edges.filter((e) => e.to === toId).map((e) => e.from);
+      const allMet = prereqIds.every(
+        (pid) => progress[pid] === "completed" || progress[pid] === "skipped"
+      );
+      if (allMet) {
+        progress[toId] = "available";
+      }
+    }
+
+    const updated: ActivePlan = {
+      ...state.activePlan,
+      updatedAt: new Date().toISOString(),
+      serviceProgress: progress,
+    };
+
+    saveActivePlan(state.persona, updated);
+    set({ activePlan: updated });
+  },
+
+  markServiceSkipped: (serviceId: string) => {
+    const state = get();
+    if (!state.persona || !state.activePlan) return;
+
+    const progress = {
+      ...state.activePlan.serviceProgress,
+      [serviceId]: "skipped" as ServicePlanStatus,
+    };
+
+    // Same unlock pass as markServiceCompleted
+    const edges = state.activePlan.plan.edges;
+    const downstreamIds = edges
+      .filter((e) => e.from === serviceId)
+      .map((e) => e.to);
+
+    for (const toId of downstreamIds) {
+      if (progress[toId] !== "locked") continue;
+      const prereqIds = edges.filter((e) => e.to === toId).map((e) => e.from);
+      const allMet = prereqIds.every(
+        (pid) => progress[pid] === "completed" || progress[pid] === "skipped"
+      );
+      if (allMet) {
+        progress[toId] = "available";
+      }
+    }
+
+    const updated: ActivePlan = {
+      ...state.activePlan,
+      updatedAt: new Date().toISOString(),
+      serviceProgress: progress,
+    };
+
+    saveActivePlan(state.persona, updated);
+    set({ activePlan: updated });
   },
 }));

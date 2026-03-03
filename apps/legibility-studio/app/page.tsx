@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Server, FileSearch, BarChart3, ArrowRight } from "lucide-react";
+import { Server, FileSearch, BarChart3, ArrowRight, Clock, ExternalLink } from "lucide-react";
 import KPICard from "@/components/ui/KPICard";
 import PageHeader from "@/components/ui/PageHeader";
 
@@ -12,20 +12,56 @@ interface DashboardSummary {
   completionRate: number;
 }
 
+interface RecentCase {
+  caseId: string;
+  userId: string;
+  serviceId: string;
+  currentState: string;
+  status: string;
+  lastActivityAt: string;
+  progressPercent: number;
+  eventCount: number;
+}
+
+interface ServiceInfo {
+  id: string;
+  name: string;
+  department: string;
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  "in-progress": "bg-blue-100 text-blue-700",
+  completed: "bg-green-100 text-green-700",
+  rejected: "bg-red-100 text-red-700",
+  "handed-off": "bg-yellow-100 text-yellow-700",
+  abandoned: "bg-gray-100 text-gray-500",
+};
+
 export default function StudioHomePage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [recentCases, setRecentCases] = useState<RecentCase[]>([]);
+  const [serviceMap, setServiceMap] = useState<Record<string, ServiceInfo>>({});
 
   useEffect(() => {
     Promise.all([
       fetch("/api/services").then((r) => r.json()),
       fetch(`${process.env.NEXT_PUBLIC_CITIZEN_API || "http://localhost:3100"}/api/ledger/dashboard`).then((r) => r.json()).catch(() => null),
     ]).then(([servicesData, dashboardData]) => {
+      const services = servicesData.services || [];
+      const map: Record<string, ServiceInfo> = {};
+      for (const s of services) {
+        map[s.id] = { id: s.id, name: s.name, department: s.department };
+      }
+      setServiceMap(map);
+
       setSummary({
-        serviceCount: servicesData.services?.length || 0,
+        serviceCount: services.length,
         totalCases: dashboardData?.totalCases || 0,
         activeCases: dashboardData?.activeCases || 0,
         completionRate: dashboardData?.completionRate || 0,
       });
+
+      setRecentCases(dashboardData?.recentCases || []);
     }).catch(() => {
       setSummary({ serviceCount: 0, totalCases: 0, activeCases: 0, completionRate: 0 });
     });
@@ -49,6 +85,96 @@ export default function StudioHomePage() {
           sparkSeed="completion-rate"
         />
       </div>
+
+      {/* Recent Cases */}
+      {recentCases.length > 0 && (
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Clock size={16} className="text-gray-400" />
+              <h2 className="font-bold text-sm text-gray-500 uppercase tracking-wide">
+                Recent Cases
+              </h2>
+            </div>
+            <a
+              href="/evidence"
+              className="text-xs text-studio-accent hover:underline flex items-center gap-1"
+            >
+              View all evidence <ExternalLink size={10} />
+            </a>
+          </div>
+          <div className="border border-studio-border rounded-xl bg-white overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-studio-border bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wide">
+                  <th className="py-2.5 px-4">Service</th>
+                  <th className="py-2.5 px-4">User</th>
+                  <th className="py-2.5 px-4">State</th>
+                  <th className="py-2.5 px-4">Status</th>
+                  <th className="py-2.5 px-4">Progress</th>
+                  <th className="py-2.5 px-4">Last Activity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentCases.map((c) => {
+                  const service = serviceMap[c.serviceId];
+                  const caseUrl = `/services/${encodeURIComponent(c.serviceId)}/ledger/cases/${encodeURIComponent(c.userId)}`;
+                  return (
+                    <tr
+                      key={c.caseId}
+                      onClick={() => window.location.href = caseUrl}
+                      className="border-b border-studio-border last:border-0 hover:bg-blue-50 transition-colors cursor-pointer"
+                    >
+                      <td className="py-3 px-4">
+                        <span className="text-studio-accent font-medium">
+                          {service ? service.name : c.serviceId}
+                        </span>
+                        {service && (
+                          <div className="text-xs text-gray-400">{service.department}</div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-xs">{c.userId}</td>
+                      <td className="py-3 px-4">
+                        <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">
+                          {c.currentState}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                            STATUS_STYLES[c.status] || "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-studio-accent rounded-full"
+                              style={{ width: `${c.progressPercent}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-500">{c.progressPercent}%</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-xs text-gray-500">
+                        {new Date(c.lastActivityAt).toLocaleString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Quick nav cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

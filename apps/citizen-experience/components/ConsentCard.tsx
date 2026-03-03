@@ -65,7 +65,7 @@ function GrantRow({
         <button
           onClick={() => onDecision(grant.id, "granted")}
           disabled={disabled}
-          className={`text-sm font-bold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50 ${
+          className={`text-sm font-bold px-4 py-2.5 rounded-full transition-colors disabled:opacity-50 ${
             decision === "granted"
               ? "bg-[#912b88] text-white"
               : "border border-govuk-mid-grey text-govuk-dark-grey hover:bg-purple-50"
@@ -81,7 +81,7 @@ function GrantRow({
         <button
           onClick={() => onDecision(grant.id, "denied")}
           disabled={disabled}
-          className={`text-sm font-medium px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50 ${
+          className={`text-sm font-medium px-4 py-2.5 rounded-full transition-colors disabled:opacity-50 ${
             decision === "denied"
               ? "bg-gray-200 text-govuk-dark-grey"
               : "border border-govuk-mid-grey text-govuk-dark-grey hover:bg-gray-50"
@@ -104,8 +104,7 @@ export function ConsentPanel({
 
   return (
     <div
-      className="my-3 rounded-2xl border border-purple-200 bg-white"
-      style={{ boxShadow: "0 2px 8px rgba(145,43,136,0.08)" }}
+      className="my-3 rounded-2xl bg-white shadow-sm"
     >
       {/* Panel header */}
       <div className="px-5 py-4 border-b border-gray-200">

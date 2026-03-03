@@ -23,6 +23,8 @@ export async function GET() {
       eligibility_summary: node.eligibility.summary,
     }));
 
+    const plan = engine.getLifeEventPlan(le.id);
+
     return {
       id: le.id,
       icon: le.icon,
@@ -31,6 +33,7 @@ export async function GET() {
       entryNodeCount: le.entryNodes?.length ?? 0,
       totalServiceCount: services.length,
       services,
+      plan,
     };
   });
 

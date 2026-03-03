@@ -11,6 +11,7 @@ interface TaskCardProps {
     type: "agent" | "user";
     dueDate?: string | null;
     dataNeeded?: string[];
+    options?: Array<{ value: string; label: string }>;
   };
   completion?: string;
   onComplete?: (taskId: string, message: string) => void;
@@ -31,13 +32,71 @@ const FIELD_META: Record<string, { label: string; type: string; placeholder: str
   address: { label: "Address", type: "text", placeholder: "e.g. 12 Maple Road, Manchester" },
   sort_code: { label: "Sort code", type: "text", placeholder: "e.g. 12-34-56" },
   account_number: { label: "Account number", type: "text", placeholder: "e.g. 12345678" },
-  tenure_type: { label: "Housing tenure", type: "text", placeholder: "e.g. Private renter" },
+  tenure_type: { label: "Housing tenure", type: "select", placeholder: "" },
   monthly_rent: { label: "Monthly rent (£)", type: "text", placeholder: "e.g. 650" },
   rent_amount: { label: "Monthly rent (£)", type: "text", placeholder: "e.g. 650" },
   employer_name: { label: "Employer name", type: "text", placeholder: "e.g. TechCo Solutions Ltd" },
   employment_status: { label: "Employment status", type: "text", placeholder: "e.g. Unemployed" },
+  employment_end_date: { label: "Employment end date", type: "text", placeholder: "e.g. 20/01/2026" },
   income_amount: { label: "Monthly income (£)", type: "text", placeholder: "e.g. 1200" },
+  landlord_name: { label: "Landlord's full name", type: "text", placeholder: "e.g. Steve Smith" },
+  landlord_address: { label: "Landlord's address", type: "text", placeholder: "e.g. 45 Oak Street, Manchester, M1 4BH" },
 };
+
+const TENURE_OPTIONS = [
+  { value: "", label: "Select an option" },
+  { value: "Private Renter", label: "Private renter" },
+  { value: "Social Renter", label: "Social renter" },
+  { value: "Owner with mortgage", label: "Owner with mortgage" },
+  { value: "Owner mortgage-free", label: "Owner (mortgage-free)" },
+  { value: "Living rent-free", label: "Living rent-free" },
+];
+
+/** Returns the dynamic label for rent/mortgage fields based on tenure, or null to hide */
+function getRentLabel(tenure: string): string | null {
+  switch (tenure) {
+    case "Owner mortgage-free":
+    case "Living rent-free":
+      return null;
+    case "Owner with mortgage":
+      return "Monthly mortgage (£)";
+    default:
+      return "Monthly rent (£)";
+  }
+}
+
+/** Infer relevant data fields from task description and detail text */
+function inferFields(description: string, detail: string): string[] {
+  const text = `${description} ${detail}`.toLowerCase();
+  const matched = new Set<string>();
+
+  const rules: Array<{ pattern: RegExp; fields: string[] }> = [
+    { pattern: /account\s*number/, fields: ["account_number"] },
+    { pattern: /sort\s*code/, fields: ["sort_code"] },
+    { pattern: /bank\b/, fields: ["account_number", "sort_code"] },
+    { pattern: /employment.*(end|last)|last\s*day|end\s*date/, fields: ["employment_end_date"] },
+    { pattern: /employer/, fields: ["employer_name"] },
+    { pattern: /landlord.*(name|full)|name.*landlord/, fields: ["landlord_name"] },
+    { pattern: /landlord.*(address|street|complete)/, fields: ["landlord_address"] },
+    { pattern: /landlord/, fields: ["landlord_name", "landlord_address"] },
+    { pattern: /rent|mortgage/, fields: ["monthly_rent"] },
+    { pattern: /tenure|housing\s*type/, fields: ["tenure_type"] },
+    { pattern: /phone|contact\s*number/, fields: ["phone"] },
+    { pattern: /email/, fields: ["email"] },
+    { pattern: /national\s*insurance|ni\s*number/, fields: ["national_insurance_number"] },
+    { pattern: /date\s*of\s*birth|dob/, fields: ["date_of_birth"] },
+    { pattern: /(?<!landlord.{0,30})full\s*name/, fields: ["full_name"] },
+    { pattern: /(?<!landlord.{0,30})\baddress\b/, fields: ["address"] },
+  ];
+
+  for (const { pattern, fields } of rules) {
+    if (pattern.test(text)) {
+      fields.forEach(f => matched.add(f));
+    }
+  }
+
+  return Array.from(matched);
+}
 
 /** Attempt to pre-fill a field from persona data */
 function getPreFill(fieldKey: string, personaData: Record<string, unknown> | null): string {
@@ -45,6 +104,19 @@ function getPreFill(fieldKey: string, personaData: Record<string, unknown> | nul
   const pc = personaData.primaryContact as Record<string, unknown> | undefined;
   const addr = personaData.address as Record<string, unknown> | undefined;
   const emp = personaData.employment as Record<string, unknown> | undefined;
+  const fin = personaData.financials as Record<string, unknown> | undefined;
+
+  // Employment may be nested under the persona name (e.g. employment.priya)
+  // Find the first object value that has a "status" key
+  const empData = emp
+    ? (emp.status ? emp : Object.values(emp).find(
+        (v) => v && typeof v === "object" && "status" in (v as Record<string, unknown>)
+      ) as Record<string, unknown> | undefined) ?? emp
+    : undefined;
+
+  // Financials: first bank account from bankAccounts array
+  const bankAccounts = fin?.bankAccounts as Array<Record<string, unknown>> | undefined;
+  const primaryBank = bankAccounts?.[0];
 
   switch (fieldKey) {
     case "email": case "contact_email": return String(pc?.email ?? "");
@@ -52,9 +124,15 @@ function getPreFill(fieldKey: string, personaData: Record<string, unknown> | nul
     case "full_name": return pc ? `${pc.firstName ?? ""} ${pc.lastName ?? ""}`.trim() : "";
     case "date_of_birth": return String(pc?.dateOfBirth ?? "");
     case "national_insurance_number": return String(pc?.nationalInsuranceNumber ?? "");
-    case "address": return addr ? `${addr.line1 ?? ""}, ${addr.city ?? ""}, ${addr.postcode ?? ""}` : "";
-    case "employer_name": return String(emp?.employer ?? emp?.employerName ?? "");
-    case "employment_status": return String(emp?.status ?? emp?.employmentStatus ?? "");
+    case "address": return addr ? [addr.line1, addr.line2, addr.city, addr.postcode].filter(Boolean).join(", ") : "";
+    case "tenure_type": return String(addr?.housingStatus ?? "");
+    case "employer_name": return String(empData?.employer ?? empData?.previousEmployer ?? empData?.businessName ?? "");
+    case "employment_status": return String(empData?.status ?? "");
+    case "employment_end_date": return String(empData?.employmentEndDate ?? empData?.retirementDate ?? "");
+    case "sort_code": return String(primaryBank?.sortCode ?? "");
+    case "account_number": return String(primaryBank?.accountNumber ?? "");
+    case "monthly_rent": case "rent_amount": return String(fin?.monthlyRent ?? fin?.monthlyMortgage ?? "");
+    case "income_amount": return String(empData?.annualIncome ?? "");
     default: return "";
   }
 }
@@ -62,19 +140,32 @@ function getPreFill(fieldKey: string, personaData: Record<string, unknown> | nul
 export function TaskCard({ task, completion, onComplete, onReset, disabled }: TaskCardProps) {
   const isAgent = task.type === "agent";
   const isCompleted = !!completion;
-  const hasDataFields = !isAgent && task.dataNeeded && task.dataNeeded.length > 0;
+  const hasOptions = !isAgent && task.options && task.options.length > 0;
+  const hasExplicitFields = !hasOptions && !isAgent && task.dataNeeded && task.dataNeeded.length > 0;
+
+  // For user tasks without explicit fields or options, infer fields from description
+  const inferredFields = (!isAgent && !hasOptions && !hasExplicitFields)
+    ? inferFields(task.description, task.detail)
+    : [];
+
+  // Unified field list: explicit dataNeeded takes precedence, then inferred
+  const activeFields = hasExplicitFields ? task.dataNeeded! : inferredFields;
+  const hasActiveFields = activeFields.length > 0;
 
   const personaData = useAppStore((s) => s.personaData) as Record<string, unknown> | null;
 
   // Initialize field values from persona data
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
-    if (!hasDataFields) return {};
+    if (!hasActiveFields) return {};
     const initial: Record<string, string> = {};
-    for (const key of task.dataNeeded!) {
+    for (const key of activeFields) {
       initial[key] = getPreFill(key, personaData);
     }
     return initial;
   });
+
+  const [selectedOptions, setSelectedOptions] = useState<Set<string>>(new Set());
+  const [freeformText, setFreeformText] = useState("");
 
   const updateField = useCallback((key: string, value: string) => {
     setFieldValues(prev => ({ ...prev, [key]: value }));
@@ -96,44 +187,69 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
     ? "text-green-700"
     : isAgent ? "text-blue-700" : "text-green-700";
   const badgeLabel = isCompleted
-    ? "Done"
+    ? "Submitted"
     : isAgent ? "Agent" : "You";
 
+  const toggleOption = useCallback((value: string) => {
+    setSelectedOptions(prev => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  }, []);
+
   const handleAccept = () => {
-    if (hasDataFields) {
+    if (hasOptions) {
+      const chosen = task.options!.filter(o => selectedOptions.has(o.value));
+      if (chosen.length === 0) return;
+      const msg = `Selected: ${chosen.map(o => o.label).join(", ")}`;
+      onComplete?.(task.id, msg);
+    } else if (hasActiveFields) {
       // Build a structured message from the field values
       const parts: string[] = [];
-      for (const key of task.dataNeeded!) {
+      for (const key of activeFields) {
+        // Skip hidden rent/mortgage fields
+        if ((key === "monthly_rent" || key === "rent_amount") && fieldValues.tenure_type) {
+          if (getRentLabel(fieldValues.tenure_type) === null) continue;
+        }
         const val = fieldValues[key]?.trim();
         if (val) {
-          const meta = FIELD_META[key];
-          const label = meta?.label ?? key.replace(/_/g, " ");
+          let label: string;
+          if ((key === "monthly_rent" || key === "rent_amount") && fieldValues.tenure_type) {
+            label = getRentLabel(fieldValues.tenure_type) ?? "Monthly rent (£)";
+          } else {
+            const meta = FIELD_META[key];
+            label = meta?.label ?? key.replace(/_/g, " ");
+          }
           parts.push(`${label}: ${val}`);
         }
       }
-      if (parts.length === 0) {
-        // Nothing filled in — don't submit
-        return;
-      }
+      if (parts.length === 0) return;
       const msg = `${task.description}:\n${parts.join("\n")}`;
       onComplete?.(task.id, msg);
+    } else if (isAgent) {
+      onComplete?.(task.id, `Please proceed with: ${task.description}`);
+    } else if (freeformText.trim()) {
+      onComplete?.(task.id, `${task.description}:\n${freeformText.trim()}`);
     } else {
-      const msg = isAgent
-        ? `Please proceed with: ${task.description}`
-        : `Confirmed: ${task.description}`;
-      onComplete?.(task.id, msg);
+      onComplete?.(task.id, `Confirmed: ${task.description}`);
     }
   };
 
-  // Check if form has at least one filled field
-  const hasFilledField = hasDataFields
-    ? Object.values(fieldValues).some(v => v.trim().length > 0)
-    : true;
+  // Check if form has at least one filled field or an option is selected
+  const hasFilledField = hasOptions
+    ? selectedOptions.size > 0
+    : hasActiveFields
+      ? Object.values(fieldValues).some(v => v.trim().length > 0)
+      : true;
+
+  // Whether this is a pure freeform task (no fields could be inferred)
+  const isFreeform = !isAgent && !hasOptions && !hasActiveFields;
 
   return (
     <div
-      className={`my-3 rounded-2xl ${borderClass} border bg-white transition-opacity ${isCompleted ? "opacity-80" : ""}`}
-      style={{ boxShadow: shadowStyle }}
+      className={`my-3 rounded-2xl bg-white shadow-sm transition-opacity ${isCompleted ? "opacity-80" : ""}`}
     >
       <div className="px-5 py-5">
         {/* Header */}
@@ -163,17 +279,88 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
         <p className={`text-base font-medium ${isCompleted ? "text-govuk-dark-grey" : "text-govuk-black"}`}>
           {task.description}
         </p>
-        <p className="text-sm text-govuk-dark-grey mt-1">{task.detail}</p>
+        {!isCompleted && (
+          <p className="text-sm text-govuk-dark-grey mt-1">{task.detail}</p>
+        )}
 
-        {/* Data input fields — shown when task has dataNeeded and is a user task */}
-        {!isCompleted && hasDataFields && (
+        {/* Checkbox options — shown when task has options (multi-select) */}
+        {!isCompleted && hasOptions && (
+          <fieldset className="mt-3 space-y-2">
+            {task.options!.map((opt) => (
+              <label
+                key={opt.value}
+                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  selectedOptions.has(opt.value)
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300 bg-white"
+                } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  value={opt.value}
+                  checked={selectedOptions.has(opt.value)}
+                  onChange={() => toggleOption(opt.value)}
+                  disabled={disabled}
+                  className="w-4 h-4 rounded text-blue-600 accent-blue-600"
+                />
+                <span className="text-sm font-medium text-govuk-black">{opt.label}</span>
+              </label>
+            ))}
+          </fieldset>
+        )}
+
+        {/* Data input fields — explicit dataNeeded or inferred from description */}
+        {!isCompleted && hasActiveFields && (
           <div className="mt-3 space-y-3">
-            {task.dataNeeded!.map((key) => {
+            {activeFields.map((key) => {
               const meta = FIELD_META[key] ?? {
                 label: key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
                 type: "text",
                 placeholder: "",
               };
+
+              // Hide rent/mortgage fields when tenure means no payment
+              if ((key === "monthly_rent" || key === "rent_amount") && fieldValues.tenure_type) {
+                const rentLabel = getRentLabel(fieldValues.tenure_type);
+                if (rentLabel === null) return null;
+                return (
+                  <div key={key}>
+                    <label className="block text-sm font-medium text-govuk-black mb-1">
+                      {rentLabel}
+                    </label>
+                    <input
+                      type="text"
+                      value={fieldValues[key] ?? ""}
+                      onChange={(e) => updateField(key, e.target.value)}
+                      placeholder={meta.placeholder}
+                      disabled={disabled}
+                      className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 bg-white"
+                    />
+                  </div>
+                );
+              }
+
+              // Render tenure as a dropdown
+              if (key === "tenure_type") {
+                return (
+                  <div key={key}>
+                    <label className="block text-sm font-medium text-govuk-black mb-1">
+                      {meta.label}
+                    </label>
+                    <select
+                      value={fieldValues[key] ?? ""}
+                      onChange={(e) => updateField(key, e.target.value)}
+                      disabled={disabled}
+                      className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 bg-white"
+                    >
+                      {TENURE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              }
+
               return (
                 <div key={key}>
                   <label className="block text-sm font-medium text-govuk-black mb-1">
@@ -193,8 +380,25 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
           </div>
         )}
 
+        {/* Freeform text area — last resort for tasks where no fields could be inferred */}
+        {!isCompleted && isFreeform && (
+          <div className="mt-3">
+            <label className="block text-sm font-medium text-govuk-black mb-1">
+              Your response
+            </label>
+            <textarea
+              value={freeformText}
+              onChange={(e) => setFreeformText(e.target.value)}
+              placeholder="Type your response here..."
+              disabled={disabled}
+              rows={3}
+              className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 bg-white resize-y"
+            />
+          </div>
+        )}
+
         {/* Data needed tags — only shown for agent tasks (user tasks now have input fields) */}
-        {!isCompleted && !hasDataFields && isAgent && task.dataNeeded && task.dataNeeded.length > 0 && (
+        {!isCompleted && !hasActiveFields && isAgent && task.dataNeeded && task.dataNeeded.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
             {task.dataNeeded.map((d) => (
               <span key={d} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-lg">
@@ -204,33 +408,64 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
           </div>
         )}
 
-        {/* Completed state */}
-        {isCompleted && (
-          <div className="mt-3 border-t border-gray-200 pt-3">
-            <p className="text-sm font-medium text-green-700 whitespace-pre-line">
-              {completion}
-            </p>
-            {!disabled && (
-              <button
-                onClick={() => onReset?.(task.id)}
-                className="text-sm text-govuk-blue underline hover:no-underline mt-2"
-              >
-                Change
-              </button>
-            )}
-          </div>
-        )}
+        {/* Completed state — data table or plain text */}
+        {isCompleted && (() => {
+          // Parse "Label: Value" lines from completion text, skipping the header line
+          const lines = (completion ?? "").split("\n").filter(Boolean);
+          const rows = lines
+            .filter((l) => l.includes(": "))
+            .map((l) => {
+              const idx = l.indexOf(": ");
+              return { label: l.slice(0, idx), value: l.slice(idx + 2) };
+            });
+
+          // Only render as a table when there are 2+ structured data rows
+          const useTable = rows.length >= 2;
+
+          return (
+            <div className="mt-3">
+              {useTable ? (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left text-xs font-medium text-govuk-dark-grey py-1.5 pr-4">Field</th>
+                      <th className="text-left text-xs font-medium text-govuk-dark-grey py-1.5">Submitted</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row, i) => (
+                      <tr key={i} className="border-b border-gray-100 last:border-b-0">
+                        <td className="text-govuk-dark-grey py-1.5 pr-4 align-top">{row.label}</td>
+                        <td className="text-govuk-black font-medium py-1.5">{row.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-sm text-govuk-black whitespace-pre-line">{completion}</p>
+              )}
+              {!disabled && (
+                <button
+                  onClick={() => onReset?.(task.id)}
+                  className="text-sm text-govuk-blue underline hover:no-underline mt-2"
+                >
+                  Change
+                </button>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Action button */}
         {!isCompleted && (
           <div className="flex gap-2 mt-4">
             <button
               onClick={handleAccept}
-              disabled={disabled || (hasDataFields && !hasFilledField)}
-              className="text-sm font-bold text-white px-4 py-2.5 rounded-xl disabled:opacity-50 transition-colors"
-              style={{ backgroundColor: (hasDataFields && !hasFilledField) ? "#b1b4b6" : (isAgent ? "#1d70b8" : "#00703c") }}
+              disabled={disabled || ((hasActiveFields || hasOptions) && !hasFilledField)}
+              className="text-sm font-bold text-white px-4 py-2.5 rounded-full disabled:opacity-50 transition-colors"
+              style={{ backgroundColor: ((hasActiveFields || hasOptions) && !hasFilledField) ? "#b1b4b6" : (isAgent ? "#1d70b8" : "#00703c") }}
             >
-              {hasDataFields ? "Submit" : (isAgent ? "Do this" : "Got it")}
+              {hasOptions ? "Continue" : hasActiveFields ? "Submit" : isAgent ? "Do this" : isFreeform ? "Submit" : "Got it"}
             </button>
           </div>
         )}

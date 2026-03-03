@@ -24,8 +24,7 @@ export function ConsentSummaryCard({
 
   return (
     <div
-      className="my-3 rounded-2xl border border-purple-200 bg-white"
-      style={{ boxShadow: "0 2px 8px rgba(145,43,136,0.08)" }}
+      className="my-3 rounded-2xl bg-white shadow-sm"
     >
       <div className="px-5 py-5">
         {/* Header */}
@@ -128,7 +127,7 @@ export function ConsentSummaryCard({
           <button
             onClick={onSubmit}
             disabled={hasRequiredDenials || isSubmitting}
-            className={`w-full py-3 rounded-xl font-bold text-sm transition-colors ${
+            className={`w-full py-3 rounded-full font-bold text-sm transition-colors ${
               hasRequiredDenials || isSubmitting
                 ? "bg-govuk-mid-grey text-white cursor-not-allowed"
                 : "bg-[#00703c] text-white hover:bg-[#005a30]"

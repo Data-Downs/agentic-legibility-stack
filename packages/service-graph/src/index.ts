@@ -12,6 +12,8 @@ export type {
   ServiceNode,
   Edge,
   LifeEvent,
+  PlanGroup,
+  LifeEventPlan,
 } from './types';
 
 export { NODES, EDGES, LIFE_EVENTS } from './graph-data';

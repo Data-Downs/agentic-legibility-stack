@@ -89,6 +89,7 @@ export interface AgentTask {
   type: "agent" | "user";
   dueDate: string | null;
   dataNeeded: string[];
+  options?: Array<{ value: string; label: string }>;
 }
 
 export interface UCStateInfo {
@@ -180,6 +181,7 @@ export interface StoredTask {
   status: "suggested" | "accepted" | "completed" | "dismissed";
   dueDate: string | null;
   dataNeeded: string[];
+  options?: Array<{ value: string; label: string }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -192,7 +194,23 @@ export type ViewType =
   | "dashboard"
   | "detail"
   | "chat"
-  | "tasks";
+  | "tasks"
+  | "plan";
+
+export type ServicePlanStatus = "locked" | "available" | "in_progress" | "completed" | "skipped";
+
+export interface ActivePlan {
+  id: string;                    // "plan_retiring_1709472000000"
+  lifeEventId: string;           // "retiring"
+  lifeEventName: string;
+  lifeEventIcon: string;
+  startedAt: string;
+  updatedAt: string;
+  serviceProgress: Record<string, ServicePlanStatus>;
+  serviceConversations: Record<string, string>;  // serviceId → conversationId
+  plan: LifeEventPlan;           // snapshot of groups/edges
+  services: LifeEventService[];  // snapshot of service metadata
+}
 
 export const PERSONA_NAMES: Record<string, string> = {
   "sarah-chen": "Sarah Chen",
@@ -233,6 +251,19 @@ export const PERSONA_INITIALS: Record<string, string> = {
   priya: "P",
 };
 
+export interface PlanGroup {
+  depth: number;
+  label: string;
+  prerequisiteIds: string[];
+  serviceIds: string[];
+}
+
+export interface LifeEventPlan {
+  entryServiceIds: string[];
+  groups: PlanGroup[];
+  edges: Array<{ from: string; to: string; type: 'REQUIRES' | 'ENABLES' }>;
+}
+
 /** A life event from the service graph */
 export interface LifeEventInfo {
   id: string;
@@ -242,6 +273,7 @@ export interface LifeEventInfo {
   entryNodeCount: number;
   totalServiceCount: number;
   services: LifeEventService[];
+  plan?: LifeEventPlan;
 }
 
 /** A service within a life event */
