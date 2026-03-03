@@ -218,6 +218,9 @@ export default function ServicesPage() {
     return filtered;
   }, [services, sourceFilter, deptFilter, lifeEventFilter, lifeEvents, searchQuery]);
 
+  const agentServices = useMemo(() => filteredServices.filter((s) => s.department === "Agent"), [filteredServices]);
+  const govServices = useMemo(() => filteredServices.filter((s) => s.department !== "Agent"), [filteredServices]);
+
   const fullCount = services.filter((s) => (s.source || "full") === "full").length;
   const graphCount = services.filter((s) => s.source === "graph").length;
 
@@ -393,8 +396,55 @@ export default function ServicesPage() {
       {/* All-services dashboard */}
       {dashboard && <AllServicesDashboard dashboard={dashboard} />}
 
+      {/* Agent Services */}
+      {agentServices.length > 0 && (
+        <div className="mb-8">
+          <div className="sticky top-0 z-10 bg-studio-body/95 backdrop-blur-sm py-3 -mx-1 px-1 mb-4">
+            <h2 className="text-2xl font-bold">Agent Services</h2>
+          </div>
+          <div className="space-y-4">
+            {agentServices.map((service) => (
+              <div
+                key={service.id}
+                className="border border-indigo-200 rounded-xl bg-indigo-50/30 hover:shadow-sm transition-shadow"
+              >
+                <a href={`/services/${encodeURIComponent(service.id)}`} className="block p-5">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h2 className="text-lg font-bold">{service.name}</h2>
+                        <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800">
+                          Agent
+                        </span>
+                      </div>
+                      <p className="text-sm text-indigo-600 mt-0.5">{service.department}</p>
+                      <p className="text-sm mt-2 text-gray-700">{service.description}</p>
+                    </div>
+                  </div>
+                </a>
+                <div className="border-t border-indigo-200 px-5 py-3 flex items-center">
+                  <a
+                    href={`/services/${encodeURIComponent(service.id)}/ledger`}
+                    className="text-sm font-semibold text-indigo-600 hover:underline"
+                  >
+                    View ledger
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* GOV Services */}
+      {govServices.length > 0 && agentServices.length > 0 && (
+        <div className="sticky top-0 z-10 bg-studio-body/95 backdrop-blur-sm py-3 -mx-1 px-1 mb-4">
+          <h2 className="text-2xl font-bold">GOV Services</h2>
+        </div>
+      )}
+
       <div className="space-y-4">
-        {filteredServices.map((service) => (
+        {govServices.map((service) => (
           <div
             key={service.id}
             className="border border-studio-border rounded-xl bg-white hover:shadow-sm transition-shadow"
