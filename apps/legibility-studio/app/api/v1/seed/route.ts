@@ -14,7 +14,7 @@ export async function OPTIONS() {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const clear = body.clear ?? true;
+    const clear = body.clear ?? false;
 
     const adapter = await getServiceStoreAdapter();
     const result = await seedServiceStore(adapter, { clear });

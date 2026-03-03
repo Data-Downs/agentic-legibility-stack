@@ -47,10 +47,11 @@ export async function seedServiceStore(
   const engine = new ServiceGraphEngine();
 
   if (options.clear) {
+    // Preserve LLM-generated services — only clear graph-only and non-generated entries
     await db.exec("DELETE FROM life_event_services");
     await db.exec("DELETE FROM life_events");
     await db.exec("DELETE FROM edges");
-    await db.exec("DELETE FROM services");
+    await db.exec("DELETE FROM services WHERE generated_at IS NULL");
   }
 
   let graphCount = 0;
