@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* GOV.UK colour tokens */
+  --govuk-blue: #1d70b8;
+  --govuk-dark-blue: #003078;
+  --govuk-black: #0b0c0c;
+  --govuk-white: #ffffff;
+  --govuk-red: #d4351c;
+  --govuk-yellow: #ffdd00;
+  --govuk-green: #00703c;
+  --govuk-light-grey: #f3f2f1;
+  --govuk-mid-grey: #b1b4b6;
+  --govuk-dark-grey: #505a5f;
+  --govuk-purple: #912b88;
+  --govuk-orange: #f47738;
+
+  /* App tokens */
+  --app-bg: #dce8f5;
+  --card-radius: 12px;
+  --spring: cubic-bezier(0.25, 0.1, 0.25, 1.4);
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  /* Safe area insets for iOS */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+
+  /* Keyboard offset (updated by JS on iOS) */
+  --keyboard-offset: 0px;
+}
+
+body {
+  font-family: "GDS Transport", "nta", Arial, sans-serif;
+  color: var(--govuk-black);
+  background-color: var(--app-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+/* GOV.UK-style link styling */
+a {
+  color: var(--govuk-blue);
+  text-decoration: underline;
+}
+
+a:hover {
+  color: var(--govuk-dark-blue);
+}
+
+a:visited {
+  color: #4c2c92;
+}
+
+a:focus {
+  outline: 3px solid var(--govuk-yellow);
+  outline-offset: 0;
+  background-color: var(--govuk-yellow);
+  color: var(--govuk-black);
+  text-decoration: none;
+}
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+  outline: 3px solid var(--govuk-yellow);
+  outline-offset: 2px;
+}
+
+/* Touch feedback for interactive elements */
+.touch-feedback:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* Momentum scrolling on iOS */
+.scroll-momentum {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scroll snap for carousels */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scroll-snap-item {
+  scroll-snap-align: start;
+}
+
+/* Bottom sheet backdrop */
+.sheet-backdrop {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* iOS input zoom prevention */
+input,
+textarea,
+select {
+  font-size: 16px;
+}

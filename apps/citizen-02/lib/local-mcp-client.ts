@@ -1,0 +1,266 @@
+/**
+ * Local MCP Client — Connection to the local @als/mcp-server
+ *
+ * Spawns packages/mcp-server as a child process via stdio transport
+ * and provides access to MCP primitives:
+ *   - Tools:     getLocalToolsForClaude(), callLocalTool()
+ *   - Resources: listLocalResources(), readLocalResource()
+ *   - Prompts:   listLocalPrompts(), getLocalPrompt()
+ *   - Lifecycle: connectLocal(), disconnectLocal(), isLocalConnected()
+ */
+
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import path from "path";
+
+interface ClaudeTool {
+  name: string;
+  description: string;
+  input_schema: Record<string, unknown>;
+}
+
+interface McpResource {
+  uri: string;
+  name: string;
+  description?: string;
+  mimeType?: string;
+}
+
+interface McpPrompt {
+  name: string;
+  description?: string;
+  arguments?: Array<{ name: string; description?: string; required?: boolean }>;
+}
+
+interface McpPromptMessage {
+  role: string;
+  content: { type: string; text?: string };
+}
+
+let client: Client | null = null;
+let transport: StdioClientTransport | null = null;
+let connected = false;
+let localTools: ClaudeTool[] = [];
+
+export async function connectLocal(): Promise<boolean> {
+  // MCP mode uses StdioClientTransport which spawns a child process — not possible on Workers
+  if (process.env.CF_PAGES || process.env.__NEXT_ON_PAGES__) {
+    console.warn("MCP mode unavailable in production (no child process spawning on Cloudflare Workers)");
+    return false;
+  }
+  if (connected && client) return true;
+
+  try {
+    // Clean up any existing connection
+    await disconnectLocal();
+
+    const serverScript = path.resolve(
+      process.cwd(),
+      "../../packages/mcp-server/src/index.ts"
+    );
+    const servicesDir = path.resolve(process.cwd(), "../../data/services");
+
+    transport = new StdioClientTransport({
+      command: "npx",
+      args: ["tsx", serverScript],
+      env: {
+        ...process.env,
+        SERVICES_DIR: servicesDir,
+      },
+    });
+
+    client = new Client({
+      name: "citizen-experience-local",
+      version: "0.1.0",
+    });
+
+    await client.connect(transport);
+    connected = true;
+
+    // List available tools
+    const result = await client.listTools();
+    localTools = (result.tools || []).map((t) => ({
+      name: t.name,
+      description: t.description || "",
+      input_schema: (t.inputSchema as Record<string, unknown>) || {
+        type: "object",
+        properties: {},
+      },
+    }));
+
+    console.log(
+      `Local MCP: connected, ${localTools.length} service tools available`
+    );
+    return true;
+  } catch (error) {
+    connected = false;
+    client = null;
+    transport = null;
+    localTools = [];
+    console.error(
+      "Local MCP connection failed:",
+      error instanceof Error ? error.message : error
+    );
+    return false;
+  }
+}
+
+export function getLocalToolsForClaude(): ClaudeTool[] {
+  if (!connected || localTools.length === 0) return [];
+  return localTools;
+}
+
+export async function callLocalTool(
+  name: string,
+  args: Record<string, unknown> = {}
+): Promise<string | { error: string }> {
+  if (!connected || !client) {
+    console.log("Local MCP disconnected, attempting reconnect...");
+    const reconnected = await connectLocal();
+    if (!reconnected) {
+      return { error: "Local MCP server not connected" };
+    }
+  }
+
+  try {
+    const result = await client!.callTool({ name, arguments: args });
+    if (result.content && Array.isArray(result.content)) {
+      const textParts = (
+        result.content as Array<{ type: string; text?: string }>
+      )
+        .filter((c) => c.type === "text")
+        .map((c) => c.text || "");
+      return textParts.join("\n");
+    }
+    return JSON.stringify(result);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`Local MCP tool call failed (${name}):`, msg);
+
+    // Try reconnecting once
+    connected = false;
+    const reconnected = await connectLocal();
+    if (reconnected) {
+      try {
+        const result = await client!.callTool({ name, arguments: args });
+        if (result.content && Array.isArray(result.content)) {
+          const textParts = (
+            result.content as Array<{ type: string; text?: string }>
+          )
+            .filter((c) => c.type === "text")
+            .map((c) => c.text || "");
+          return textParts.join("\n");
+        }
+        return JSON.stringify(result);
+      } catch (retryError) {
+        const retryMsg =
+          retryError instanceof Error ? retryError.message : String(retryError);
+        return { error: `Local MCP tool call failed: ${retryMsg}` };
+      }
+    }
+    return { error: `Local MCP tool call failed: ${msg}` };
+  }
+}
+
+// ── Resource support ──
+
+export async function listLocalResources(): Promise<McpResource[]> {
+  if (!connected || !client) return [];
+
+  try {
+    const result = await client.listResources();
+    return (result.resources || []).map((r) => ({
+      uri: r.uri,
+      name: r.name,
+      description: r.description,
+      mimeType: r.mimeType,
+    }));
+  } catch (error) {
+    console.error("Local MCP listResources failed:", error instanceof Error ? error.message : error);
+    return [];
+  }
+}
+
+export async function readLocalResource(uri: string): Promise<string | null> {
+  if (!connected || !client) return null;
+
+  try {
+    const result = await client.readResource({ uri });
+    if (result.contents && result.contents.length > 0) {
+      const first = result.contents[0];
+      if ("text" in first && typeof first.text === "string") {
+        return first.text;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error(`Local MCP readResource failed (${uri}):`, error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+// ── Prompt support ──
+
+export async function listLocalPrompts(): Promise<McpPrompt[]> {
+  if (!connected || !client) return [];
+
+  try {
+    const result = await client.listPrompts();
+    return (result.prompts || []).map((p) => ({
+      name: p.name,
+      description: p.description,
+      arguments: p.arguments?.map((a) => ({
+        name: a.name,
+        description: a.description,
+        required: a.required,
+      })),
+    }));
+  } catch (error) {
+    console.error("Local MCP listPrompts failed:", error instanceof Error ? error.message : error);
+    return [];
+  }
+}
+
+export async function getLocalPrompt(
+  name: string,
+  args?: Record<string, string>
+): Promise<{ messages: McpPromptMessage[] } | null> {
+  if (!connected || !client) return null;
+
+  try {
+    const result = await client.getPrompt({ name, arguments: args });
+    const messages = (result.messages || []).map((m) => ({
+      role: m.role,
+      content: m.content as { type: string; text?: string },
+    }));
+    return { messages };
+  } catch (error) {
+    console.error(`Local MCP getPrompt failed (${name}):`, error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+export function isLocalConnected(): boolean {
+  return connected;
+}
+
+export async function disconnectLocal(): Promise<void> {
+  if (client) {
+    try {
+      await client.close();
+    } catch {
+      /* ignore */
+    }
+    client = null;
+  }
+  if (transport) {
+    try {
+      await transport.close();
+    } catch {
+      /* ignore */
+    }
+    transport = null;
+  }
+  connected = false;
+  localTools = [];
+}

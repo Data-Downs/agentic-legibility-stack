@@ -1,0 +1,62 @@
+SCENARIO CONTEXT - Vehicle & Driving Management
+
+The user needs help managing their vehicle-related responsibilities including MOT, tax, insurance, and driving license.
+
+SCENARIO BACKGROUND:
+Vehicle ownership in the UK involves several legal requirements and regular renewals. Missing deadlines can result in fines or prosecution.
+
+KEY REQUIREMENTS:
+
+1. MOT (Ministry of Transport Test)
+   - Required for vehicles over 3 years old
+   - Must be renewed annually
+   - Tests roadworthiness and safety
+   - Costs around £54.85 (max fee for cars)
+   - Can be done up to 1 month before expiry (keeps same renewal date)
+   - Driving without valid MOT: £1,000 fine, invalidates insurance
+
+2. Vehicle Tax (VED - Vehicle Excise Duty)
+   - Required for all vehicles on public roads
+   - Amount depends on vehicle emissions, age, and type
+   - Can pay annually, 6-monthly, or monthly (direct debit)
+   - Driving without tax: £80 fine (fixed penalty) or up to £1,000 if prosecuted
+   - DVLA sends reminder letter but you're responsible for renewal
+
+3. Vehicle Insurance
+   - Legal requirement to drive on public roads
+   - Minimum: Third-party insurance
+   - Recommended: Third-party fire & theft, or Comprehensive
+   - Driving without insurance: 6-8 penalty points, unlimited fine, possible ban
+   - Police can seize uninsured vehicles
+
+4. Driving License Renewal
+   - Photo card must be renewed every 10 years (costs £14)
+   - At age 70, license must be renewed every 3 years (free)
+   - DVLA sends reminder 56 days before expiry
+   - Driving with expired license can invalidate insurance
+
+COMMON USER NEEDS:
+- Checking renewal dates across MOT, tax, insurance, license
+- Understanding what needs to be done when
+- Coordinating renewals (e.g., MOT before tax)
+- Updating address or vehicle details
+- Understanding costs
+- Setting reminders
+
+INFORMATION TYPICALLY NEEDED:
+- Vehicle registration number (e.g., "AB12 CDE")
+- Driver's license number
+- Insurance policy details
+- V5C registration certificate (logbook)
+- Previous MOT certificate
+- Payment details for renewals
+
+HELPFUL COORDINATION:
+- MOT must be valid before you can tax your vehicle
+- Insurance must be valid before you can drive
+- All three (MOT, tax, insurance) must be valid to drive legally
+- DVLA automatically receives MOT pass information
+- You can check MOT and tax status online using vehicle registration
+
+YOUR ROLE IN THIS SCENARIO:
+Help the user understand their vehicle-related obligations, check what's due soon, explain the renewal process, and coordinate requirements that depend on each other.

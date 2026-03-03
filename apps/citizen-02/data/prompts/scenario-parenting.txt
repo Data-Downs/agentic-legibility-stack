@@ -1,0 +1,77 @@
+SCENARIO CONTEXT - New Baby Financial Support
+
+The user is expecting a baby or has recently had a baby and needs help understanding available financial support and what to apply for.
+
+SCENARIO BACKGROUND:
+Having a baby involves significant costs and reduced income (especially during maternity/paternity leave). The UK government provides various forms of financial support for new parents.
+
+MAIN BENEFITS AND SUPPORT:
+
+1. MATERNITY/PATERNITY PAY
+
+   Statutory Maternity Pay (SMP):
+   - Eligibility: Employed for at least 26 weeks by the 15th week before due date, earning £123/week+
+   - Duration: Up to 39 weeks
+   - Amount: 90% of average earnings for first 6 weeks, then £184.03/week or 90% (whichever is lower) for remaining 33 weeks
+   - Employer pays this, reclaims from HMRC
+
+   Statutory Paternity Pay (SPP):
+   - Eligibility: Employed for at least 26 weeks by the 15th week before due date
+   - Duration: 1 or 2 weeks (must be taken together)
+   - Amount: £184.03/week or 90% of average earnings (whichever is lower)
+
+   Maternity Allowance:
+   - For those who don't qualify for SMP (self-employed or recently changed jobs)
+   - £184.03/week or 90% of average earnings for up to 39 weeks
+
+2. CHILD BENEFIT
+   - Universal benefit for anyone responsible for a child under 16 (or under 20 if in approved education/training)
+   - Amount: £25.60/week for eldest child, £16.95/week for additional children
+   - Paid every 4 weeks
+   - Should claim within 3 months of birth to avoid losing payments
+   - High earners (£60,000+) may need to pay tax charge
+   - Important: Even if you earn too much, still claim - it protects your State Pension credits
+
+3. BEST START GRANT (Scotland only)
+   - Pregnancy & Baby Payment: £754.30 for first child, £377.15 for subsequent
+   - Early Learning Payment: £314.79 when child turns 2-3
+   - School Age Payment: £314.79 when child starts school
+
+4. CHILDCARE SUPPORT
+
+   Tax-Free Childcare:
+   - For working parents (including self-employed)
+   - Government adds 25p for every 75p you pay in (up to £2,000/year per child)
+   - Can't be used with Tax Credits or Universal Credit childcare support
+
+   15/30 Hours Free Childcare:
+   - 15 hours/week free for all 3-4 year olds (term after 3rd birthday)
+   - 30 hours/week if both parents working (or sole parent working)
+   - Some 2-year-olds eligible if on certain benefits
+
+5. UNIVERSAL CREDIT (if household income is low)
+   - Can include childcare costs (up to 85% of eligible costs)
+   - Increases for each child in household
+
+APPLICATION TIMELINE:
+- Before birth: Register pregnancy with employer (for maternity leave/pay planning)
+- After birth: Register birth within 42 days (England/Wales)
+- Within 3 months: Claim Child Benefit (avoid losing payments)
+- When ready: Apply for Tax-Free Childcare or free hours
+
+KEY INFORMATION NEEDED:
+- Expected due date or baby's date of birth
+- National Insurance numbers (both parents)
+- Employment details (employer, dates, income)
+- Bank details for payments
+- Birth certificate (after baby is born)
+- Relationship to child
+
+IMPORTANT NOTES:
+- Some benefits can't be claimed together (e.g., Tax-Free Childcare + Tax Credits)
+- Child Benefit protects your State Pension even if you don't get payments
+- Maternity pay comes from employer, not government directly
+- Must tell employer about pregnancy at least 15 weeks before due date (for SMP)
+
+YOUR ROLE IN THIS SCENARIO:
+Help the user understand what financial support they're entitled to, when to apply, what information they need, and guide them through the application process. Focus on reducing their stress and ensuring they don't miss out on support they deserve.

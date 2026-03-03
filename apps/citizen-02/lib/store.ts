@@ -1,0 +1,822 @@
+import { create } from "zustand";
+import type {
+  PersonaData,
+  AgentType,
+  ServiceMode,
+  ServiceType,
+  ViewType,
+  Conversation,
+  StoredTask,
+  ChatMessage,
+  ChatApiResponse,
+  UCStateInfo,
+  ConsentGrant,
+  ActivePlan,
+  ServicePlanStatus,
+  LifeEventInfo,
+  EnrichedData,
+  BottomSheetState,
+  ToastMessage,
+} from "./types";
+import type { CardRequest } from "@als/schemas";
+import { getAllTerminalStateIds } from "@als/schemas";
+
+interface AppStore {
+  // Identity
+  persona: string | null;
+  agent: AgentType;
+  serviceMode: ServiceMode;
+  personaData: PersonaData | null;
+  enrichedData: EnrichedData | null;
+
+  // Navigation
+  currentView: ViewType;
+  currentService: ServiceType | null;
+  serviceName: string | null;
+  viewHistory: Array<{ view: ViewType; service: ServiceType | null; serviceName: string | null }>;
+
+  // Chat
+  conversationHistory: ChatMessage[];
+  activeConversationId: string | null;
+  activeConversation: Conversation | null;
+  currentReasoning: string;
+  hasNewReasoning: boolean;
+  isLoading: boolean;
+
+  // Handoff
+  activeHandoff: {
+    triggered: boolean;
+    reason?: string;
+    description?: string;
+    urgency?: string;
+    routing?: Record<string, unknown>;
+  } | null;
+
+  // UC State Journey
+  ucState: string | null;
+  ucStateHistory: string[];
+  lastUcStateInfo: UCStateInfo | null;
+  pendingConsent: ConsentGrant[];
+  consentDecisions: Record<string, "granted" | "denied">;
+  consentSubmitted: boolean;
+  lastResponseTasks: Array<{
+    id: string;
+    description: string;
+    detail: string;
+    type: "agent" | "user";
+    dueDate: string | null;
+    dataNeeded: string[];
+  }>;
+  taskCompletions: Record<string, string>;
+  tasksSubmitted: boolean;
+
+  // Interaction type (from chat API — used for dynamic milestones)
+  interactionType: string | null;
+
+  // Dynamic Cards
+  pendingCards: CardRequest[];
+  cardsSubmitted: boolean;
+
+  // Active plans
+  activePlanId: string | null;
+  activePlan: ActivePlan | null;
+
+  // UI overlays
+  settingsPaneOpen: boolean;
+  personaSelectorOpen: boolean;
+  bottomSheet: BottomSheetState;
+  toast: ToastMessage | null;
+
+  // Actions
+  setPersona: (id: string) => Promise<void>;
+  setAgent: (agent: AgentType) => void;
+  setServiceMode: (mode: ServiceMode) => void;
+  navigateTo: (view: ViewType, service?: ServiceType | null, serviceName?: string | null) => void;
+  navigateBack: () => void;
+  sendMessage: (text: string) => Promise<void>;
+  startNewConversation: (service?: ServiceType | null, serviceName?: string | null) => void;
+  loadConversation: (conversationId: string) => void;
+  setReasoning: (reasoning: string) => void;
+  clearReasoningBadge: () => void;
+  setConsentDecision: (grantId: string, decision: "granted" | "denied") => void;
+  clearConsentDecision: (grantId: string) => void;
+  submitConsent: () => Promise<void>;
+  setTaskCompletion: (taskId: string, message: string) => void;
+  clearTaskCompletion: (taskId: string) => void;
+  submitTasks: () => Promise<void>;
+  submitCardsSummary: (summaryMessage: string) => Promise<void>;
+  setSettingsPaneOpen: (open: boolean) => void;
+  setPersonaSelectorOpen: (open: boolean) => void;
+  openBottomSheet: (type: BottomSheetState["type"], data?: unknown) => void;
+  closeBottomSheet: () => void;
+  showToast: (text: string) => void;
+
+  // Plan actions
+  startPlan: (lifeEvent: LifeEventInfo) => void;
+  loadPlan: (planId: string) => void;
+  startServiceFromPlan: (serviceId: string, serviceName: string) => void;
+  markServiceInProgress: (serviceId: string, conversationId: string) => void;
+  markServiceCompleted: (serviceId: string) => void;
+  markServiceSkipped: (serviceId: string) => void;
+}
+
+// localStorage-backed conversation store
+function getConversations(personaId: string): Conversation[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(`c02_conversations_${personaId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveConversation(personaId: string, conversation: Conversation) {
+  if (typeof window === "undefined") return;
+  const all = getConversations(personaId);
+  const index = all.findIndex((c) => c.id === conversation.id);
+  if (index >= 0) {
+    all[index] = conversation;
+  } else {
+    all.unshift(conversation);
+  }
+  while (all.length > 20) all.pop();
+  try {
+    localStorage.setItem(`c02_conversations_${personaId}`, JSON.stringify(all));
+  } catch {
+    all.pop();
+    try {
+      localStorage.setItem(`c02_conversations_${personaId}`, JSON.stringify(all));
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+function deleteConversation(personaId: string, conversationId: string) {
+  if (typeof window === "undefined") return;
+  const all = getConversations(personaId).filter((c) => c.id !== conversationId);
+  try {
+    localStorage.setItem(`c02_conversations_${personaId}`, JSON.stringify(all));
+  } catch {
+    /* ignore */
+  }
+}
+
+// localStorage-backed task store
+function saveTasks(personaId: string, tasks: StoredTask[]) {
+  if (typeof window === "undefined") return;
+  while (tasks.length > 50) tasks.pop();
+  try {
+    localStorage.setItem(`c02_tasks_${personaId}`, JSON.stringify(tasks));
+  } catch {
+    /* ignore */
+  }
+}
+
+function getTasks(personaId: string): StoredTask[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(`c02_tasks_${personaId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+// localStorage-backed plan store
+function getActivePlans(personaId: string): ActivePlan[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(`c02_plans_${personaId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveActivePlan(personaId: string, plan: ActivePlan) {
+  if (typeof window === "undefined") return;
+  const all = getActivePlans(personaId);
+  const index = all.findIndex((p) => p.id === plan.id);
+  if (index >= 0) {
+    all[index] = plan;
+  } else {
+    all.unshift(plan);
+  }
+  while (all.length > 10) all.pop();
+  try {
+    localStorage.setItem(`c02_plans_${personaId}`, JSON.stringify(all));
+  } catch {
+    all.pop();
+    try {
+      localStorage.setItem(`c02_plans_${personaId}`, JSON.stringify(all));
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+export { getConversations, deleteConversation, getTasks, saveTasks, getActivePlans };
+
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
+
+export const useAppStore = create<AppStore>((set, get) => ({
+  persona: null,
+  agent: "dot",
+  serviceMode: "mcp",
+  personaData: null,
+  enrichedData: null,
+  currentView: "persona-picker",
+  currentService: null,
+  serviceName: null,
+  viewHistory: [],
+  conversationHistory: [],
+  activeConversationId: null,
+  activeConversation: null,
+  currentReasoning: "",
+  hasNewReasoning: false,
+  isLoading: false,
+  activeHandoff: null,
+  ucState: null,
+  ucStateHistory: [],
+  lastUcStateInfo: null,
+  pendingConsent: [],
+  consentDecisions: {},
+  consentSubmitted: false,
+  lastResponseTasks: [],
+  taskCompletions: {},
+  tasksSubmitted: false,
+  interactionType: null,
+  pendingCards: [],
+  cardsSubmitted: false,
+  activePlanId: null,
+  activePlan: null,
+  settingsPaneOpen: false,
+  personaSelectorOpen: false,
+  bottomSheet: { type: null },
+  toast: null,
+
+  setSettingsPaneOpen: (open: boolean) => set({ settingsPaneOpen: open }),
+  setPersonaSelectorOpen: (open: boolean) => set({ personaSelectorOpen: open }),
+
+  openBottomSheet: (type, data) => set({ bottomSheet: { type, data } }),
+  closeBottomSheet: () => set({ bottomSheet: { type: null } }),
+
+  showToast: (text: string) => {
+    if (toastTimer) clearTimeout(toastTimer);
+    const id = `toast_${Date.now()}`;
+    set({ toast: { id, text } });
+    toastTimer = setTimeout(() => {
+      set({ toast: null });
+      toastTimer = null;
+    }, 2000);
+  },
+
+  setPersona: async (id: string) => {
+    set({
+      persona: id,
+      conversationHistory: [],
+      currentReasoning: "",
+      hasNewReasoning: false,
+      currentService: null,
+      serviceName: null,
+      viewHistory: [],
+      activeConversationId: null,
+      activeConversation: null,
+      enrichedData: null,
+    });
+
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("c02_persona", id);
+    }
+
+    try {
+      const response = await fetch(`/api/personal-data/${id}/full`);
+      if (response.ok) {
+        const data = await response.json();
+        set({ personaData: data });
+      }
+    } catch (error) {
+      console.error("Error loading persona:", error);
+    }
+
+    set({ currentView: "dashboard" });
+
+    // Fetch enrichment in background
+    fetch(`/api/enrich/${id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.enriched) {
+          set({ enrichedData: data });
+        }
+      })
+      .catch(() => {});
+  },
+
+  setAgent: (agent: AgentType) => {
+    set({ agent });
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("c02_agent", agent);
+    }
+  },
+
+  setServiceMode: (mode: ServiceMode) => {
+    set({ serviceMode: mode });
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("c02_serviceMode", mode);
+    }
+  },
+
+  navigateTo: (view: ViewType, service?: ServiceType | null, serviceName?: string | null) => {
+    const state = get();
+    if (state.currentView !== view) {
+      set((s) => ({
+        viewHistory: [
+          ...s.viewHistory,
+          { view: s.currentView, service: s.currentService, serviceName: s.serviceName },
+        ],
+      }));
+    }
+    set({
+      currentView: view,
+      currentService: service !== undefined ? service : get().currentService,
+      serviceName: serviceName !== undefined ? serviceName : get().serviceName,
+    });
+  },
+
+  navigateBack: () => {
+    const state = get();
+    if (state.viewHistory.length > 0) {
+      const prev = state.viewHistory[state.viewHistory.length - 1];
+      set({
+        viewHistory: state.viewHistory.slice(0, -1),
+        currentView: prev.view,
+        currentService: prev.view === "dashboard" ? null : prev.service,
+        serviceName: prev.view === "dashboard" ? null : prev.serviceName,
+      });
+    }
+  },
+
+  startNewConversation: (service?: ServiceType | null, serviceName?: string | null) => {
+    set({
+      conversationHistory: [],
+      activeConversationId: null,
+      activeConversation: null,
+      currentReasoning: "",
+      hasNewReasoning: false,
+      ucState: null,
+      ucStateHistory: [],
+      lastUcStateInfo: null,
+      interactionType: null,
+      pendingConsent: [],
+      consentDecisions: {},
+      consentSubmitted: false,
+      lastResponseTasks: [],
+      taskCompletions: {},
+      tasksSubmitted: false,
+      pendingCards: [],
+      cardsSubmitted: false,
+    });
+    if (service !== undefined) {
+      set({ currentService: service });
+    }
+    if (serviceName !== undefined) {
+      set({ serviceName: serviceName });
+    }
+  },
+
+  loadConversation: (conversationId: string) => {
+    const state = get();
+    if (!state.persona) return;
+    const conversations = getConversations(state.persona);
+    const conv = conversations.find((c) => c.id === conversationId);
+    if (conv) {
+      set({
+        activeConversationId: conv.id,
+        activeConversation: conv,
+        conversationHistory: conv.messages,
+        ucState: conv.ucState ?? null,
+        ucStateHistory: conv.ucStateHistory ?? [],
+        interactionType: conv.interactionType ?? null,
+        lastResponseTasks: conv.tasks ?? [],
+        taskCompletions: conv.taskCompletions ?? {},
+        tasksSubmitted: conv.tasksSubmitted ?? false,
+      });
+    }
+  },
+
+  sendMessage: async (text: string) => {
+    const TERMINAL_STATES = getAllTerminalStateIds();
+    const state = get();
+    if (!state.persona || !state.personaData || state.isLoading) return;
+    if (state.ucState && TERMINAL_STATES.has(state.ucState)) return;
+
+    const service = state.currentService;
+    const LEGACY_SCENARIO_MAP: Record<string, string> = {
+      driving: "driving",
+      benefits: "benefits",
+      family: "parenting",
+    };
+    const scenario = service ? (LEGACY_SCENARIO_MAP[service] || service) : "triage";
+    const isNewConversation = state.conversationHistory.length === 0;
+
+    const updatedHistory: ChatMessage[] = [
+      ...state.conversationHistory,
+      { role: "user", content: text },
+    ];
+    set({ conversationHistory: updatedHistory, isLoading: true });
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          persona: state.persona,
+          agent: state.agent,
+          scenario,
+          messages: updatedHistory,
+          generateTitle: isNewConversation,
+          ucState: state.ucState,
+          ucStateHistory: state.ucStateHistory,
+          serviceMode: state.serviceMode,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({})) as Record<string, string>;
+        const detail = errorData.details || errorData.error || `HTTP ${response.status}`;
+        throw new Error(`Chat request failed: ${detail}`);
+      }
+
+      const data: ChatApiResponse = await response.json();
+
+      const newHistory: ChatMessage[] = [
+        ...updatedHistory,
+        { role: "assistant", content: data.response },
+      ];
+
+      const conversationId =
+        state.activeConversationId || `conv_${Date.now()}`;
+      const conversation: Conversation = state.activeConversation
+        ? {
+            ...state.activeConversation,
+            messages: newHistory,
+            updatedAt: new Date().toISOString(),
+          }
+        : {
+            id: conversationId,
+            title: data.conversationTitle || "New conversation",
+            service: service || "triage",
+            agent: state.agent,
+            scenario,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            messages: newHistory,
+          };
+
+      if (data.conversationTitle && !state.activeConversation) {
+        conversation.title = data.conversationTitle;
+      }
+
+      conversation.ucState = data.ucState?.currentState ?? state.ucState ?? undefined;
+      conversation.ucStateHistory = data.ucState?.stateHistory ?? state.ucStateHistory ?? undefined;
+      conversation.interactionType = data.interactionType ?? state.interactionType ?? undefined;
+
+      if (data.tasks && data.tasks.length > 0) {
+        conversation.tasks = data.tasks;
+        conversation.taskCompletions = {};
+        conversation.tasksSubmitted = false;
+      } else {
+        conversation.tasks = state.activeConversation?.tasks;
+        conversation.taskCompletions = state.taskCompletions;
+        conversation.tasksSubmitted = state.tasksSubmitted;
+      }
+
+      saveConversation(state.persona, conversation);
+
+      if (data.tasks && data.tasks.length > 0) {
+        const existingTasks = getTasks(state.persona);
+        for (const task of data.tasks) {
+          existingTasks.unshift({
+            id: task.id,
+            conversationId,
+            service: service || "triage",
+            description: task.description,
+            detail: task.detail,
+            type: task.type as "agent" | "user",
+            status: "suggested",
+            dueDate: task.dueDate,
+            dataNeeded: task.dataNeeded,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        }
+        saveTasks(state.persona, existingTasks);
+      }
+
+      set({
+        conversationHistory: newHistory,
+        activeConversationId: conversationId,
+        activeConversation: conversation,
+        currentReasoning: data.reasoning,
+        hasNewReasoning: true,
+        isLoading: false,
+        activeHandoff: data.handoff?.triggered ? data.handoff : null,
+        ucState: data.ucState?.currentState ?? state.ucState,
+        ucStateHistory: data.ucState?.stateHistory ?? state.ucStateHistory,
+        lastUcStateInfo: data.ucState ?? state.lastUcStateInfo,
+        pendingConsent: data.consentRequests ?? [],
+        lastResponseTasks: data.tasks ?? [],
+        taskCompletions: (data.tasks && data.tasks.length > 0) ? {} : state.taskCompletions,
+        tasksSubmitted: (data.tasks && data.tasks.length > 0) ? false : state.tasksSubmitted,
+        interactionType: data.interactionType ?? state.interactionType,
+        pendingCards: data.cardRequests ?? [],
+        cardsSubmitted: (data.cardRequests && data.cardRequests.length > 0) ? false : state.cardsSubmitted,
+        consentDecisions: (data.ucState?.currentState !== state.ucState)
+          ? {}
+          : state.consentDecisions,
+        consentSubmitted: (data.ucState?.currentState !== state.ucState)
+          ? false
+          : state.consentSubmitted,
+      });
+    } catch (error) {
+      console.error("Chat error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Something went wrong";
+      const errorHistory: ChatMessage[] = [
+        ...updatedHistory,
+        { role: "assistant", content: `Something went wrong.\n\n${errorMessage}\n\nCheck that ANTHROPIC_API_KEY is set correctly in apps/citizen-02/.env.local` },
+      ];
+      set({
+        conversationHistory: errorHistory,
+        isLoading: false,
+      });
+    }
+  },
+
+  setConsentDecision: (grantId: string, decision: "granted" | "denied") => {
+    set((s) => ({
+      consentDecisions: { ...s.consentDecisions, [grantId]: decision },
+    }));
+  },
+
+  clearConsentDecision: (grantId: string) => {
+    set((s) => {
+      const updated = { ...s.consentDecisions };
+      delete updated[grantId];
+      return { consentDecisions: updated };
+    });
+  },
+
+  submitConsent: async () => {
+    const state = get();
+    const { pendingConsent, consentDecisions } = state;
+
+    const lines = ["I have reviewed all consent requests:"];
+
+    for (const grant of pendingConsent) {
+      const decision = consentDecisions[grant.id];
+      if (decision === "granted") {
+        const dataStr = grant.data_shared.map((d) => d.replace(/_/g, " ")).join(", ");
+        lines.push(`- Granted: ${grant.description} (sharing: ${dataStr})`);
+      } else if (decision === "denied") {
+        lines.push(`- Declined: ${grant.description}`);
+      }
+    }
+
+    lines.push("");
+    lines.push("Please proceed with my application.");
+
+    set({ consentSubmitted: true });
+    await state.sendMessage(lines.join("\n"));
+  },
+
+  setTaskCompletion: (taskId: string, message: string) => {
+    const state = get();
+    const updatedCompletions = { ...state.taskCompletions, [taskId]: message };
+    set({ taskCompletions: updatedCompletions });
+
+    if (state.persona && state.activeConversation) {
+      const conv = { ...state.activeConversation, taskCompletions: updatedCompletions };
+      saveConversation(state.persona, conv);
+      set({ activeConversation: conv });
+    }
+  },
+
+  clearTaskCompletion: (taskId: string) => {
+    const state = get();
+    const updatedCompletions = { ...state.taskCompletions };
+    delete updatedCompletions[taskId];
+    set({ taskCompletions: updatedCompletions });
+
+    if (state.persona && state.activeConversation) {
+      const conv = { ...state.activeConversation, taskCompletions: updatedCompletions };
+      saveConversation(state.persona, conv);
+      set({ activeConversation: conv });
+    }
+  },
+
+  submitTasks: async () => {
+    const state = get();
+    const { lastResponseTasks, taskCompletions } = state;
+
+    const lines: string[] = [];
+
+    for (const task of lastResponseTasks) {
+      const completion = taskCompletions[task.id];
+      if (!completion) continue;
+      lines.push(completion);
+    }
+
+    if (lines.length === 0) return;
+
+    set({ tasksSubmitted: true });
+
+    if (state.persona && state.activeConversation) {
+      const conv = { ...state.activeConversation, tasksSubmitted: true };
+      saveConversation(state.persona, conv);
+      set({ activeConversation: conv });
+    }
+
+    if (state.persona) {
+      const storedTasks = getTasks(state.persona);
+      const completedIds = new Set(Object.keys(taskCompletions));
+      for (const st of storedTasks) {
+        if (completedIds.has(st.id)) {
+          st.status = "completed";
+          st.updatedAt = new Date().toISOString();
+        }
+      }
+      saveTasks(state.persona, storedTasks);
+    }
+
+    await state.sendMessage("[TASK_RECEIPT]\n" + lines.join("\n\n"));
+  },
+
+  submitCardsSummary: async (summaryMessage: string) => {
+    set({ cardsSubmitted: true });
+    await get().sendMessage(summaryMessage);
+  },
+
+  setReasoning: (reasoning: string) => {
+    set({ currentReasoning: reasoning, hasNewReasoning: true });
+  },
+
+  clearReasoningBadge: () => {
+    set({ hasNewReasoning: false });
+  },
+
+  // ── Plan actions ──
+
+  startPlan: (lifeEvent: LifeEventInfo) => {
+    const state = get();
+    if (!state.persona || !lifeEvent.plan) return;
+
+    const existing = getActivePlans(state.persona).find(
+      (p) => p.lifeEventId === lifeEvent.id
+    );
+    if (existing) {
+      set({ activePlanId: existing.id, activePlan: existing });
+      state.navigateTo("plan");
+      return;
+    }
+
+    const entryIds = new Set(lifeEvent.plan.entryServiceIds);
+    const serviceProgress: Record<string, ServicePlanStatus> = {};
+    for (const svc of lifeEvent.services) {
+      serviceProgress[svc.id] = entryIds.has(svc.id) ? "available" : "locked";
+    }
+
+    const plan: ActivePlan = {
+      id: `plan_${lifeEvent.id}_${Date.now()}`,
+      lifeEventId: lifeEvent.id,
+      lifeEventName: lifeEvent.name,
+      lifeEventIcon: lifeEvent.icon,
+      startedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      serviceProgress,
+      serviceConversations: {},
+      plan: lifeEvent.plan,
+      services: lifeEvent.services,
+    };
+
+    saveActivePlan(state.persona, plan);
+    set({ activePlanId: plan.id, activePlan: plan });
+    state.navigateTo("plan");
+  },
+
+  loadPlan: (planId: string) => {
+    const state = get();
+    if (!state.persona) return;
+    const plans = getActivePlans(state.persona);
+    const plan = plans.find((p) => p.id === planId);
+    if (plan) {
+      set({ activePlanId: plan.id, activePlan: plan });
+    }
+  },
+
+  startServiceFromPlan: (serviceId: string, serviceName: string) => {
+    const state = get();
+    if (!state.persona || !state.activePlan) return;
+
+    state.startNewConversation(serviceId as ServiceType, serviceName);
+
+    const convId = `conv_${Date.now()}`;
+    state.markServiceInProgress(serviceId, convId);
+
+    state.navigateTo("chat", serviceId as ServiceType, serviceName);
+
+    state.sendMessage(`I'd like to start ${serviceName}.`);
+  },
+
+  markServiceInProgress: (serviceId: string, conversationId: string) => {
+    const state = get();
+    if (!state.persona || !state.activePlan) return;
+
+    const updated: ActivePlan = {
+      ...state.activePlan,
+      updatedAt: new Date().toISOString(),
+      serviceProgress: {
+        ...state.activePlan.serviceProgress,
+        [serviceId]: "in_progress",
+      },
+      serviceConversations: {
+        ...state.activePlan.serviceConversations,
+        [serviceId]: conversationId,
+      },
+    };
+
+    saveActivePlan(state.persona, updated);
+    set({ activePlan: updated });
+  },
+
+  markServiceCompleted: (serviceId: string) => {
+    const state = get();
+    if (!state.persona || !state.activePlan) return;
+
+    const progress = {
+      ...state.activePlan.serviceProgress,
+      [serviceId]: "completed" as ServicePlanStatus,
+    };
+
+    const edges = state.activePlan.plan.edges;
+    const downstreamIds = edges
+      .filter((e) => e.from === serviceId)
+      .map((e) => e.to);
+
+    for (const toId of downstreamIds) {
+      if (progress[toId] !== "locked") continue;
+      const prereqIds = edges.filter((e) => e.to === toId).map((e) => e.from);
+      const allMet = prereqIds.every(
+        (pid) => progress[pid] === "completed" || progress[pid] === "skipped"
+      );
+      if (allMet) {
+        progress[toId] = "available";
+      }
+    }
+
+    const updated: ActivePlan = {
+      ...state.activePlan,
+      updatedAt: new Date().toISOString(),
+      serviceProgress: progress,
+    };
+
+    saveActivePlan(state.persona, updated);
+    set({ activePlan: updated });
+  },
+
+  markServiceSkipped: (serviceId: string) => {
+    const state = get();
+    if (!state.persona || !state.activePlan) return;
+
+    const progress = {
+      ...state.activePlan.serviceProgress,
+      [serviceId]: "skipped" as ServicePlanStatus,
+    };
+
+    const edges = state.activePlan.plan.edges;
+    const downstreamIds = edges
+      .filter((e) => e.from === serviceId)
+      .map((e) => e.to);
+
+    for (const toId of downstreamIds) {
+      if (progress[toId] !== "locked") continue;
+      const prereqIds = edges.filter((e) => e.to === toId).map((e) => e.from);
+      const allMet = prereqIds.every(
+        (pid) => progress[pid] === "completed" || progress[pid] === "skipped"
+      );
+      if (allMet) {
+        progress[toId] = "available";
+      }
+    }
+
+    const updated: ActivePlan = {
+      ...state.activePlan,
+      updatedAt: new Date().toISOString(),
+      serviceProgress: progress,
+    };
+
+    saveActivePlan(state.persona, updated);
+    set({ activePlan: updated });
+  },
+}));

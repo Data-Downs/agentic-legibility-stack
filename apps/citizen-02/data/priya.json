@@ -1,0 +1,59 @@
+{
+  "personaId": "priya",
+  "personaName": "Priya Sharma",
+  "description": "Recently redundant software tester, applying for Universal Credit",
+  "primaryContact": {
+    "firstName": "Priya",
+    "middleName": "Anita",
+    "lastName": "Sharma",
+    "dateOfBirth": "1998-04-12",
+    "nationalInsuranceNumber": "GH567890A",
+    "email": "priya.sharma@email.com",
+    "phone": "07456789012"
+  },
+  "address": {
+    "line1": "17 Ashton Lane",
+    "city": "Manchester",
+    "postcode": "M1 4BH",
+    "residingSince": "2023-01-15"
+  },
+  "employment": {
+    "priya": {
+      "status": "Unemployed",
+      "previousEmployer": "TechCo Solutions Ltd",
+      "previousJobTitle": "Software Tester",
+      "employmentEndDate": "2026-01-31",
+      "endReason": "Redundancy",
+      "annualIncome": 0
+    }
+  },
+  "financials": {
+    "savingsAccount": {
+      "bank": "Nationwide Building Society",
+      "balance": 2400
+    },
+    "bankAccounts": [
+      { "bank": "Nationwide Building Society", "sortCode": "07-01-16", "accountNumber": "10203040", "label": "Current Account" },
+      { "bank": "Monzo", "sortCode": "04-00-04", "accountNumber": "56781234", "label": "Savings Account" }
+    ]
+  },
+  "benefits": {
+    "currentlyReceiving": [],
+    "previousClaims": []
+  },
+  "communicationStyle": {
+    "tone": "Polite, organised, slightly anxious",
+    "techSavvy": "High - former software tester, comfortable with digital services",
+    "primaryConcerns": [
+      "Getting financial support while job hunting",
+      "Understanding what she needs to do and when",
+      "Making sure she provides everything correctly the first time"
+    ],
+    "typicalPhrases": [
+      "I was made redundant at the end of January, so I need to apply for UC",
+      "I've got all my documents ready, just tell me what you need",
+      "Sorry, can you explain what that means exactly?",
+      "Is there anything else I should know about?"
+    ]
+  }
+}
