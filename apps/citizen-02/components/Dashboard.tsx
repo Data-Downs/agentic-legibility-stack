@@ -6,59 +6,195 @@ import type { ServiceType, LifeEventInfo, ActivePlan } from "@/lib/types";
 import { UnifiedTimeline } from "./dashboard/UnifiedTimeline";
 import { NearYouSection } from "./dashboard/NearYouSection";
 
+/** Blue-circle icon set — white strokes on filled blue circles matching GOV.UK style */
+function ServiceIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="w-14 h-14 rounded-full bg-govuk-blue flex items-center justify-center shrink-0">
+      {children}
+    </div>
+  );
+}
+
 const serviceIcons: Record<string, React.ReactNode> = {
   driving: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="3" width="15" height="13" rx="2" /><path d="M16 8h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
-    </svg>
+    <ServiceIcon>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 17h14M7 11l1.5-4h7L17 11" />
+        <rect x="3" y="11" width="18" height="6" rx="2" />
+        <circle cx="7" cy="17" r="1.5" fill="white" />
+        <circle cx="17" cy="17" r="1.5" fill="white" />
+      </svg>
+    </ServiceIcon>
   ),
   benefits: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
+    <ServiceIcon>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="8" />
+        <text x="12" y="16" textAnchor="middle" fill="white" stroke="none" fontSize="12" fontWeight="bold" fontFamily="Arial">£</text>
+      </svg>
+    </ServiceIcon>
   ),
-  family: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
+  money: (
+    <ServiceIcon>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="8" />
+        <path d="M15 9.5L10.5 14.5" />
+        <path d="M9 12l2 2" />
+        <line x1="9" y1="9" x2="15" y2="9" />
+        <line x1="9" y1="15" x2="15" y2="15" />
+      </svg>
+    </ServiceIcon>
+  ),
+  health: (
+    <ServiceIcon>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 4H13V8H17V10H13V14H11V10H7V8H11V4Z" fill="white" stroke="none" />
+        <rect x="4" y="3" width="16" height="12" rx="2" />
+        <path d="M8 19h8M10 15v4M14 15v4" />
+      </svg>
+    </ServiceIcon>
+  ),
+  "work-pension": (
+    <ServiceIcon>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="7" width="18" height="12" rx="2" />
+        <path d="M8 7V5a4 4 0 0 1 8 0v2" />
+        <line x1="12" y1="11" x2="12" y2="15" />
+        <circle cx="12" cy="11" r="1" fill="white" stroke="none" />
+      </svg>
+    </ServiceIcon>
+  ),
+  "home-family": (
+    <ServiceIcon>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 10.5L12 4l9 6.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10.5z" />
+        <path d="M9 21v-6h6v6" />
+      </svg>
+    </ServiceIcon>
+  ),
+  "travel-identity": (
+    <ServiceIcon>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="4" width="16" height="16" rx="2" />
+        <circle cx="12" cy="10" r="3" />
+        <path d="M7 18c0-2.2 2.2-4 5-4s5 1.8 5 4" />
+      </svg>
+    </ServiceIcon>
   ),
 };
 
 function getServiceDetail(service: string, data: import("@/lib/types").PersonaData): string {
+  const raw = data as unknown as Record<string, unknown>;
   if (service === "driving") {
     const vehicles = data.vehicles;
     if (!vehicles || vehicles.length === 0) return "No vehicles registered";
-    const v = vehicles[0];
-    return `${v.make} ${v.model} (${v.registrationNumber})`;
+    return `${vehicles.length} vehicle${vehicles.length > 1 ? "s" : ""}`;
   }
   if (service === "benefits") {
-    const financials = data.financials as Record<string, unknown> | undefined;
-    if (financials?.statePension) {
-      const sp = financials.statePension as Record<string, unknown>;
-      return `State Pension: ${sp.weeklyAmount ? `£${sp.weeklyAmount}/wk` : "Active"}`;
-    }
     const current = data.benefits?.currentlyReceiving;
-    if (current && current.length > 0) {
-      return current.map((b) => b.type).join(", ");
-    }
-    return "Check what you may be entitled to";
+    if (current && current.length > 0) return current.map((b) => b.type).join(", ");
+    return "Childcare, housing, disability";
   }
-  if (service === "family") {
+  if (service === "money") {
+    const fin = data.financials as Record<string, unknown> | undefined;
+    if (fin?.statePension) return "State Pension, tax";
+    return "Personal tax";
+  }
+  if (service === "health") {
+    const hi = data.healthInfo as Record<string, unknown> | undefined;
+    const conditions = hi?.conditions as string[] | undefined;
+    if (conditions && conditions.length > 0) return conditions.slice(0, 2).join(", ");
+    return "NHS, prescriptions, GP";
+  }
+  if (service === "work-pension") {
+    const emp = data.employment as Record<string, unknown> | undefined;
+    const status = emp?.status ?? emp?.employment_status ?? (raw.employment_status as string);
+    if (status === "self-employed" || status === "Self-Employed") return "Self-employed";
+    if (status === "retired" || status === "Retired") return "Retired, state pension";
+    return "Employment, state pension";
+  }
+  if (service === "home-family") {
     if (data.pregnancy) {
       return `Baby due ${new Date(data.pregnancy.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
     }
     if (data.children && data.children.length > 0) {
       return data.children.map((c) => c.firstName).join(" & ");
     }
-    return "Family support and information";
+    return "Housing, childcare, family";
+  }
+  if (service === "travel-identity") {
+    return "Passport, visa, travel";
   }
   return "";
 }
 
+/** Determine whether a service category is relevant based on persona data */
+function isServiceRelevant(service: string, data: import("@/lib/types").PersonaData): boolean {
+  const raw = data as unknown as Record<string, unknown>;
+  switch (service) {
+    case "driving":
+      return !!(data.vehicles && data.vehicles.length > 0);
+    case "benefits":
+      return !!(
+        (data.benefits?.currentlyReceiving && data.benefits.currentlyReceiving.length > 0) ||
+        (data.benefits?.potentiallyEligibleFor && data.benefits.potentiallyEligibleFor.length > 0) ||
+        data.pregnancy ||
+        (data.children && data.children.length > 0) ||
+        raw.over_70
+      );
+    case "money":
+      return !!(
+        data.financials ||
+        raw.income ||
+        raw.savings
+      );
+    case "health":
+      return !!(
+        data.healthInfo ||
+        data.pregnancy ||
+        raw.over_70
+      );
+    case "work-pension":
+      return !!(
+        data.employment ||
+        raw.employment_status ||
+        (data.financials as Record<string, unknown> | undefined)?.statePension
+      );
+    case "home-family":
+      return !!(
+        data.pregnancy ||
+        (data.children && data.children.length > 0) ||
+        data.partner ||
+        raw.powerOfAttorney ||
+        data.family
+      );
+    case "travel-identity":
+      // Show if they have credential data indicating passport/visa
+      return !!(raw.credentials || raw.visa || raw.immigration);
+    default:
+      return false;
+  }
+}
+
+/** Category → life events mapping */
+export const SERVICE_LIFE_EVENTS: Record<string, string[]> = {
+  driving: ["Moving House", "Learning to Drive", "Starting a New Job"],
+  benefits: ["Having a Baby", "Death of Someone Close", "Losing Your Job", "Disability or Health Condition", "Becoming a Carer", "Separating or Divorcing", "Arriving in the UK"],
+  money: ["Death of Someone Close", "Getting Married", "Retiring", "Starting a Business", "Buying a Home", "Moving House", "Losing Your Job", "Separating or Divorcing", "Going to University", "Starting a New Job"],
+  health: ["Having a Baby", "Retiring", "Disability or Health Condition", "Becoming a Carer"],
+  "work-pension": ["Retiring", "Starting a Business", "Losing Your Job", "Disability or Health Condition", "Becoming a Carer", "Arriving in the UK", "Going to University", "Starting a New Job"],
+  "home-family": ["Having a Baby", "Death of Someone Close", "Getting Married", "Buying a Home", "Moving House", "Separating or Divorcing", "Child Starting School"],
+  "travel-identity": ["Arriving in the UK"],
+};
+
 const QUICK_ACCESS: Array<{ key: ServiceType; label: string }> = [
   { key: "driving", label: "Driving" },
-  { key: "benefits", label: "Benefits & money" },
-  { key: "family", label: "Family" },
+  { key: "benefits", label: "Benefits" },
+  { key: "money", label: "Money" },
+  { key: "health", label: "Health" },
+  { key: "work-pension", label: "Work & Pension" },
+  { key: "home-family", label: "Home & Family" },
+  { key: "travel-identity", label: "Travel & Identity" },
 ];
 
 export function Dashboard() {
@@ -73,6 +209,27 @@ export function Dashboard() {
   const [lifeEvents, setLifeEvents] = useState<LifeEventInfo[]>([]);
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
   const [activePlans, setActivePlans] = useState<ActivePlan[]>([]);
+  const [showBrowseTopics, setShowBrowseTopics] = useState(false);
+
+  // Manually added topics (persisted per persona in localStorage)
+  const [addedTopics, setAddedTopics] = useState<Set<string>>(() => {
+    if (typeof window === "undefined" || !persona) return new Set();
+    try {
+      const stored = localStorage.getItem(`c02_topics_${persona}`);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  // Persist added topics
+  const toggleTopic = (key: string) => {
+    setAddedTopics(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      if (persona) localStorage.setItem(`c02_topics_${persona}`, JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetch("/api/life-events")
@@ -109,32 +266,116 @@ export function Dashboard() {
         onSeeAll={() => navigateTo("tasks")}
       />
 
-      {/* Service cards → detail view */}
-      <h3 className="text-base font-extrabold text-govuk-black mb-3">Services</h3>
-      <div className="bg-white rounded-card shadow-sm mb-5 divide-y divide-gray-100">
-        {QUICK_ACCESS.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => {
-              navigateTo("detail", key, label);
-            }}
-            className="flex items-center gap-4 w-full p-4 hover:bg-gray-50 transition-all text-left touch-feedback first:rounded-t-card last:rounded-b-card"
-          >
-            <div className="w-10 h-10 rounded-lg bg-govuk-light-grey flex items-center justify-center text-govuk-dark-grey shrink-0">
-              {serviceIcons[key]}
+      {/* Topic cards → detail view */}
+      <h3 className="text-base font-extrabold text-govuk-black mb-3">Topics</h3>
+      {(() => {
+        const visibleTopics = QUICK_ACCESS.filter(
+          ({ key }) => isServiceRelevant(key, personaData) || addedTopics.has(key)
+        );
+        const hiddenTopics = QUICK_ACCESS.filter(
+          ({ key }) => !isServiceRelevant(key, personaData) && !addedTopics.has(key)
+        );
+        return (
+          <>
+            <div className="bg-white rounded-2xl shadow-sm mb-5 divide-y divide-gray-100">
+              {visibleTopics.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => navigateTo("detail", key, label)}
+                  className="flex items-center gap-4 w-full px-5 py-5 hover:bg-gray-50 transition-all text-left touch-feedback first:rounded-t-2xl last:rounded-b-2xl"
+                >
+                  {serviceIcons[key]}
+                  <div className="flex-1 min-w-0">
+                    <strong className="block text-lg font-bold text-govuk-black">{label}</strong>
+                    <span className="text-sm text-govuk-dark-grey">
+                      {getServiceDetail(key, personaData)}
+                    </span>
+                  </div>
+                  <svg className="shrink-0 text-govuk-blue" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+              ))}
             </div>
-            <div className="flex-1 min-w-0">
-              <strong className="block text-govuk-black">{label}</strong>
-              <span className="text-sm text-govuk-dark-grey">
-                {getServiceDetail(key, personaData)}
-              </span>
+
+            {/* Browse topics button */}
+            <div className="mb-5">
+              <button
+                onClick={() => setShowBrowseTopics(true)}
+                className="w-full py-4 bg-white rounded-2xl shadow-sm text-govuk-blue font-bold text-base hover:bg-gray-50 transition-colors touch-feedback"
+              >
+                Browse topics
+              </button>
             </div>
-            <svg className="shrink-0 text-govuk-blue" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </button>
-        ))}
-      </div>
+
+            {/* Browse topics overlay */}
+            {showBrowseTopics && (
+              <div className="fixed inset-0 z-50 flex flex-col bg-govuk-page-bg">
+                <div className="bg-govuk-blue px-4 pt-3 pb-4" style={{ paddingTop: "var(--safe-area-top)" }}>
+                  <div className="max-w-[960px] mx-auto">
+                    <button
+                      onClick={() => setShowBrowseTopics(false)}
+                      className="text-white text-sm font-medium flex items-center gap-1 hover:underline touch-feedback mb-2"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M15 18l-6-6 6-6" />
+                      </svg>
+                      Back
+                    </button>
+                    <h1 className="text-white font-bold text-2xl">Browse topics</h1>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 py-6">
+                  <div className="max-w-lg mx-auto">
+                    <p className="text-sm text-govuk-dark-grey mb-4">Add topics to your homepage. Topics with your data are shown automatically.</p>
+                    <div className="bg-white rounded-2xl shadow-sm divide-y divide-gray-100">
+                      {QUICK_ACCESS.map(({ key, label }) => {
+                        const autoRelevant = isServiceRelevant(key, personaData);
+                        const manuallyAdded = addedTopics.has(key);
+                        const isVisible = autoRelevant || manuallyAdded;
+                        return (
+                          <div
+                            key={key}
+                            className="flex items-center gap-4 px-5 py-4 first:rounded-t-2xl last:rounded-b-2xl"
+                          >
+                            {serviceIcons[key]}
+                            <div className="flex-1 min-w-0">
+                              <strong className="block text-base font-bold text-govuk-black">{label}</strong>
+                              <span className="text-xs text-govuk-dark-grey">
+                                {autoRelevant ? "Based on your data" : SERVICE_LIFE_EVENTS[key]?.slice(0, 2).join(", ")}
+                              </span>
+                            </div>
+                            {autoRelevant ? (
+                              <span className="text-xs font-medium text-govuk-dark-grey bg-gray-100 px-2.5 py-1 rounded-full shrink-0">
+                                Auto
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => toggleTopic(key)}
+                                className={`shrink-0 w-10 h-6 rounded-full transition-colors relative ${
+                                  isVisible ? "bg-govuk-blue" : "bg-gray-300"
+                                }`}
+                              >
+                                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                                  isVisible ? "left-[18px]" : "left-0.5"
+                                }`} />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {hiddenTopics.length === 0 && (
+                      <p className="text-sm text-govuk-dark-grey text-center mt-4">All topics are visible on your homepage.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Active plans */}
       {activePlans.length > 0 && (
