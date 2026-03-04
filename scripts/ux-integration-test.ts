@@ -218,10 +218,10 @@ async function testUCMultiTurn() {
 // ══════════════════════════════════════════════════════════════════════
 
 async function testRegisterBirthMultiTurn() {
-  console.log("\n── Test Suite 2: Register Birth (sarah-chen) — multi-turn ──");
+  console.log("\n── Test Suite 2: Register Birth (emma-parker) — multi-turn ──");
 
   try {
-    const conv = await driveConversation("sarah-chen", "gro-register-birth", [
+    const conv = await driveConversation("emma-parker", "gro-register-birth", [
       { userMessage: "I need to register my baby's birth. She was born last week.", autoConsent: true },
       { userMessage: "Yes that all looks correct, please proceed." },
       { userMessage: "The birth was on 20 February 2026 at St Mary's Hospital in Cambridge." },
@@ -320,10 +320,10 @@ async function testProvisionalLicenceMultiTurn() {
 // ══════════════════════════════════════════════════════════════════════
 
 async function testStampDutyMultiTurn() {
-  console.log("\n── Test Suite 4: Stamp Duty (mohammed-al-rashid) — multi-turn ──");
+  console.log("\n── Test Suite 4: Stamp Duty (rajesh-patel) — multi-turn ──");
 
   try {
-    const conv = await driveConversation("mohammed-al-rashid", "hmrc-sdlt", [
+    const conv = await driveConversation("rajesh-patel", "hmrc-sdlt", [
       { userMessage: "I need to pay stamp duty on a property I just purchased for £350,000", autoConsent: true },
       { userMessage: "Yes, those details are correct. Please proceed." },
     ]);

@@ -93,13 +93,13 @@ echo ""
 
 # ══════════════════════════════════════════════════════
 # TEST 1: Register Birth (registration type) — initial message
-# Persona: sarah-chen | Service: gro-register-birth
+# Persona: emma-parker | Service: gro-register-birth
 # Expect: interactionType = "register"
 # ══════════════════════════════════════════════════════
-echo "Test 1: Register Birth (sarah-chen) — interactionType check..."
+echo "Test 1: Register Birth (emma-parker) — interactionType check..."
 run_test \
   "1-register-birth-interaction-type" \
-  "sarah-chen" \
+  "emma-parker" \
   "gro-register-birth" \
   "I need to register my baby's birth" \
   "null" \
@@ -127,13 +127,13 @@ run_test \
 
 # ══════════════════════════════════════════════════════
 # TEST 3: Child Benefit (application type) — initial message
-# Persona: sarah-chen | Service: hmrc-child-benefit
+# Persona: emma-parker | Service: hmrc-child-benefit
 # Expect: interactionType = "application"
 # ══════════════════════════════════════════════════════
-echo "Test 3: Child Benefit (sarah-chen) — interactionType check..."
+echo "Test 3: Child Benefit (emma-parker) — interactionType check..."
 run_test \
   "3-child-benefit-interaction-type" \
-  "sarah-chen" \
+  "emma-parker" \
   "hmrc-child-benefit" \
   "I want to apply for child benefit" \
   "null" \
@@ -161,13 +161,13 @@ run_test \
 
 # ══════════════════════════════════════════════════════
 # TEST 5: Stamp Duty (obligation/payment type) — initial message
-# Persona: mohammed-al-rashid | Service: hmrc-sdlt
+# Persona: rajesh-patel | Service: hmrc-sdlt
 # Expect: interactionType = "payment_service"
 # ══════════════════════════════════════════════════════
-echo "Test 5: Stamp Duty (mohammed-al-rashid) — interactionType check..."
+echo "Test 5: Stamp Duty (rajesh-patel) — interactionType check..."
 run_test \
   "5-stamp-duty-interaction-type" \
-  "mohammed-al-rashid" \
+  "rajesh-patel" \
   "hmrc-sdlt" \
   "I need to pay stamp duty on a property purchase" \
   "null" \
@@ -242,13 +242,13 @@ run_test \
   "application|register|payment_service"
 
 # ══════════════════════════════════════════════════════
-# TEST 10: PIP Application (benefit) — mohammed-al-rashid
-# Persona: mohammed-al-rashid | Service: dwp-pip
+# TEST 10: PIP Application (benefit) — rajesh-patel
+# Persona: rajesh-patel | Service: dwp-pip
 # ══════════════════════════════════════════════════════
-echo "Test 10: PIP (mohammed-al-rashid) — application type..."
+echo "Test 10: PIP (rajesh-patel) — application type..."
 run_test \
   "10-pip-application" \
-  "mohammed-al-rashid" \
+  "rajesh-patel" \
   "dwp-pip" \
   "I want to apply for PIP disability payment" \
   "null" \
@@ -323,13 +323,13 @@ run_test \
   "license|application"
 
 # ══════════════════════════════════════════════════════
-# TEST 15: Student Finance (portal) — sarah-chen
-# Persona: sarah-chen | Service: slc-student-finance
+# TEST 15: Student Finance (portal) — emma-parker
+# Persona: emma-parker | Service: slc-student-finance
 # ══════════════════════════════════════════════════════
-echo "Test 15: Student Finance (sarah-chen) — application type..."
+echo "Test 15: Student Finance (emma-parker) — application type..."
 run_test \
   "15-student-finance" \
-  "sarah-chen" \
+  "emma-parker" \
   "slc-student-finance" \
   "I want to apply for student finance for my masters degree" \
   "null" \
@@ -339,13 +339,13 @@ run_test \
   "application"
 
 # ══════════════════════════════════════════════════════
-# TEST 16: Register as Sole Trader (registration) — mohammed
-# Persona: mohammed-al-rashid | Service: hmrc-register-sole-trader
+# TEST 16: Register as Sole Trader (registration) — rajesh
+# Persona: rajesh-patel | Service: hmrc-register-sole-trader
 # ══════════════════════════════════════════════════════
-echo "Test 16: Register Sole Trader (mohammed) — register type..."
+echo "Test 16: Register Sole Trader (rajesh) — register type..."
 run_test \
   "16-register-sole-trader" \
-  "mohammed-al-rashid" \
+  "rajesh-patel" \
   "hmrc-register-sole-trader" \
   "I need to register as a sole trader with HMRC" \
   "null" \
@@ -356,13 +356,13 @@ run_test \
 
 # ══════════════════════════════════════════════════════
 # TEST 17: Hand-crafted Driving Licence (backward compat)
-# Persona: sarah-chen | Service: driving (legacy)
+# Persona: emma-parker | Service: driving (legacy)
 # Expect: Uses hand-crafted service artefacts, not templates
 # ══════════════════════════════════════════════════════
-echo "Test 17: Driving Licence Renewal (sarah-chen) — legacy hand-crafted..."
+echo "Test 17: Driving Licence Renewal (emma-parker) — legacy hand-crafted..."
 run_test \
   "17-driving-licence-legacy" \
-  "sarah-chen" \
+  "emma-parker" \
   "driving" \
   "I need to renew my driving licence" \
   "null" \

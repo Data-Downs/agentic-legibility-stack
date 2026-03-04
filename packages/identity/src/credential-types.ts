@@ -25,7 +25,6 @@ export interface TestUser {
   over_70?: boolean;
   no_fixed_address?: boolean;
   pension_qualifying_years?: number;
-  persona_mapping: string;
 }
 
 export interface WalletCredential {

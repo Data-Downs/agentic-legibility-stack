@@ -136,11 +136,11 @@ function seed() {
     // ═══════════════════════════════════════
     const trace1 = "trace_demo_emma_driving";
     const span1 = "span_demo_1";
-    const meta1 = { userId: "emma-liam", sessionId: "session_demo_1", capabilityId: "agent.chat" };
+    const meta1 = { userId: "emma-parker", sessionId: "session_demo_1", capabilityId: "agent.chat" };
 
     // LLM Request
     const e1 = createTraceEvent(trace1, span1, "llm.request", {
-      persona: "emma-liam",
+      persona: "emma-parker",
       agent: "dot",
       scenario: "driving",
       messageCount: 1,
@@ -179,7 +179,7 @@ function seed() {
     // Capability Invoked
     const e5 = createTraceEvent(trace1, span1, "capability.invoked", {
       capabilityId: "agent.chat",
-      input: { persona: "emma-liam", scenario: "driving" },
+      input: { persona: "emma-parker", scenario: "driving" },
     }, meta1, 4);
     insertEvent.run(e5.id, e5.traceId, e5.spanId, e5.parentSpanId, e5.timestamp, e5.type, e5.payload, e5.metadata);
 
@@ -224,7 +224,7 @@ function seed() {
     const r1 = createReceipt(
       trace1,
       "dvla.renew-driving-licence",
-      "emma-liam",
+      "emma-parker",
       "Emma Parker",
       "Checked driving licence renewal eligibility",
       "success",
@@ -246,11 +246,11 @@ function seed() {
     // ═══════════════════════════════════════
     const trace2 = "trace_demo_margaret_pension";
     const span2 = "span_demo_2";
-    const meta2 = { userId: "margaret", sessionId: "session_demo_2", capabilityId: "agent.chat" };
+    const meta2 = { userId: "margaret-thompson", sessionId: "session_demo_2", capabilityId: "agent.chat" };
 
     // LLM Request
     const f1 = createTraceEvent(trace2, span2, "llm.request", {
-      persona: "margaret",
+      persona: "margaret-thompson",
       agent: "dot",
       scenario: "benefits",
       messageCount: 1,
@@ -281,7 +281,7 @@ function seed() {
     // Capability Invoked
     const f4 = createTraceEvent(trace2, span2, "capability.invoked", {
       capabilityId: "agent.chat",
-      input: { persona: "margaret", scenario: "benefits" },
+      input: { persona: "margaret-thompson", scenario: "benefits" },
     }, meta2, 23);
     insertEvent.run(f4.id, f4.traceId, f4.spanId, f4.parentSpanId, f4.timestamp, f4.type, f4.payload, f4.metadata);
 
@@ -335,7 +335,7 @@ function seed() {
     const r2 = createReceipt(
       trace2,
       "dwp.check-state-pension",
-      "margaret",
+      "margaret-thompson",
       "Margaret Thompson",
       "Checked state pension forecast and benefit eligibility",
       "success",
