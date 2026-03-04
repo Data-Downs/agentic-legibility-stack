@@ -5,6 +5,18 @@ export interface ExtractedFact {
   source_snippet: string;
 }
 
+export interface LLMTaskField {
+  key: string;
+  label: string;
+  type: "text" | "email" | "tel" | "currency" | "date" | "number" | "confirm" | "select";
+  placeholder?: string;
+  options?: Array<{ value: string; label: string }>;
+  prefill?: string;
+  required?: boolean;
+}
+
+const VALID_FIELD_TYPES = new Set(["text", "email", "tel", "currency", "date", "number", "confirm", "select"]);
+
 export interface LLMStructuredOutput {
   title?: string;
   tasks?: Array<{
@@ -13,6 +25,8 @@ export interface LLMStructuredOutput {
     type: "agent" | "user";
     dueDate?: string;
     dataNeeded?: string[];
+    options?: Array<{ value: string; label: string }>;
+    fields?: LLMTaskField[];
   }>;
   stateTransition?: string;
   extractedFacts?: ExtractedFact[];
@@ -105,6 +119,49 @@ export function extractStructuredOutput(responseText: string): ExtractionResult 
           .filter((d): d is string => typeof d === "string")
           .map((d) => d.trim())
           .filter(Boolean);
+      }
+
+      if (Array.isArray(task.options)) {
+        const validOptions = task.options
+          .filter((o): o is Record<string, unknown> => typeof o === "object" && o !== null)
+          .filter((o) => typeof o.value === "string" && typeof o.label === "string"
+            && o.value.toString().trim().length > 0 && o.label.toString().trim().length > 0)
+          .slice(0, 5)
+          .map((o) => ({ value: String(o.value).trim(), label: String(o.label).trim() }));
+        if (validOptions.length > 0) {
+          entry.options = validOptions;
+        }
+      }
+
+      if (Array.isArray(task.fields)) {
+        const validFields: LLMTaskField[] = [];
+        for (const f of task.fields.slice(0, 8)) {
+          if (typeof f !== "object" || f === null) continue;
+          const field = f as Record<string, unknown>;
+          const key = typeof field.key === "string" ? field.key.trim() : "";
+          const label = typeof field.label === "string" ? field.label.trim() : "";
+          const ftype = typeof field.type === "string" ? field.type.trim() : "";
+          if (!key || !label || !VALID_FIELD_TYPES.has(ftype)) continue;
+          const parsed: LLMTaskField = { key, label, type: ftype as LLMTaskField["type"] };
+          if (typeof field.placeholder === "string") parsed.placeholder = field.placeholder.trim();
+          if (typeof field.prefill === "string") parsed.prefill = field.prefill.trim();
+          if (typeof field.required === "boolean") parsed.required = field.required;
+          if (ftype === "select" && Array.isArray(field.options)) {
+            const selOpts: Array<{ value: string; label: string }> = [];
+            for (const so of field.options.slice(0, 6)) {
+              if (typeof so !== "object" || so === null) continue;
+              const sopt = so as Record<string, unknown>;
+              const sv = typeof sopt.value === "string" ? sopt.value.trim() : "";
+              const sl = typeof sopt.label === "string" ? sopt.label.trim() : "";
+              if (sv && sl) selOpts.push({ value: sv, label: sl });
+            }
+            if (selOpts.length > 0) parsed.options = selOpts;
+          }
+          validFields.push(parsed);
+        }
+        if (validFields.length > 0) {
+          entry.fields = validFields;
+        }
       }
 
       validated.push(entry);

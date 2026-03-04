@@ -17,6 +17,7 @@ import type {
   EnrichedData,
   BottomSheetState,
   ToastMessage,
+  TaskField,
 } from "./types";
 import type { CardRequest } from "@als/schemas";
 import { getAllTerminalStateIds } from "@als/schemas";
@@ -66,6 +67,7 @@ interface AppStore {
     type: "agent" | "user";
     dueDate: string | null;
     dataNeeded: string[];
+    fields?: TaskField[];
   }>;
   taskCompletions: Record<string, string>;
   tasksSubmitted: boolean;
@@ -508,6 +510,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
             status: "suggested",
             dueDate: task.dueDate,
             dataNeeded: task.dataNeeded,
+            ...(task.fields ? { fields: task.fields } : {}),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           });

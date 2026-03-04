@@ -82,6 +82,16 @@ export interface ChatMessage {
   content: string | Array<Record<string, unknown>>;
 }
 
+export interface TaskField {
+  key: string;
+  label: string;
+  type: "text" | "email" | "tel" | "currency" | "date" | "number" | "confirm" | "select";
+  placeholder?: string;
+  options?: Array<{ value: string; label: string }>;
+  prefill?: string;
+  required?: boolean;
+}
+
 export interface AgentTask {
   id: string;
   description: string;
@@ -90,6 +100,7 @@ export interface AgentTask {
   dueDate: string | null;
   dataNeeded: string[];
   options?: Array<{ value: string; label: string }>;
+  fields?: TaskField[];
 }
 
 export interface UCStateInfo {
@@ -176,6 +187,7 @@ export interface StoredTask {
   dueDate: string | null;
   dataNeeded: string[];
   options?: Array<{ value: string; label: string }>;
+  fields?: TaskField[];
   createdAt: string;
   updatedAt: string;
 }

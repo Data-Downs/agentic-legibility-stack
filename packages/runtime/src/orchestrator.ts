@@ -97,6 +97,7 @@ export interface OrchestratorOutput {
     dueDate: string | null;
     dataNeeded: string[];
     options: Array<{ value: string; label: string }>;
+    fields?: ParsedTaskField[];
   }>;
   policyResult?: {
     eligible: boolean;
@@ -138,6 +139,18 @@ export interface OrchestratorOutput {
 
 // ── Structured output parser ──
 
+interface ParsedTaskField {
+  key: string;
+  label: string;
+  type: "text" | "email" | "tel" | "currency" | "date" | "number" | "confirm" | "select";
+  placeholder?: string;
+  options?: Array<{ value: string; label: string }>;
+  prefill?: string;
+  required?: boolean;
+}
+
+const VALID_FIELD_TYPES = new Set(["text", "email", "tel", "currency", "date", "number", "confirm", "select"]);
+
 interface ParsedStructuredOutput {
   title?: string;
   proposedTransition?: string;
@@ -148,6 +161,7 @@ interface ParsedStructuredOutput {
     dueDate?: string;
     dataNeeded?: string[];
     options?: Array<{ value: string; label: string }>;
+    fields?: ParsedTaskField[];
   }>;
   extractedFacts?: FieldExtraction[];
 }
@@ -220,6 +234,34 @@ function parseStructuredOutput(responseText: string): {
         }
         if (validOpts.length > 0) entry.options = validOpts;
       }
+      if (Array.isArray(task.fields)) {
+        const validFields: ParsedTaskField[] = [];
+        for (const f of task.fields.slice(0, 8)) {
+          if (typeof f !== "object" || f === null) continue;
+          const field = f as Record<string, unknown>;
+          const key = typeof field.key === "string" ? field.key.trim() : "";
+          const label = typeof field.label === "string" ? field.label.trim() : "";
+          const ftype = typeof field.type === "string" ? field.type.trim() : "";
+          if (!key || !label || !VALID_FIELD_TYPES.has(ftype)) continue;
+          const parsed: ParsedTaskField = { key, label, type: ftype as ParsedTaskField["type"] };
+          if (typeof field.placeholder === "string") parsed.placeholder = field.placeholder.trim();
+          if (typeof field.prefill === "string") parsed.prefill = field.prefill.trim();
+          if (typeof field.required === "boolean") parsed.required = field.required;
+          if (ftype === "select" && Array.isArray(field.options)) {
+            const selOpts: Array<{ value: string; label: string }> = [];
+            for (const so of field.options.slice(0, 6)) {
+              if (typeof so !== "object" || so === null) continue;
+              const sopt = so as Record<string, unknown>;
+              const sv = typeof sopt.value === "string" ? sopt.value.trim() : "";
+              const sl = typeof sopt.label === "string" ? sopt.label.trim() : "";
+              if (sv && sl) selOpts.push({ value: sv, label: sl });
+            }
+            if (selOpts.length > 0) parsed.options = selOpts;
+          }
+          validFields.push(parsed);
+        }
+        if (validFields.length > 0) entry.fields = validFields;
+      }
       validated.push(entry);
     }
     if (validated.length > 0) output.tasks = validated;
@@ -271,6 +313,7 @@ interface TaskEntry {
   dueDate: string | null;
   dataNeeded: string[];
   options: Array<{ value: string; label: string }>;
+  fields?: ParsedTaskField[];
 }
 
 function taskMatchesHousing(t: { dataNeeded: string[]; description: string; detail: string }) {
@@ -549,6 +592,7 @@ export class Orchestrator {
       dueDate: t.dueDate || null,
       dataNeeded: t.dataNeeded || [],
       options: t.options || [],
+      ...(t.fields ? { fields: t.fields } : {}),
     }));
 
     // ── 10. State Transitions ──
@@ -932,6 +976,53 @@ Each task object has these fields:
 - "dueDate": optional, ISO date string YYYY-MM-DD (only when there is a genuine deadline)
 - "dataNeeded": optional array of persona data field names relevant to the task
 - "options": optional array of selectable choices, each with "value" and "label" (max 5). The UI renders checkboxes so the citizen can select multiple options at once. Therefore you MUST only list individual, distinct options — NEVER include combination/aggregate options like "Both X and Y" or "All of the above" since the citizen can simply tick multiple checkboxes. Use when the citizen needs to choose between distinct options (e.g. which benefit to apply for, which appointment slot to pick). Do NOT use for yes/no confirmations or free-text input.
+
+PERSON SELECTION — IMPORTANT:
+When the task asks the citizen to clarify WHO a service is for (e.g. themselves, a family member, or someone else), ALWAYS include "options" listing each relevant person from the citizen's profile data. Include a final option { "value": "other", "label": "Someone else" } as an escape hatch.
+
+Example person-selection task:
+{
+  "description": "Who is this benefit claim for?",
+  "detail": "Let me know if this is for yourself, your mother Margaret, or someone else",
+  "type": "user",
+  "options": [
+    { "value": "self", "label": "Myself (Mary Summers)" },
+    { "value": "dep-margaret", "label": "Margaret Evans (Mary's mother)" },
+    { "value": "other", "label": "Someone else" }
+  ]
+}
+
+STRUCTURED INPUT FIELDS — IMPORTANT:
+When a user task requires specific data input, include a "fields" array defining exactly
+what form inputs to render. Each field has:
+- "key": unique identifier (snake_case)
+- "label": human-readable label shown above the input
+- "type": "text" | "email" | "tel" | "currency" | "date" | "number" | "confirm" | "select"
+- "placeholder": optional hint text
+- "options": required for "select" type, array of { "value", "label" } (max 6)
+- "prefill": optional pre-filled value from persona data
+- "required": optional boolean
+
+Type guide:
+- "confirm": checkbox for boolean facts (e.g. "First-time buyer")
+- "currency": monetary amount (renders with £ symbol)
+- "select": dropdown with 2-6 fixed choices
+- Maximum 8 fields per task
+- Pre-fill values you already know from persona data
+
+Example — LISA withdrawal task:
+{
+  "description": "Provide your LISA details",
+  "detail": "We need your Lifetime ISA account information to process the withdrawal",
+  "type": "user",
+  "fields": [
+    { "key": "account_holder", "label": "Account holder name", "type": "text", "prefill": "Thomas Summers" },
+    { "key": "lisa_provider", "label": "LISA provider", "type": "text", "placeholder": "e.g. Hargreaves Lansdown" },
+    { "key": "account_ref", "label": "Account reference", "type": "text", "placeholder": "e.g. HL-12345678" },
+    { "key": "first_time_buyer", "label": "First-time buyer", "type": "confirm" },
+    { "key": "property_price", "label": "Property price", "type": "currency", "placeholder": "e.g. 350000" }
+  ]
+}
 
 Rules:
 - Maximum 3 tasks per response

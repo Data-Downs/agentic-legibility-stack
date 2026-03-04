@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
+import type { TaskField } from "@/lib/types";
 import { DEMO_TODAY } from "@/lib/types";
 
 function generateCalendarFile(task: { id: string; description: string; detail: string; dueDate?: string | null }) {
@@ -39,6 +40,7 @@ interface TaskCardProps {
     dueDate?: string | null;
     dataNeeded?: string[];
     options?: Array<{ value: string; label: string }>;
+    fields?: TaskField[];
   };
   completion?: string;
   onComplete?: (taskId: string, message: string) => void;
@@ -90,6 +92,171 @@ function getRentLabel(tenure: string): string | null {
     default:
       return "Monthly rent (£)";
   }
+}
+
+// ── Smart interaction inference ──
+
+interface PersonOption {
+  value: string;
+  label: string;
+}
+
+interface SmartInteraction {
+  type: "person-selection" | "yes-no" | "enumerated" | "freeform";
+  options: PersonOption[];
+  allowOther: boolean;
+}
+
+/** Extract person options from persona data by matching names in text */
+function matchPeopleInText(
+  text: string,
+  personaData: Record<string, unknown> | null,
+): PersonOption[] {
+  if (!personaData) return [];
+  const lower = text.toLowerCase();
+  const matched: PersonOption[] = [];
+
+  const pc = personaData.primaryContact as Record<string, unknown> | undefined;
+  if (pc?.firstName) {
+    const first = String(pc.firstName).toLowerCase();
+    const last = String(pc.lastName ?? "").toLowerCase();
+    const fullName = `${pc.firstName} ${pc.lastName ?? ""}`.trim();
+    if (
+      lower.includes(first) ||
+      lower.includes("yourself") ||
+      lower.includes("for you") ||
+      lower.includes("for myself")
+    ) {
+      matched.push({ value: "self", label: `Myself (${fullName})` });
+    }
+  }
+
+  const partner =
+    (personaData.partner as Record<string, unknown> | undefined) ??
+    (personaData.spouse as Record<string, unknown> | undefined);
+  if (partner?.firstName) {
+    const first = String(partner.firstName).toLowerCase();
+    if (lower.includes(first)) {
+      const fullName = `${partner.firstName} ${partner.lastName ?? ""}`.trim();
+      matched.push({ value: `partner-${first}`, label: fullName });
+    }
+  }
+
+  // Top-level children array
+  const topChildren = personaData.children as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(topChildren)) {
+    for (const child of topChildren) {
+      if (!child?.firstName) continue;
+      const first = String(child.firstName).toLowerCase();
+      if (lower.includes(first)) {
+        const fullName = `${child.firstName} ${child.lastName ?? ""}`.trim();
+        matched.push({ value: `child-${first}`, label: fullName });
+      }
+    }
+  }
+
+  // Nested family.children
+  const family = personaData.family as Record<string, unknown> | undefined;
+  if (family) {
+    const famChildren = family.children as Array<Record<string, unknown>> | undefined;
+    if (Array.isArray(famChildren)) {
+      for (const child of famChildren) {
+        if (!child?.firstName) continue;
+        const first = String(child.firstName).toLowerCase();
+        if (lower.includes(first)) {
+          const fullName = `${child.firstName} ${child.lastName ?? ""}`.trim();
+          matched.push({ value: `child-${first}`, label: fullName });
+        }
+      }
+    }
+
+    // Nested family.dependents
+    const dependents = family.dependents as Array<Record<string, unknown>> | undefined;
+    if (Array.isArray(dependents)) {
+      for (const dep of dependents) {
+        if (!dep?.firstName) continue;
+        const first = String(dep.firstName).toLowerCase();
+        if (lower.includes(first)) {
+          const fullName = `${dep.firstName} ${dep.lastName ?? ""}`.trim();
+          const relationship = dep.relationship ? ` (${dep.relationship})` : "";
+          matched.push({ value: `dep-${first}`, label: `${fullName}${relationship}` });
+        }
+      }
+    }
+  }
+
+  return matched;
+}
+
+/** Infer the best interaction type from task text and persona data */
+function inferInteraction(
+  description: string,
+  detail: string,
+  personaData: Record<string, unknown> | null,
+): SmartInteraction {
+  const text = `${description} ${detail}`;
+
+  // 1. Person selection — check if 2+ people are mentioned
+  const people = matchPeopleInText(text, personaData);
+  if (people.length >= 2) {
+    return {
+      type: "person-selection",
+      options: [...people, { value: "other", label: "Someone else" }],
+      allowOther: true,
+    };
+  }
+
+  // 2. Yes/No confirmation — detect question patterns but exclude data-gathering questions
+  const lower = text.toLowerCase();
+  const yesNoPatterns = [
+    /\bdo you want\b/,
+    /\bwould you like\b/,
+    /\bis this correct\b/,
+    /\bshall (i|we)\b/,
+    /\bdo you confirm\b/,
+    /\bwould you prefer\b/,
+    /\bcan (i|we) proceed\b/,
+    /\bdo you agree\b/,
+  ];
+  const dataPatterns = [
+    /what is your/,
+    /provide your/,
+    /enter your/,
+    /tell us your/,
+  ];
+  const isYesNo = yesNoPatterns.some((p) => p.test(lower));
+  const isDataRequest = dataPatterns.some((p) => p.test(lower));
+  if (isYesNo && !isDataRequest) {
+    return {
+      type: "yes-no",
+      options: [
+        { value: "yes", label: "Yes" },
+        { value: "no", label: "No" },
+      ],
+      allowOther: false,
+    };
+  }
+
+  // 3. Enumerated choices — parse "X, Y, or Z" pattern from text
+  const enumMatch = text.match(/(?:choose|select|pick|between)\s+(.+?)(?:\.|$)/i)
+    ?? text.match(/(?:^|[.!?]\s*)([A-Z][^.]*?,\s*[^.]*?\bor\s+[^.]+)/);
+  if (enumMatch) {
+    const raw = enumMatch[1];
+    // Split on ", " and " or "
+    const parts = raw.split(/,\s*(?:or\s+)?|\s+or\s+/).map((s) => s.trim()).filter(Boolean);
+    if (parts.length >= 2 && parts.length <= 5) {
+      return {
+        type: "enumerated",
+        options: [
+          ...parts.map((p) => ({ value: p.toLowerCase().replace(/\s+/g, "_"), label: p })),
+          { value: "other", label: "Other" },
+        ],
+        allowOther: true,
+      };
+    }
+  }
+
+  return { type: "freeform", options: [], allowOther: false };
 }
 
 /** Infer relevant data fields from task description and detail text */
@@ -167,12 +334,13 @@ function getPreFill(fieldKey: string, personaData: Record<string, unknown> | nul
 export function TaskCard({ task, completion, onComplete, onReset, disabled }: TaskCardProps) {
   const isAgent = task.type === "agent";
   const isCompleted = !!completion;
-  const hasOptions = !isAgent && task.options && task.options.length > 0;
-  const hasExplicitFields = !hasOptions && !isAgent && task.dataNeeded && task.dataNeeded.length > 0;
+  const hasLLMFields = !isAgent && Array.isArray(task.fields) && task.fields.length > 0;
+  const hasOptions = !isAgent && !hasLLMFields && task.options && task.options.length > 0;
+  const hasExplicitFields = !hasOptions && !hasLLMFields && !isAgent && task.dataNeeded && task.dataNeeded.length > 0;
   const [showAgentDetail, setShowAgentDetail] = useState(false);
 
   // For user tasks without explicit fields or options, infer fields from description
-  const inferredFields = (!isAgent && !hasOptions && !hasExplicitFields)
+  const inferredFields = (!isAgent && !hasOptions && !hasLLMFields && !hasExplicitFields)
     ? inferFields(task.description, task.detail)
     : [];
 
@@ -195,8 +363,31 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
     return initial;
   });
 
+  // LLM fields state — initialized from prefill values
+  const [llmFieldValues, setLlmFieldValues] = useState<Record<string, string>>(() => {
+    if (!hasLLMFields) return {};
+    const initial: Record<string, string> = {};
+    for (const field of task.fields!) {
+      initial[field.key] = field.prefill ?? "";
+    }
+    return initial;
+  });
+
+  const updateLlmField = useCallback((key: string, value: string) => {
+    setLlmFieldValues(prev => ({ ...prev, [key]: value }));
+  }, []);
+
   const [selectedOptions, setSelectedOptions] = useState<Set<string>>(new Set());
   const [freeformText, setFreeformText] = useState("");
+
+  // Smart interaction inference — only for user tasks without LLM fields, explicit options, or active fields
+  const smartInteraction = (!isAgent && !hasLLMFields && !hasOptions && !hasActiveFields)
+    ? inferInteraction(task.description, task.detail, personaData)
+    : null;
+  const hasSmartOptions = smartInteraction !== null && smartInteraction.type !== "freeform";
+
+  const [selectedSmart, setSelectedSmart] = useState<string | null>(null);
+  const [otherText, setOtherText] = useState("");
 
   const updateField = useCallback((key: string, value: string) => {
     setFieldValues(prev => ({ ...prev, [key]: value }));
@@ -231,7 +422,21 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
   }, []);
 
   const handleAccept = () => {
-    if (hasOptions) {
+    if (hasLLMFields) {
+      const parts: string[] = [];
+      for (const field of task.fields!) {
+        const val = llmFieldValues[field.key]?.trim();
+        if (field.type === "confirm") {
+          parts.push(`${field.label}: ${val === "true" ? "Yes" : "No"}`);
+        } else if (val) {
+          const display = field.type === "currency" ? `£${val}` : val;
+          parts.push(`${field.label}: ${display}`);
+        }
+      }
+      if (parts.length === 0) return;
+      const msg = `${task.description}:\n${parts.join("\n")}`;
+      onComplete?.(task.id, msg);
+    } else if (hasOptions) {
       const chosen = task.options!.filter(o => selectedOptions.has(o.value));
       if (chosen.length === 0) return;
       const msg = `Selected: ${chosen.map(o => o.label).join(", ")}`;
@@ -259,6 +464,13 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
       if (parts.length === 0) return;
       const msg = `${task.description}:\n${parts.join("\n")}`;
       onComplete?.(task.id, msg);
+    } else if (hasSmartOptions && selectedSmart) {
+      if (selectedSmart === "other" && otherText.trim()) {
+        onComplete?.(task.id, `${task.description}: ${otherText.trim()}`);
+      } else if (selectedSmart !== "other") {
+        const chosen = smartInteraction!.options.find((o) => o.value === selectedSmart);
+        onComplete?.(task.id, `Selected: ${chosen?.label ?? selectedSmart}`);
+      }
     } else if (isAgent) {
       onComplete?.(task.id, `Please proceed with: ${task.description}`);
     } else if (freeformText.trim()) {
@@ -269,17 +481,21 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
   };
 
   // Check if form has at least one filled field or an option is selected
-  const hasFilledField = hasOptions
-    ? selectedOptions.size > 0
-    : hasActiveFields
-      ? Object.values(fieldValues).some(v => v.trim().length > 0)
-      : true;
+  const hasFilledField = hasLLMFields
+    ? Object.values(llmFieldValues).some(v => v.trim().length > 0)
+    : hasOptions
+      ? selectedOptions.size > 0
+      : hasSmartOptions
+        ? selectedSmart !== null && (selectedSmart !== "other" || otherText.trim().length > 0)
+        : hasActiveFields
+          ? Object.values(fieldValues).some(v => v.trim().length > 0)
+          : true;
 
   // Date reminder: has a due date but no meaningful form fields to collect
-  const isDateReminder = !isAgent && !!task.dueDate && !hasActiveFields && !hasOptions;
+  const isDateReminder = !isAgent && !hasLLMFields && !!task.dueDate && !hasActiveFields && !hasOptions;
 
-  // Whether this is a pure freeform task (no fields could be inferred)
-  const isFreeform = !isAgent && !hasOptions && !hasActiveFields && !isDateReminder;
+  // Whether this is a pure freeform task (no fields could be inferred, no smart options)
+  const isFreeform = !isAgent && !hasLLMFields && !hasOptions && !hasSmartOptions && !hasActiveFields && !isDateReminder;
 
   return (
     <div
@@ -317,6 +533,93 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
           <p className="text-sm text-govuk-dark-grey mt-1">{task.detail}</p>
         )}
 
+        {/* LLM-defined fields — primary rendering path */}
+        {!isCompleted && hasLLMFields && (
+          <div className="mt-3 space-y-3">
+            {task.fields!.map((field) => {
+              if (field.type === "confirm") {
+                return (
+                  <label key={field.key} className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={llmFieldValues[field.key] === "true"}
+                      onChange={(e) => updateLlmField(field.key, e.target.checked ? "true" : "")}
+                      disabled={disabled}
+                      className="w-4 h-4 rounded text-blue-600 accent-blue-600"
+                    />
+                    <span className="text-sm font-medium text-govuk-black">{field.label}</span>
+                  </label>
+                );
+              }
+
+              if (field.type === "select" && field.options) {
+                return (
+                  <div key={field.key}>
+                    <label className="block text-sm font-medium text-govuk-black mb-1">
+                      {field.label}
+                    </label>
+                    <select
+                      value={llmFieldValues[field.key] ?? ""}
+                      onChange={(e) => updateLlmField(field.key, e.target.value)}
+                      disabled={disabled}
+                      className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 bg-white"
+                    >
+                      <option value="">Select an option</option>
+                      {field.options.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              }
+
+              if (field.type === "currency") {
+                return (
+                  <div key={field.key}>
+                    <label className="block text-sm font-medium text-govuk-black mb-1">
+                      {field.label}
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-govuk-dark-grey">£</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={llmFieldValues[field.key] ?? ""}
+                        onChange={(e) => updateLlmField(field.key, e.target.value)}
+                        placeholder={field.placeholder}
+                        disabled={disabled}
+                        className="w-full text-sm border border-gray-300 rounded-lg pl-7 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 bg-white"
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
+              const inputType = field.type === "date" ? "date"
+                : field.type === "number" ? "number"
+                : field.type === "email" ? "email"
+                : field.type === "tel" ? "tel"
+                : "text";
+
+              return (
+                <div key={field.key}>
+                  <label className="block text-sm font-medium text-govuk-black mb-1">
+                    {field.label}
+                  </label>
+                  <input
+                    type={inputType}
+                    value={llmFieldValues[field.key] ?? ""}
+                    onChange={(e) => updateLlmField(field.key, e.target.value)}
+                    placeholder={field.placeholder}
+                    disabled={disabled}
+                    className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 bg-white"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Checkbox options — shown when task has options (multi-select) */}
         {!isCompleted && hasOptions && (
           <fieldset className="mt-3 space-y-2">
@@ -340,6 +643,43 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
                 <span className="text-sm font-medium text-govuk-black">{opt.label}</span>
               </label>
             ))}
+          </fieldset>
+        )}
+
+        {/* Smart inferred options — radio-style selection */}
+        {!isCompleted && hasSmartOptions && (
+          <fieldset className="mt-3 space-y-2">
+            {smartInteraction!.options.map((opt) => (
+              <label
+                key={opt.value}
+                onClick={() => !disabled && setSelectedSmart(opt.value)}
+                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  selectedSmart === opt.value
+                    ? "border-green-500 bg-green-50"
+                    : "border-gray-200 hover:border-gray-300 bg-white"
+                } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                  selectedSmart === opt.value ? "border-green-500" : "border-gray-300"
+                }`}>
+                  {selectedSmart === opt.value && (
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                  )}
+                </span>
+                <span className="text-sm font-medium text-govuk-black">{opt.label}</span>
+              </label>
+            ))}
+            {/* "Other" text input revealed when selected */}
+            {smartInteraction!.allowOther && selectedSmart === "other" && (
+              <input
+                type="text"
+                value={otherText}
+                onChange={(e) => setOtherText(e.target.value)}
+                placeholder="Please specify..."
+                disabled={disabled}
+                className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2.5 mt-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:opacity-50 bg-white"
+              />
+            )}
           </fieldset>
         )}
 
@@ -566,11 +906,11 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
             )}
             <button
               onClick={handleAccept}
-              disabled={disabled || ((hasActiveFields || hasOptions) && !hasFilledField)}
+              disabled={disabled || ((hasLLMFields || hasActiveFields || hasOptions || hasSmartOptions) && !hasFilledField)}
               className="text-sm font-bold text-white px-4 py-2.5 rounded-full disabled:opacity-50 transition-colors"
-              style={{ backgroundColor: ((hasActiveFields || hasOptions) && !hasFilledField) ? "#b1b4b6" : (isAgent ? "#1d70b8" : "#00703c") }}
+              style={{ backgroundColor: ((hasLLMFields || hasActiveFields || hasOptions || hasSmartOptions) && !hasFilledField) ? "#b1b4b6" : (isAgent ? "#1d70b8" : "#00703c") }}
             >
-              {hasOptions ? "Continue" : hasActiveFields ? "Submit" : isAgent ? "Do this" : isFreeform ? "Submit" : "Got it"}
+              {hasLLMFields ? "Submit" : hasOptions ? "Continue" : hasSmartOptions ? "Continue" : hasActiveFields ? "Submit" : isAgent ? "Do this" : isFreeform ? "Submit" : "Got it"}
             </button>
           </div>
         )}
