@@ -74,7 +74,7 @@ function BottomTabBar() {
           }
         />
         <TabButton
-          label="Chat"
+          label="Dot"
           active={currentView === "chat"}
           onClick={() => navigateTo("chat")}
           icon={
@@ -211,20 +211,6 @@ export function AppShell() {
       </a>
 
       <AppHeader />
-
-      {/* Phase banner */}
-      {currentView !== "persona-picker" && (
-        <div className="max-w-[960px] mx-auto w-full px-4 pt-3">
-          <div className="flex items-center gap-2 text-sm pb-3">
-            <strong className="bg-govuk-blue text-govuk-white px-2 py-0.5 text-xs font-bold uppercase tracking-wide rounded">
-              Prototype
-            </strong>
-            <span className="text-govuk-dark-grey">
-              This is a reference implementation — not a live government service.
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Main content */}
       <main

@@ -26,6 +26,7 @@ export function DetailView() {
       {/* Hero carousel filtered to this service */}
       <HeroCarousel
         personaData={personaData}
+        filterService={currentService}
         onCardTap={() => {
           startNewConversation(currentService, serviceName);
           navigateTo("chat", currentService, serviceName);

@@ -2,6 +2,33 @@
 
 import { useState, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
+import { DEMO_TODAY } from "@/lib/types";
+
+function generateCalendarFile(task: { id: string; description: string; detail: string; dueDate?: string | null }) {
+  if (!task.dueDate) return;
+  const dtstart = task.dueDate.replace(/-/g, "") + "T090000";
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//GOV.UK//Citizen Agent//EN",
+    "BEGIN:VEVENT",
+    `DTSTART:${dtstart}`,
+    `SUMMARY:${task.description.replace(/[,;\\]/g, " ")}`,
+    `DESCRIPTION:${task.detail.replace(/[,;\\]/g, " ")}`,
+    `UID:${task.id}@citizen-02`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+  const blob = new Blob([ics], { type: "text/calendar" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "reminder.ics";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 interface TaskCardProps {
   task: {
@@ -142,14 +169,18 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
   const isCompleted = !!completion;
   const hasOptions = !isAgent && task.options && task.options.length > 0;
   const hasExplicitFields = !hasOptions && !isAgent && task.dataNeeded && task.dataNeeded.length > 0;
+  const [showAgentDetail, setShowAgentDetail] = useState(false);
 
   // For user tasks without explicit fields or options, infer fields from description
   const inferredFields = (!isAgent && !hasOptions && !hasExplicitFields)
     ? inferFields(task.description, task.detail)
     : [];
 
-  // Unified field list: explicit dataNeeded takes precedence, then inferred
-  const activeFields = hasExplicitFields ? task.dataNeeded! : inferredFields;
+  // Unified field list: explicit dataNeeded takes precedence, then inferred.
+  // Only render fields we have proper form metadata for — drop unknown/generic
+  // fields (e.g. "vehicles") that would just show an empty unlabelled input.
+  const rawFields = hasExplicitFields ? task.dataNeeded! : inferredFields;
+  const activeFields = rawFields.filter((key) => FIELD_META[key]);
   const hasActiveFields = activeFields.length > 0;
 
   const personaData = useAppStore((s) => s.personaData) as Record<string, unknown> | null;
@@ -244,8 +275,11 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
       ? Object.values(fieldValues).some(v => v.trim().length > 0)
       : true;
 
+  // Date reminder: has a due date but no meaningful form fields to collect
+  const isDateReminder = !isAgent && !!task.dueDate && !hasActiveFields && !hasOptions;
+
   // Whether this is a pure freeform task (no fields could be inferred)
-  const isFreeform = !isAgent && !hasOptions && !hasActiveFields;
+  const isFreeform = !isAgent && !hasOptions && !hasActiveFields && !isDateReminder;
 
   return (
     <div
@@ -456,9 +490,80 @@ export function TaskCard({ task, completion, onComplete, onReset, disabled }: Ta
           );
         })()}
 
-        {/* Action button */}
-        {!isCompleted && (
+        {/* Date reminder action buttons */}
+        {!isCompleted && isDateReminder && (
+          <>
+            <div className="flex flex-wrap gap-2 mt-4">
+              <button
+                onClick={() => generateCalendarFile(task as { id: string; description: string; detail: string; dueDate: string })}
+                className="text-sm font-bold px-4 py-2.5 rounded-full border-2 border-govuk-blue text-govuk-blue hover:bg-blue-50 transition-colors flex items-center gap-1.5"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                Add to calendar
+              </button>
+              <button
+                onClick={() => setShowAgentDetail(prev => !prev)}
+                disabled={disabled}
+                className={`text-sm font-bold px-4 py-2.5 rounded-full transition-colors flex items-center gap-1.5 ${
+                  showAgentDetail
+                    ? "bg-blue-600 text-white"
+                    : "border-2 border-blue-600 text-blue-600 hover:bg-blue-50"
+                }`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                  <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Ask agent
+              </button>
+              <button
+                onClick={() => onComplete?.(task.id, `Dismissed: ${task.description}`)}
+                disabled={disabled}
+                className="text-sm font-bold px-4 py-2.5 rounded-full border-2 border-gray-300 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Dismiss
+              </button>
+            </div>
+
+            {/* Ask agent expandable detail */}
+            {showAgentDetail && (
+              <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                <p className="text-sm font-medium text-blue-800 mb-1">What the agent would do</p>
+                <p className="text-sm text-blue-700">{task.detail}</p>
+                <button
+                  onClick={() => onComplete?.(task.id, `Please proceed with: ${task.description}`)}
+                  disabled={disabled}
+                  className="mt-3 text-sm font-bold text-white px-4 py-2.5 rounded-full transition-colors disabled:opacity-50"
+                  style={{ backgroundColor: "#1d70b8" }}
+                >
+                  Proceed
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Action button — non-date-reminder tasks */}
+        {!isCompleted && !isDateReminder && (
           <div className="flex gap-2 mt-4">
+            {task.dueDate && (
+              <button
+                onClick={() => generateCalendarFile(task as { id: string; description: string; detail: string; dueDate: string })}
+                className="text-sm font-bold px-4 py-2.5 rounded-full border-2 border-govuk-blue text-govuk-blue hover:bg-blue-50 transition-colors flex items-center gap-1.5"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                Add to calendar
+              </button>
+            )}
             <button
               onClick={handleAccept}
               disabled={disabled || ((hasActiveFields || hasOptions) && !hasFilledField)}

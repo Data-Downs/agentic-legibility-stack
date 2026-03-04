@@ -115,11 +115,13 @@ function buildHeroCards(data: PersonaData): HeroCard[] {
 
 interface HeroCarouselProps {
   personaData: PersonaData;
+  filterService?: string;
   onCardTap?: (service: string) => void;
 }
 
-export function HeroCarousel({ personaData, onCardTap }: HeroCarouselProps) {
-  const cards = buildHeroCards(personaData);
+export function HeroCarousel({ personaData, filterService, onCardTap }: HeroCarouselProps) {
+  const allCards = buildHeroCards(personaData);
+  const cards = filterService ? allCards.filter((c) => c.service === filterService) : allCards;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 

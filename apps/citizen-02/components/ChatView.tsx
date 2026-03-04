@@ -189,7 +189,7 @@ export function ChatView() {
                   className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                     isUser
                       ? "bg-govuk-blue text-white rounded-br-sm whitespace-pre-wrap"
-                      : "bg-white shadow-sm text-govuk-black rounded-bl-sm prose prose-sm prose-neutral max-w-none"
+                      : "text-govuk-black prose prose-sm prose-neutral max-w-none"
                   }`}
                 >
                   {isUser ? msg.content : <ReactMarkdown>{msg.content}</ReactMarkdown>}
@@ -221,7 +221,7 @@ export function ChatView() {
 
         {/* Task cards — rendered outside the message loop for reliability */}
         {showTasks && (
-          <div className="max-w-[85%] mt-1">
+          <div className="mt-1">
             {lastResponseTasks.map((task) => (
               <TaskCard
                 key={task.id}

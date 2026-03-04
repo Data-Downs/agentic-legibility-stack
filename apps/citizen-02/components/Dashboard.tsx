@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useAppStore, getConversations, getActivePlans } from "@/lib/store";
 import type { ServiceType, LifeEventInfo, ActivePlan } from "@/lib/types";
-import { HeroCarousel } from "./dashboard/HeroCarousel";
 import { UnifiedTimeline } from "./dashboard/UnifiedTimeline";
 import { NearYouSection } from "./dashboard/NearYouSection";
 
@@ -101,14 +100,6 @@ export function Dashboard() {
         <h2 className="text-2xl font-bold">Hello, {firstName}</h2>
         <p className="text-govuk-dark-grey text-sm">Your government services at a glance</p>
       </div>
-
-      {/* Hero Carousel */}
-      <HeroCarousel
-        personaData={personaData}
-        onCardTap={(service) => {
-          navigateTo("detail", service as ServiceType, QUICK_ACCESS.find((s) => s.key === service)?.label || service);
-        }}
-      />
 
       {/* Unified Timeline */}
       <UnifiedTimeline

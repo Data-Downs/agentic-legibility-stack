@@ -19,7 +19,7 @@ const config: Config = {
         "govuk-light-grey": "#f3f2f1",
         "govuk-mid-grey": "#b1b4b6",
         "govuk-dark-grey": "#505a5f",
-        "govuk-page-bg": "#dce8f5",
+        "govuk-page-bg": "#eaf1f7",
         // Demo app accent colours
         "govuk-purple": "#912b88",
         "govuk-orange": "#f47738",
