@@ -19,7 +19,7 @@ import type {
   ToastMessage,
   TaskField,
 } from "./types";
-import type { CardRequest } from "@als/schemas";
+import type { CardRequest, PipelineTrace } from "@als/schemas";
 import { getAllTerminalStateIds } from "@als/schemas";
 
 interface AppStore {
@@ -74,6 +74,9 @@ interface AppStore {
 
   // Interaction type (from chat API — used for dynamic milestones)
   interactionType: string | null;
+
+  // Pipeline trace
+  lastPipelineTrace: PipelineTrace | null;
 
   // Dynamic Cards
   pendingCards: CardRequest[];
@@ -250,6 +253,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   taskCompletions: {},
   tasksSubmitted: false,
   interactionType: null,
+  lastPipelineTrace: null,
   pendingCards: [],
   cardsSubmitted: false,
   activePlanId: null,
@@ -377,6 +381,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       lastResponseTasks: [],
       taskCompletions: {},
       tasksSubmitted: false,
+      lastPipelineTrace: null,
       pendingCards: [],
       cardsSubmitted: false,
     });
@@ -534,6 +539,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         taskCompletions: (data.tasks && data.tasks.length > 0) ? {} : state.taskCompletions,
         tasksSubmitted: (data.tasks && data.tasks.length > 0) ? false : state.tasksSubmitted,
         interactionType: data.interactionType ?? state.interactionType,
+        lastPipelineTrace: data.pipelineTrace ?? null,
         pendingCards: data.cardRequests ?? [],
         cardsSubmitted: (data.cardRequests && data.cardRequests.length > 0) ? false : state.cardsSubmitted,
         consentDecisions: (data.ucState?.currentState !== state.ucState)

@@ -199,7 +199,29 @@ export type TraceEventType =
   | "handoff.initiated"
   | "handoff.package.created"
   | "error.raised"
-  | "redress.offered";
+  | "redress.offered"
+  | "pipeline.trace"
+  | "agent.selected";
+
+// ── Pipeline Trace ──
+
+export interface PipelineStep {
+  id: string;
+  name: string;
+  type: "deterministic" | "ai";
+  label: string;
+  status: "complete" | "skipped" | "error";
+  durationMs: number;
+  detail?: string;
+  agentName?: string;
+}
+
+export interface PipelineTrace {
+  traceId: string;
+  steps: PipelineStep[];
+  totalDurationMs: number;
+  agentUsed: string;
+}
 
 // ── Receipts ──
 

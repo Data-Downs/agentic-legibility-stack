@@ -157,6 +157,7 @@ export interface ChatApiResponse {
   consentRequests?: ConsentGrant[];
   cardRequests?: import("@als/schemas").CardRequest[];
   interactionType?: string;
+  pipelineTrace?: import("@als/schemas").PipelineTrace;
 }
 
 export interface Conversation {

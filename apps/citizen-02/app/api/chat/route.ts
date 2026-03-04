@@ -928,6 +928,26 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    if (output.pipelineTrace) {
+      output.pipelineTrace.traceId = traceId;
+
+      await emitter.emit("agent.selected", chatSpan, {
+        agentUsed: output.pipelineTrace.agentUsed,
+        serviceId,
+        reason: output.pipelineTrace.agentUsed === "triage"
+          ? "No active service journey"
+          : "Active service journey",
+      });
+
+      await emitter.emit("pipeline.trace", chatSpan, {
+        steps: output.pipelineTrace.steps.length,
+        totalDurationMs: output.pipelineTrace.totalDurationMs,
+        agentUsed: output.pipelineTrace.agentUsed,
+        aiSteps: output.pipelineTrace.steps.filter((s: { type: string }) => s.type === "ai").length,
+        deterministicSteps: output.pipelineTrace.steps.filter((s: { type: string }) => s.type === "deterministic").length,
+      });
+    }
+
     await emitter.emit("llm.response", chatSpan, {
       toolsUsed: output.toolsUsed,
       tasksGenerated: output.tasks.length,

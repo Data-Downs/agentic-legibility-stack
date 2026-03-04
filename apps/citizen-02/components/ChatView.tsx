@@ -15,6 +15,7 @@ import { CardHost } from "./cards/CardHost";
 import { RelatedServicesCard } from "./RelatedServicesCard";
 import { getAllTerminalStateIds, TERMINAL_STATE_CONFIG } from "@als/schemas";
 import { QuickReplies } from "./QuickReplies";
+import { PipelineTraceBar } from "./PipelineTraceBar";
 
 const TERMINAL_STATES = getAllTerminalStateIds();
 
@@ -51,6 +52,7 @@ export function ChatView() {
   const currentService = useAppStore((s) => s.currentService);
   const serviceName = useAppStore((s) => s.serviceName);
   const interactionType = useAppStore((s) => s.interactionType);
+  const lastPipelineTrace = useAppStore((s) => s.lastPipelineTrace);
   const pendingCards = useAppStore((s) => s.pendingCards);
   const cardsSubmitted = useAppStore((s) => s.cardsSubmitted);
   const lastAssistantRef = useRef<HTMLDivElement>(null);
@@ -198,6 +200,11 @@ export function ChatView() {
             </div>
           );
         })}
+
+        {/* Pipeline trace bar — shown below the last assistant message */}
+        {!isLoading && lastPipelineTrace && (
+          <PipelineTraceBar trace={lastPipelineTrace} />
+        )}
 
         {/* Quick reply buttons — detected from bulleted choices in assistant message */}
         {showQuickReplies && (

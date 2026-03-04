@@ -22,6 +22,8 @@ import type {
   OrchestratorAction,
   FieldExtraction,
   TraceEvent,
+  PipelineStep,
+  PipelineTrace,
 } from "@als/schemas";
 import {
   PolicyEvaluator,
@@ -31,6 +33,13 @@ import {
 import type { ServiceArtefacts } from "@als/legibility";
 import { HandoffManager } from "./handoff-manager";
 import type { ServiceStrategy, ToolDefinition } from "./service-strategy";
+import {
+  ACCURACY_GUARDRAILS,
+  TITLE_INSTRUCTIONS,
+  TASK_INSTRUCTIONS,
+  STRUCTURED_OUTPUT_INSTRUCTIONS,
+  FACT_EXTRACTION_INSTRUCTIONS,
+} from "./prompt-fragments";
 
 // ── LLM Adapter Interface ──
 // Defined here so @als/runtime does NOT import @als/adapters.
@@ -135,6 +144,8 @@ export interface OrchestratorOutput {
     rulesetVersion?: string;
     stateModelVersion?: string;
   };
+  /** Pipeline trace for transparency UI */
+  pipelineTrace?: PipelineTrace;
 }
 
 // ── Structured output parser ──
@@ -471,38 +482,98 @@ export class Orchestrator {
     const currentState = input.currentState || "not-started";
     const clientStateHistory = input.stateHistory || [];
 
+    const pipelineStart = Date.now();
+    const steps: PipelineStep[] = [];
+
     // ── 1. Policy Evaluation (deterministic) ──
     let policyResult: PolicyResult | undefined;
     let policyResultInfo: OrchestratorOutput["policyResult"] | undefined;
 
-    if (policyRuleset && policyCtx) {
-      const evaluator = new PolicyEvaluator();
-      policyResult = evaluator.evaluate(policyRuleset, policyCtx);
-      policyResultInfo = {
-        eligible: policyResult.eligible,
-        explanation: policyResult.explanation,
-        passedCount: policyResult.passed.length,
-        failedCount: policyResult.failed.length,
-        edgeCaseCount: policyResult.edgeCases.length,
-      };
+    {
+      const t0 = Date.now();
+      if (policyRuleset && policyCtx) {
+        const evaluator = new PolicyEvaluator();
+        policyResult = evaluator.evaluate(policyRuleset, policyCtx);
+        policyResultInfo = {
+          eligible: policyResult.eligible,
+          explanation: policyResult.explanation,
+          passedCount: policyResult.passed.length,
+          failedCount: policyResult.failed.length,
+          edgeCaseCount: policyResult.edgeCases.length,
+        };
+        steps.push({
+          id: "policy-eval", name: "PolicyEvaluator", type: "deterministic",
+          label: "Policy evaluation (rule-based)", status: "complete",
+          durationMs: Date.now() - t0,
+          detail: `Eligible: ${policyResult.eligible}, ${policyResult.passed.length} passed, ${policyResult.failed.length} failed`,
+        });
+      } else {
+        steps.push({
+          id: "policy-eval", name: "PolicyEvaluator", type: "deterministic",
+          label: "Policy evaluation (rule-based)", status: "skipped",
+          durationMs: Date.now() - t0,
+          detail: "No policy ruleset provided",
+        });
+      }
     }
 
     // ── 2. State Machine Setup ──
     let stateMachine: StateMachine | null = null;
-    if (stateModelDef) {
-      stateMachine = new StateMachine(stateModelDef);
-      stateMachine.setState(currentState);
+    {
+      const t0 = Date.now();
+      if (stateModelDef) {
+        stateMachine = new StateMachine(stateModelDef);
+        stateMachine.setState(currentState);
+        steps.push({
+          id: "state-setup", name: "StateMachine", type: "deterministic",
+          label: "State machine setup", status: "complete",
+          durationMs: Date.now() - t0,
+          detail: `State: ${currentState}`,
+        });
+      } else {
+        steps.push({
+          id: "state-setup", name: "StateMachine", type: "deterministic",
+          label: "State machine setup", status: "skipped",
+          durationMs: Date.now() - t0,
+        });
+      }
     }
 
     // ── 3. FieldCollector ──
     const manifest = input.artefacts?.manifest;
     let fieldCollector: FieldCollector | undefined;
-    if (manifest?.input_schema) {
-      fieldCollector = new FieldCollector(manifest.input_schema);
-      fieldCollector.seedFromPersona(personaData);
+    {
+      const t0 = Date.now();
+      if (manifest?.input_schema) {
+        fieldCollector = new FieldCollector(manifest.input_schema);
+        fieldCollector.seedFromPersona(personaData);
+        steps.push({
+          id: "field-collector", name: "FieldCollector", type: "deterministic",
+          label: "Field collection (rule-based)", status: "complete",
+          durationMs: Date.now() - t0,
+        });
+      } else {
+        steps.push({
+          id: "field-collector", name: "FieldCollector", type: "deterministic",
+          label: "Field collection (rule-based)", status: "skipped",
+          durationMs: Date.now() - t0,
+        });
+      }
     }
 
-    // ── 4. Build Strategy Context ──
+    // ── Agent Selection (deterministic) ──
+    const selectedAgent = Orchestrator.selectAgent(serviceId, stateModelDef, currentState);
+    steps.push({
+      id: "agent-select", name: "AgentSelector", type: "deterministic",
+      label: `Agent selection: ${selectedAgent}`,
+      status: "complete", durationMs: 0,
+      detail: selectedAgent === "triage"
+        ? "No active service journey — using triage agent"
+        : "Active service journey — using journey agent",
+    });
+
+    // ── 4-5. Build Strategy Context + System Prompt ──
+    let systemPrompt: string;
     const strategyCtx = {
       serviceId,
       personaData: policyCtx || personaData,
@@ -513,21 +584,51 @@ export class Orchestrator {
       stateInstructions,
     };
 
-    // ── 5. Build System Prompt ──
-    const systemPrompt = this.buildSystemPrompt({
-      agent, scenario, serviceId,
-      agentPrompt, personaPrompt, scenarioPrompt,
-      personaData, policyResult,
-      stateMachine, consentModel, stateInstructions,
-      fieldCollector,
-      factsAlreadyKnown, unresolvedContradictions,
-      generateTitle,
-      strategyServiceContext: await Promise.resolve(this.strategy.buildServiceContext(strategyCtx)),
-    });
+    {
+      const t0 = Date.now();
+      const strategyServiceContext = await Promise.resolve(this.strategy.buildServiceContext(strategyCtx));
+
+      if (selectedAgent === "triage") {
+        systemPrompt = this.buildTriagePrompt({
+          agent, agentPrompt, personaPrompt, scenarioPrompt,
+          personaData, generateTitle,
+          strategyServiceContext,
+          factsAlreadyKnown, unresolvedContradictions,
+        });
+      } else {
+        systemPrompt = this.buildJourneyPrompt({
+          agent, scenario, serviceId,
+          agentPrompt, personaPrompt, scenarioPrompt,
+          personaData, policyResult,
+          stateMachine, consentModel, stateInstructions,
+          fieldCollector,
+          factsAlreadyKnown, unresolvedContradictions,
+          generateTitle,
+          strategyServiceContext,
+        });
+      }
+
+      steps.push({
+        id: "prompt-build", name: "PromptBuilder", type: "deterministic",
+        label: `${capitalize(selectedAgent)} prompt construction`, status: "complete",
+        durationMs: Date.now() - t0,
+      });
+    }
 
     // ── 6. Build Tools ──
-    const tools = this.strategy.buildTools(strategyCtx);
-    const hasTools = tools.length > 0;
+    let tools: ToolDefinition[];
+    let hasTools: boolean;
+    {
+      const t0 = Date.now();
+      tools = this.strategy.buildTools(strategyCtx);
+      hasTools = tools.length > 0;
+      steps.push({
+        id: "tool-build", name: "ToolBuilder", type: "deterministic",
+        label: "Tool list construction", status: "complete",
+        durationMs: Date.now() - t0,
+        detail: `${tools.length} tools available`,
+      });
+    }
 
     // ── 7. Agentic Loop ──
     let loopMessages = [...messages];
@@ -535,69 +636,92 @@ export class Orchestrator {
     let responseText = "";
     const toolsUsed: string[] = [];
 
-    for (let i = 0; i < this.maxIterations; i++) {
-      const llmResult = await this.adapter.chat({
-        systemPrompt,
-        messages: loopMessages,
-        tools: hasTools ? tools : undefined,
-      });
+    {
+      const t0 = Date.now();
+      for (let i = 0; i < this.maxIterations; i++) {
+        const llmResult = await this.adapter.chat({
+          systemPrompt,
+          messages: loopMessages,
+          tools: hasTools ? tools : undefined,
+        });
 
-      if (llmResult.stopReason === "tool_use") {
-        if (llmResult.reasoning) reasoning = llmResult.reasoning;
+        if (llmResult.stopReason === "tool_use") {
+          if (llmResult.reasoning) reasoning = llmResult.reasoning;
 
-        loopMessages.push({ role: "assistant", content: llmResult.rawContent });
+          loopMessages.push({ role: "assistant", content: llmResult.rawContent });
 
-        const toolResults: Array<{ type: "tool_result"; tool_use_id: string; content: string }> = [];
+          const toolResults: Array<{ type: "tool_result"; tool_use_id: string; content: string }> = [];
 
-        for (const toolCall of llmResult.toolCalls) {
-          toolsUsed.push(toolCall.name);
+          for (const toolCall of llmResult.toolCalls) {
+            toolsUsed.push(toolCall.name);
 
-          let toolResult: string;
-          if (toolCall.name === "ea_current_floods" && floodDataHandler) {
-            const city = (personaData.address as Record<string, unknown>)?.city as string || "";
-            toolResult = await floodDataHandler(city);
-          } else {
-            toolResult = await this.strategy.dispatchToolCall(toolCall.name, toolCall.input);
+            let toolResult: string;
+            if (toolCall.name === "ea_current_floods" && floodDataHandler) {
+              const city = (personaData.address as Record<string, unknown>)?.city as string || "";
+              toolResult = await floodDataHandler(city);
+            } else {
+              toolResult = await this.strategy.dispatchToolCall(toolCall.name, toolCall.input);
+            }
+
+            toolResults.push({
+              type: "tool_result",
+              tool_use_id: toolCall.id,
+              content: toolResult,
+            });
           }
 
-          toolResults.push({
-            type: "tool_result",
-            tool_use_id: toolCall.id,
-            content: toolResult,
-          });
+          loopMessages.push({ role: "user", content: toolResults });
+          continue;
         }
 
-        loopMessages.push({ role: "user", content: toolResults });
-        continue;
+        // Final response
+        responseText = llmResult.responseText;
+        reasoning = llmResult.reasoning || reasoning;
+        break;
       }
-
-      // Final response
-      responseText = llmResult.responseText;
-      reasoning = llmResult.reasoning || reasoning;
-      break;
+      steps.push({
+        id: "llm-call", name: "LanguageAgent", type: "ai",
+        label: "LLM generation", status: responseText ? "complete" : "error",
+        durationMs: Date.now() - t0,
+        detail: toolsUsed.length > 0 ? `${toolsUsed.length} tool calls` : undefined,
+        agentName: selectedAgent,
+      });
     }
 
-    // ── 8. Parse Structured Output ──
-    const { parsed: structuredOutput, cleanText } = parseStructuredOutput(responseText);
-    responseText = cleanText;
+    // ── 8-9. Parse Structured Output + Build Tasks ──
+    let structuredOutput: ParsedStructuredOutput | null;
+    let conversationTitle: string | null;
+    let tasks: TaskEntry[];
+    {
+      const t0 = Date.now();
+      const parsed = parseStructuredOutput(responseText);
+      structuredOutput = parsed.parsed;
+      responseText = parsed.cleanText;
 
-    const conversationTitle = (generateTitle && structuredOutput?.title) ? structuredOutput.title : null;
+      conversationTitle = (generateTitle && structuredOutput?.title) ? structuredOutput.title : null;
 
-    // ── 9. Build Tasks ──
-    let tasks: TaskEntry[] = (structuredOutput?.tasks || []).map((t, i) => ({
-      id: `task_${Date.now()}_${i}`,
-      description: t.description,
-      detail: t.detail,
-      type: t.type,
-      dueDate: t.dueDate || null,
-      dataNeeded: t.dataNeeded || [],
-      options: t.options || [],
-      ...(t.fields ? { fields: t.fields } : {}),
-    }));
+      tasks = (structuredOutput?.tasks || []).map((t, i) => ({
+        id: `task_${Date.now()}_${i}`,
+        description: t.description,
+        detail: t.detail,
+        type: t.type,
+        dueDate: t.dueDate || null,
+        dataNeeded: t.dataNeeded || [],
+        options: t.options || [],
+        ...(t.fields ? { fields: t.fields } : {}),
+      }));
+      steps.push({
+        id: "output-parse", name: "OutputParser", type: "deterministic",
+        label: "Parse structured output", status: structuredOutput ? "complete" : "skipped",
+        durationMs: Date.now() - t0,
+        detail: structuredOutput ? `${tasks.length} tasks, ${structuredOutput.extractedFacts?.length || 0} facts` : undefined,
+      });
+    }
 
     // ── 10. State Transitions ──
     const stateTransitions: Array<{ fromState: string; toState: string; trigger: string }> = [];
     let ucStateInfo: OrchestratorOutput["ucState"] | undefined;
+    const stateTransitionT0 = Date.now();
 
     // MCP mode: extract transitions from tool results
     const mcpTransitions = this.strategy.extractStateTransitions(loopMessages);
@@ -714,62 +838,102 @@ export class Orchestrator {
       };
     }
 
+    steps.push({
+      id: "state-transition", name: "StateValidator", type: "deterministic",
+      label: "State transition validation", status: stateTransitions.length > 0 ? "complete" : "skipped",
+      durationMs: Date.now() - stateTransitionT0,
+      detail: stateTransitions.length > 0 ? `${stateTransitions.length} transition(s)` : undefined,
+    });
+
     // ── 11. Deterministic Task Injection ──
-    if (stateMachine) {
-      tasks = injectDeterministicTasks(
-        tasks,
-        currentState,
-        stateMachine.getState(),
-        stateTransitions.length > 0,
-      );
+    {
+      const t0 = Date.now();
+      if (stateMachine) {
+        tasks = injectDeterministicTasks(
+          tasks,
+          currentState,
+          stateMachine.getState(),
+          stateTransitions.length > 0,
+        );
+        steps.push({
+          id: "task-injection", name: "TaskInjector", type: "deterministic",
+          label: "Deterministic task injection", status: "complete",
+          durationMs: Date.now() - t0,
+          detail: `${tasks.length} task(s)`,
+        });
+      } else {
+        steps.push({
+          id: "task-injection", name: "TaskInjector", type: "deterministic",
+          label: "Deterministic task injection", status: "skipped",
+          durationMs: Date.now() - t0,
+        });
+      }
     }
 
     // ── 12. Consent Requests ──
     let consentRequests: OrchestratorOutput["consentRequests"] | undefined;
-    if (consentModel && stateMachine) {
-      const stateId = stateMachine.getState();
-      if (stateId === "eligibility-checked") {
-        const grants = (consentModel.grants || []);
-        consentRequests = grants.map(g => ({
-          id: g.id,
-          description: g.description,
-          data_shared: g.data_shared,
-          source: g.source,
-          purpose: g.purpose,
-        }));
+    {
+      const t0 = Date.now();
+      if (consentModel && stateMachine) {
+        const stateId = stateMachine.getState();
+        if (stateId === "eligibility-checked") {
+          const grants = (consentModel.grants || []);
+          consentRequests = grants.map(g => ({
+            id: g.id,
+            description: g.description,
+            data_shared: g.data_shared,
+            source: g.source,
+            purpose: g.purpose,
+          }));
+        }
       }
+      steps.push({
+        id: "consent-check", name: "ConsentResolver", type: "deterministic",
+        label: "Consent check", status: consentRequests ? "complete" : "skipped",
+        durationMs: Date.now() - t0,
+        detail: consentRequests ? `${consentRequests.length} grant(s)` : undefined,
+      });
     }
 
     // ── 13. Handoff Detection ──
-    const lastUserMessage = messages.filter(m => m.role === "user").pop();
-    const lastUserText = typeof lastUserMessage?.content === "string" ? lastUserMessage.content : "";
-    const handoffCheck = this.handoffManager.evaluateTriggers(lastUserText, {
-      policyEdgeCase: policyResultInfo ? policyResultInfo.edgeCaseCount > 0 : false,
-    });
-
     let handoffInfo: OrchestratorOutput["handoff"] | undefined;
-    if (handoffCheck.triggered) {
-      const citizenName = (personaData.name as string) || "Unknown";
-      const handoffPackage = this.handoffManager.createPackage({
-        reason: handoffCheck.reason!,
-        description: handoffCheck.description!,
-        agentAssessment: `Agent ${agent.toUpperCase()} detected handoff trigger during ${scenario} scenario.`,
-        citizen: { name: citizenName },
-        stepsCompleted: [`Chat conversation (${messages.length} messages)`],
-        stepsBlocked: [handoffCheck.description || "Trigger detected"],
-        dataCollected: Object.keys(personaData).filter(k => k !== "communicationStyle"),
-        timeSpent: `${messages.length} exchanges`,
-        traceId: "",
-        receiptIds: [],
+    {
+      const t0 = Date.now();
+      const lastUserMessage = messages.filter(m => m.role === "user").pop();
+      const lastUserText = typeof lastUserMessage?.content === "string" ? lastUserMessage.content : "";
+      const handoffCheck = this.handoffManager.evaluateTriggers(lastUserText, {
+        policyEdgeCase: policyResultInfo ? policyResultInfo.edgeCaseCount > 0 : false,
       });
 
-      handoffInfo = {
-        triggered: true,
-        reason: handoffCheck.reason,
-        description: handoffCheck.description,
-        urgency: handoffPackage.urgency,
-        routing: handoffPackage.routing as unknown as Record<string, unknown>,
-      };
+      if (handoffCheck.triggered) {
+        const citizenName = (personaData.name as string) || "Unknown";
+        const handoffPackage = this.handoffManager.createPackage({
+          reason: handoffCheck.reason!,
+          description: handoffCheck.description!,
+          agentAssessment: `Agent ${agent.toUpperCase()} detected handoff trigger during ${scenario} scenario.`,
+          citizen: { name: citizenName },
+          stepsCompleted: [`Chat conversation (${messages.length} messages)`],
+          stepsBlocked: [handoffCheck.description || "Trigger detected"],
+          dataCollected: Object.keys(personaData).filter(k => k !== "communicationStyle"),
+          timeSpent: `${messages.length} exchanges`,
+          traceId: "",
+          receiptIds: [],
+        });
+
+        handoffInfo = {
+          triggered: true,
+          reason: handoffCheck.reason,
+          description: handoffCheck.description,
+          urgency: handoffPackage.urgency,
+          routing: handoffPackage.routing as unknown as Record<string, unknown>,
+        };
+      }
+      steps.push({
+        id: "handoff-check", name: "HandoffDetector", type: "deterministic",
+        label: "Handoff detection", status: handoffCheck.triggered ? "complete" : "skipped",
+        durationMs: Date.now() - t0,
+        detail: handoffCheck.triggered ? `Reason: ${handoffCheck.reason}` : undefined,
+      });
     }
 
     // ── 14. Record Extracted Fields ──
@@ -786,6 +950,13 @@ export class Orchestrator {
       stateModelVersion: stateModelDef?.version,
     };
 
+    const pipelineTrace: PipelineTrace = {
+      traceId: "",
+      steps,
+      totalDurationMs: Date.now() - pipelineStart,
+      agentUsed: selectedAgent,
+    };
+
     return {
       response: responseText,
       reasoning: reasoning || "No internal reasoning available for this response.",
@@ -798,12 +969,89 @@ export class Orchestrator {
       consentRequests,
       extractedFields: structuredOutput?.extractedFacts,
       versionMetadata,
+      pipelineTrace,
     };
   }
 
-  // ── System Prompt Builder ──
+  // ── Agent Selection ──
 
-  private buildSystemPrompt(opts: {
+  static selectAgent(
+    serviceId: string,
+    stateModelDef?: StateModelDefinition,
+    currentState?: string,
+  ): "triage" | "journey" {
+    if (!serviceId || serviceId === "triage") return "triage";
+    if (!stateModelDef && (!currentState || currentState === "not-started")) return "triage";
+    return "journey";
+  }
+
+  // ── Triage Prompt Builder ──
+  // Receives: personality, persona, service catalog context, fact extraction, task/output format
+  // Does NOT receive: state model, field collector, consent model, accuracy guardrails about payments
+
+  private buildTriagePrompt(opts: {
+    agent: string;
+    agentPrompt: string;
+    personaPrompt: string;
+    scenarioPrompt: string;
+    personaData: Record<string, unknown>;
+    generateTitle?: boolean;
+    strategyServiceContext: string;
+    factsAlreadyKnown?: string;
+    unresolvedContradictions?: string;
+  }): string {
+    const {
+      agent, agentPrompt, personaPrompt, scenarioPrompt,
+      personaData, generateTitle, strategyServiceContext,
+      factsAlreadyKnown, unresolvedContradictions,
+    } = opts;
+
+    const parts: string[] = [];
+
+    // Agent personality
+    parts.push(agentPrompt);
+    parts.push("---");
+    parts.push(personaPrompt);
+    parts.push("---");
+    parts.push(scenarioPrompt);
+    parts.push("---");
+
+    // Persona data
+    parts.push(`PERSONA DATA AVAILABLE:\nYou have access to the following data about the user. Use this according to your agent personality (DOT asks permission, MAX auto-fills).\n\n${JSON.stringify(personaData, null, 2)}`);
+
+    // Service catalog/graph context
+    if (strategyServiceContext) {
+      parts.push("---");
+      parts.push(strategyServiceContext);
+    }
+
+    // Fact extraction
+    parts.push("---");
+    let factPrompt = FACT_EXTRACTION_INSTRUCTIONS;
+    if (factsAlreadyKnown) factPrompt += factsAlreadyKnown;
+    if (unresolvedContradictions) factPrompt += unresolvedContradictions;
+    parts.push(factPrompt);
+
+    // Character
+    parts.push("---");
+    parts.push(`Remember: Stay in character as ${agent.toUpperCase()} agent, communicate according to the persona style, and help the citizen find the right government service.`);
+
+    if (generateTitle) {
+      parts.push(TITLE_INSTRUCTIONS);
+    }
+
+    parts.push(TASK_INSTRUCTIONS);
+    parts.push(STRUCTURED_OUTPUT_INSTRUCTIONS);
+
+    return parts.join("\n\n");
+  }
+
+  // ── Journey Prompt Builder ──
+  // Receives: personality, persona, strategy service context, state model, field collector,
+  //           consent model, accuracy guardrails, task/output format, fact extraction
+  // Does NOT receive: service catalog/triage context (that's in strategy context for journey)
+
+  private buildJourneyPrompt(opts: {
     agent: string;
     scenario: string;
     serviceId: string;
@@ -831,7 +1079,7 @@ export class Orchestrator {
 
     const parts: string[] = [];
 
-    // Core prompts
+    // Agent personality
     parts.push(agentPrompt);
     parts.push("---");
     parts.push(personaPrompt);
@@ -848,21 +1096,9 @@ export class Orchestrator {
       parts.push(strategyServiceContext);
     }
 
-    // Personal data extraction instructions
+    // Fact extraction
     parts.push("---");
-    let factPrompt = `PERSONAL DATA EXTRACTION:
-When the user reveals personal facts in conversation, include an "extractedFacts" array in your JSON block.
-Rules:
-- Only extract NEW facts not already known from persona data
-- Max 5 facts per response
-- Use snake_case keys (e.g. "number_of_children", "lives_in", "marital_status")
-- Confidence levels: "high" (user stated directly), "medium" (strongly implied), "low" (loosely inferred)
-- Include a short source_snippet from their message
-
-Example:
-"extractedFacts": [
-  { "key": "number_of_daughters", "value": 2, "confidence": "high", "source_snippet": "I have 2 daughters" }
-]`;
+    let factPrompt = FACT_EXTRACTION_INSTRUCTIONS;
     if (factsAlreadyKnown) factPrompt += factsAlreadyKnown;
     if (unresolvedContradictions) factPrompt += unresolvedContradictions;
     parts.push(factPrompt);
@@ -953,116 +1189,8 @@ Example:
   }
 }
 
-// ── Static prompt fragments ──
+// Prompt fragments are imported from ./prompt-fragments
 
-const ACCURACY_GUARDRAILS = `ACCURACY GUARDRAILS — CRITICAL:
-- Do NOT fabricate specific payment amounts (e.g. "£393.45/month"). Instead say "DWP will calculate and confirm your exact payment amount."
-- Do NOT fabricate specific payment dates (e.g. "14th March 2026"). Instead say "Your first payment will be approximately 5 weeks after your claim date."
-- Do NOT fabricate claim reference numbers. Instead say "You will receive a reference number by email/post."
-- Do NOT perform benefit calculations — these are complex and depend on many factors only DWP can assess.
-- You MAY mention general facts: the 5-week waiting period, the UC journal requirement, Jobcentre Plus interviews.
-- When presenting data from the citizen's records, show EXACTLY what is in the data — do not embellish or assume.`;
-
-const TITLE_INSTRUCTIONS = `CONVERSATION TITLE:
-Since this is the start of a new conversation, include a "title" field in the JSON block at the end of your response.
-The title should be a short 3-8 word phrase describing the user's intent or action (e.g. "Renewing MOT for Ford Focus", "Checking flood warnings in Cambridge", "Understanding PIP eligibility").`;
-
-const TASK_INSTRUCTIONS = `ACTIONABLE TASKS:
-When your response contains actionable next steps, include them in the "tasks" array of the JSON block.
-Each task object has these fields:
-- "description": short summary (max 60 chars)
-- "detail": one-sentence explanation (max 150 chars)
-- "type": "agent" (something you can do) or "user" (something the citizen must do)
-- "dueDate": optional, ISO date string YYYY-MM-DD (only when there is a genuine deadline)
-- "dataNeeded": optional array of persona data field names relevant to the task
-- "options": optional array of selectable choices, each with "value" and "label" (max 5). The UI renders checkboxes so the citizen can select multiple options at once. Therefore you MUST only list individual, distinct options — NEVER include combination/aggregate options like "Both X and Y" or "All of the above" since the citizen can simply tick multiple checkboxes. Use when the citizen needs to choose between distinct options (e.g. which benefit to apply for, which appointment slot to pick). Do NOT use for yes/no confirmations or free-text input.
-
-PERSON SELECTION — IMPORTANT:
-When the task asks the citizen to clarify WHO a service is for (e.g. themselves, a family member, or someone else), ALWAYS include "options" listing each relevant person from the citizen's profile data. Include a final option { "value": "other", "label": "Someone else" } as an escape hatch.
-
-Example person-selection task:
-{
-  "description": "Who is this benefit claim for?",
-  "detail": "Let me know if this is for yourself, your mother Margaret, or someone else",
-  "type": "user",
-  "options": [
-    { "value": "self", "label": "Myself (Mary Summers)" },
-    { "value": "dep-margaret", "label": "Margaret Evans (Mary's mother)" },
-    { "value": "other", "label": "Someone else" }
-  ]
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
-
-STRUCTURED INPUT FIELDS — IMPORTANT:
-When a user task requires specific data input, include a "fields" array defining exactly
-what form inputs to render. Each field has:
-- "key": unique identifier (snake_case)
-- "label": human-readable label shown above the input
-- "type": "text" | "email" | "tel" | "currency" | "date" | "number" | "confirm" | "select"
-- "placeholder": optional hint text
-- "options": required for "select" type, array of { "value", "label" } (max 6)
-- "prefill": optional pre-filled value from persona data
-- "required": optional boolean
-
-Type guide:
-- "confirm": checkbox for boolean facts (e.g. "First-time buyer")
-- "currency": monetary amount (renders with £ symbol)
-- "select": dropdown with 2-6 fixed choices
-- Maximum 8 fields per task
-- Pre-fill values you already know from persona data
-
-Example — LISA withdrawal task:
-{
-  "description": "Provide your LISA details",
-  "detail": "We need your Lifetime ISA account information to process the withdrawal",
-  "type": "user",
-  "fields": [
-    { "key": "account_holder", "label": "Account holder name", "type": "text", "prefill": "Thomas Summers" },
-    { "key": "lisa_provider", "label": "LISA provider", "type": "text", "placeholder": "e.g. Hargreaves Lansdown" },
-    { "key": "account_ref", "label": "Account reference", "type": "text", "placeholder": "e.g. HL-12345678" },
-    { "key": "first_time_buyer", "label": "First-time buyer", "type": "confirm" },
-    { "key": "property_price", "label": "Property price", "type": "currency", "placeholder": "e.g. 350000" }
-  ]
-}
-
-Rules:
-- Maximum 3 tasks per response
-- Only create tasks for genuinely actionable items, not general advice`;
-
-const STRUCTURED_OUTPUT_INSTRUCTIONS = `STRUCTURED OUTPUT FORMAT — CRITICAL:
-At the END of every response, you MUST append a fenced JSON block containing structured metadata.
-The block must be the LAST thing in your response, after all conversational text.
-Format:
-\`\`\`json
-{
-  "title": "Short title or null",
-  "tasks": [],
-  "stateTransition": "trigger-name or null"
-}
-\`\`\`
-
-Example with options (citizen can select one or more — no need for "both/all" combo options):
-\`\`\`json
-{
-  "title": null,
-  "tasks": [
-    {
-      "description": "Choose which benefit(s) to apply for",
-      "detail": "Select one or more benefits to get started",
-      "type": "user",
-      "options": [
-        { "value": "universal_credit", "label": "Universal Credit" },
-        { "value": "new_style_jsa", "label": "New Style Jobseeker's Allowance (JSA)" },
-        { "value": "income_jsa", "label": "Jobseeker's Allowance (income-based)" }
-      ]
-    }
-  ],
-  "stateTransition": null
-}
-\`\`\`
-
-Rules:
-- ALWAYS include the JSON block, even if all fields are null/empty
-- "title": set only when instructed (first message of a new conversation), otherwise null
-- "tasks": array of task objects (see ACTIONABLE TASKS above), or empty array []
-- "stateTransition": the trigger name for the current state transition, or null if none
-- The JSON block will be stripped before showing your response to the citizen`;
