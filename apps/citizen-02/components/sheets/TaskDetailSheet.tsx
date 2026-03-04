@@ -5,6 +5,46 @@ import type { StoredTask, TimelineItem } from "@/lib/types";
 import { UrgencyDot } from "../ui/UrgencyDot";
 import { DEMO_TODAY } from "@/lib/types";
 
+function generateCalendarFile(item: { title?: string; description?: string; dueDate?: string; detail?: string; dueLabel?: string; id?: string; daysUntil?: number }) {
+  const dateStr = item.dueDate || item.dueLabel;
+  if (!dateStr) return;
+
+  let dtstart: string;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    dtstart = dateStr.replace(/-/g, "") + "T090000";
+  } else {
+    const d = new Date(DEMO_TODAY);
+    d.setDate(d.getDate() + (item.daysUntil || 0));
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    dtstart = `${y}${m}${day}T090000`;
+  }
+
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//GOV.UK//Citizen Agent//EN",
+    "BEGIN:VEVENT",
+    `DTSTART:${dtstart}`,
+    `SUMMARY:${(item.title || item.description || "").replace(/[,;\\]/g, " ")}`,
+    `DESCRIPTION:${(item.detail || "").replace(/[,;\\]/g, " ")}`,
+    `UID:${item.id || "item"}@citizen-02`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+
+  const blob = new Blob([ics], { type: "text/calendar" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "reminder.ics";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function daysUntil(dateStr: string): number {
   const target = new Date(dateStr);
   const diff = target.getTime() - DEMO_TODAY.getTime();
@@ -175,6 +215,28 @@ export function TaskDetailSheet({ data }: TaskDetailSheetProps) {
 
       {/* Action buttons */}
       <div className="flex flex-col gap-2 pt-2">
+        {item.dueDate && (
+          <button
+            onClick={() => generateCalendarFile({
+              title: item.title,
+              description: storedTask?.description,
+              dueDate: item.dueDate,
+              detail: item.detail || storedTask?.detail,
+              dueLabel: item.dueLabel,
+              id: item.id,
+              daysUntil: days ?? undefined,
+            })}
+            className="w-full py-3 rounded-full border-2 border-govuk-blue text-govuk-blue font-bold text-sm hover:bg-blue-50 transition-colors touch-feedback flex items-center justify-center gap-2"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Add to calendar
+          </button>
+        )}
         <button
           onClick={handleAskAbout}
           className="w-full py-3 rounded-full bg-govuk-blue text-white font-bold text-sm hover:bg-blue-800 transition-colors touch-feedback"
