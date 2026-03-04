@@ -6,6 +6,7 @@ import {
   Server,
   FileSearch,
   BarChart3,
+  Users,
   Settings,
 } from "lucide-react";
 
@@ -34,6 +35,12 @@ const mainNav: NavItem[] = [
     href: "/evidence",
     icon: <FileSearch size={18} />,
     matchPrefix: "/evidence",
+  },
+  {
+    label: "Personas",
+    href: "/personas",
+    icon: <Users size={18} />,
+    matchPrefix: "/personas",
   },
   {
     label: "Gap Analysis",
