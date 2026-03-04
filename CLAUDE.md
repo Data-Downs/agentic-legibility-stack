@@ -29,6 +29,7 @@ data/
 ## Commands
 - `npm run dev` — start both apps in dev mode
 - `npm run build` — build everything
+- `npm test` — run tests across all packages (vitest via turbo)
 - `npm run seed` — seed the traces database
 
 ## Architecture rules — IMPORTANT
@@ -42,6 +43,12 @@ data/
 - `serverExternalPackages: ["better-sqlite3"]` is required in BOTH Next.js configs — do not remove
 - Do NOT add `@als/evidence` as a dependency of legibility-studio — it causes lru-cache/native module crashes. Studio fetches via HTTP instead.
 - MCP tool types need `as unknown as Array<Record<string, unknown>>` cast for the adapter interface
+
+## Testing — IMPORTANT
+- After making changes to any package, run `npm test` before considering the work done.
+- Tests use Vitest with workspace configuration — each package has its own `vitest.config.ts`
+- Never make real API calls in tests — mock external dependencies (Anthropic SDK, databases)
+- Evidence tests use an in-memory DatabaseAdapter, not real SQLite
 
 ## Environment
 - Requires `ANTHROPIC_API_KEY` env variable for LLM functionality
