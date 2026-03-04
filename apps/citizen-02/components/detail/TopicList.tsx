@@ -9,6 +9,62 @@ interface Topic {
 }
 
 const SERVICE_TOPICS: Record<string, Topic[]> = {
+  benefits: [
+    { id: "uc", label: "Universal Credit", questions: [
+      "Am I eligible for Universal Credit?",
+      "How do I make a Universal Credit claim?",
+      "What happens at my first work coach appointment?",
+    ]},
+    { id: "disability", label: "Disability benefits", questions: [
+      "What disability benefits am I entitled to?",
+      "How do I apply for PIP?",
+      "What's the difference between PIP and DLA?",
+    ]},
+    { id: "housing", label: "Housing benefit", questions: [
+      "Am I eligible for Housing Benefit?",
+      "How do I apply for council tax reduction?",
+      "What help is available with energy bills?",
+    ]},
+    { id: "bereavement", label: "Bereavement benefits", questions: [
+      "What benefits can I claim after a bereavement?",
+      "How do I apply for Bereavement Support Payment?",
+      "Do I need to report a death to DWP?",
+    ]},
+  ],
+  business: [
+    { id: "setup", label: "Setting up a business", questions: [
+      "How do I register as a sole trader?",
+      "What's the difference between sole trader and limited company?",
+      "How do I register for VAT?",
+    ]},
+    { id: "biztax", label: "Business tax", questions: [
+      "When do I need to file a self-assessment return?",
+      "How do I pay Corporation Tax?",
+      "What business expenses can I claim?",
+    ]},
+    { id: "bizrates", label: "Business rates & licences", questions: [
+      "How are business rates calculated?",
+      "Am I eligible for small business rate relief?",
+      "What licences does my business need?",
+    ]},
+  ],
+  care: [
+    { id: "socialcare", label: "Adult social care", questions: [
+      "How do I get a care needs assessment?",
+      "What is the means test for social care?",
+      "How do I arrange care for an elderly relative?",
+    ]},
+    { id: "carers", label: "Carer's Allowance", questions: [
+      "Am I eligible for Carer's Allowance?",
+      "How many hours do I need to care to qualify?",
+      "Can I work and claim Carer's Allowance?",
+    ]},
+    { id: "lpa", label: "Lasting power of attorney", questions: [
+      "How do I set up a lasting power of attorney?",
+      "What's the difference between health and financial LPA?",
+      "How much does it cost to register an LPA?",
+    ]},
+  ],
   driving: [
     { id: "mot", label: "Vehicle maintenance & MOT", questions: [
       "When is my MOT due and what do I need to prepare?",
@@ -31,29 +87,58 @@ const SERVICE_TOPICS: Record<string, Topic[]> = {
       "What happens if I drive without insurance?",
     ]},
   ],
-  benefits: [
-    { id: "uc", label: "Universal Credit", questions: [
-      "Am I eligible for Universal Credit?",
-      "How do I make a Universal Credit claim?",
-      "What happens at my first work coach appointment?",
+  employment: [
+    { id: "findjob", label: "Finding a job", questions: [
+      "How do I use the Find a Job service?",
+      "What help is available for job seekers?",
+      "How do I write a CV for government jobs?",
     ]},
-    { id: "pension", label: "State Pension", questions: [
-      "When can I claim my State Pension?",
-      "How much State Pension will I get?",
-      "Can I defer my State Pension?",
+    { id: "rights", label: "Employment rights", questions: [
+      "What are my rights regarding redundancy pay?",
+      "How do I check I'm being paid the minimum wage?",
+      "What are my rights to flexible working?",
     ]},
-    { id: "disability", label: "Disability benefits", questions: [
-      "What disability benefits am I entitled to?",
-      "How do I apply for PIP?",
-      "What's the difference between PIP and DLA?",
-    ]},
-    { id: "housing", label: "Housing benefit", questions: [
-      "Am I eligible for Housing Benefit?",
-      "How do I apply for council tax reduction?",
-      "What help is available with energy bills?",
+    { id: "sickpay", label: "Sick pay & leave", questions: [
+      "How much Statutory Sick Pay will I get?",
+      "How long can I claim sick pay for?",
+      "What is my employer's duty for sick leave?",
     ]},
   ],
-  family: [
+  health: [
+    { id: "nhs", label: "NHS services", questions: [
+      "How do I register with a GP?",
+      "How do I find an NHS dentist near me?",
+      "Am I eligible for free prescriptions?",
+    ]},
+    { id: "pip", label: "PIP & disability", questions: [
+      "How do I apply for Personal Independence Payment?",
+      "What evidence do I need for a PIP claim?",
+      "How do I challenge a PIP decision?",
+    ]},
+    { id: "mental", label: "Mental health support", questions: [
+      "How do I access NHS mental health services?",
+      "What is an IAPT self-referral?",
+      "Can I get time off work for mental health?",
+    ]},
+  ],
+  money: [
+    { id: "incometax", label: "Income Tax & PAYE", questions: [
+      "How do I check my tax code is correct?",
+      "How do I claim a tax refund?",
+      "What is my personal allowance?",
+    ]},
+    { id: "selfassess", label: "Self-assessment", questions: [
+      "When is the self-assessment deadline?",
+      "How do I register for self-assessment?",
+      "What expenses can I deduct on my tax return?",
+    ]},
+    { id: "ni", label: "National Insurance", questions: [
+      "How do I check my National Insurance record?",
+      "Can I pay voluntary NI contributions?",
+      "What NI class do I pay as self-employed?",
+    ]},
+  ],
+  parenting: [
     { id: "maternity", label: "Maternity & paternity", questions: [
       "What maternity pay am I entitled to?",
       "How do I claim Statutory Maternity Pay?",
@@ -73,6 +158,57 @@ const SERVICE_TOPICS: Record<string, Topic[]> = {
       "How do I apply for a school place?",
       "Am I eligible for free childcare?",
       "What's the Tax-Free Childcare scheme?",
+    ]},
+  ],
+  retirement: [
+    { id: "statepension", label: "State Pension", questions: [
+      "When can I claim my State Pension?",
+      "How much State Pension will I get?",
+      "Can I defer my State Pension?",
+    ]},
+    { id: "pensioncredit", label: "Pension Credit", questions: [
+      "Am I eligible for Pension Credit?",
+      "How do I apply for Pension Credit?",
+      "Can I get Pension Credit if I have savings?",
+    ]},
+    { id: "workplace", label: "Workplace pensions", questions: [
+      "How do I find a lost pension?",
+      "What is auto-enrolment for pensions?",
+      "Can I take my pension early?",
+    ]},
+  ],
+  studying: [
+    { id: "studentfin", label: "Student loans & finance", questions: [
+      "How do I apply for a student loan?",
+      "When do I start repaying my student loan?",
+      "Am I eligible for a maintenance grant?",
+    ]},
+    { id: "apprentice", label: "Apprenticeships", questions: [
+      "How do I find an apprenticeship?",
+      "What is the apprenticeship minimum wage?",
+      "Can adults apply for apprenticeships?",
+    ]},
+    { id: "adulted", label: "Adult education", questions: [
+      "What free courses are available for adults?",
+      "How do I access the National Careers Service?",
+      "Am I eligible for an Advanced Learner Loan?",
+    ]},
+  ],
+  travel: [
+    { id: "passport", label: "Passports", questions: [
+      "How do I renew my passport?",
+      "How long does a passport application take?",
+      "What documents do I need for a first passport?",
+    ]},
+    { id: "abroad", label: "Travel abroad", questions: [
+      "What is the latest travel advice for my destination?",
+      "How do I get a GHIC or EHIC card?",
+      "Do I need travel insurance?",
+    ]},
+    { id: "eta", label: "Visas & immigration", questions: [
+      "Do I need a visa to visit the UK?",
+      "What is an Electronic Travel Authorisation?",
+      "How do I extend my UK visa?",
     ]},
   ],
 };
