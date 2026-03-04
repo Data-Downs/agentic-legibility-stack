@@ -1,0 +1,123 @@
+{
+  "id": "david-evans",
+  "name": "David Evans",
+  "personaName": "David Evans",
+  "description": "Recently redundant warehouse worker, struggling with finances, moderate tech skills",
+  "date_of_birth": "1992-01-30",
+  "age": 34,
+  "national_insurance_number": "EF345678G",
+  "address": {
+    "line_1": "Flat 3, 28 High Street",
+    "city": "Bristol",
+    "postcode": "BS1 4AQ"
+  },
+  "jurisdiction": "England",
+  "credentials": [
+    {
+      "type": "national-insurance",
+      "issuer": "HMRC",
+      "number": "EF345678G",
+      "issued": "2010-01-30",
+      "status": "valid"
+    },
+    {
+      "type": "proof-of-address",
+      "issuer": "Royal Mail",
+      "number": "PAF-DE-BS14AQ",
+      "issued": "2025-03-01",
+      "expires": "2026-03-01",
+      "status": "valid"
+    }
+  ],
+  "employment_status": "unemployed",
+  "income": 0,
+  "savings": 800,
+  "bank_account": true,
+  "no_fixed_address": false,
+  "primaryContact": {
+    "firstName": "David",
+    "middleName": "Thomas",
+    "lastName": "Evans",
+    "dateOfBirth": "1992-01-30",
+    "nationalInsuranceNumber": "EF345678G",
+    "email": "dave.evans92@gmail.com",
+    "phone": "07534891234"
+  },
+  "employment": {
+    "status": "Unemployed",
+    "previousEmployer": "Bristol Distribution Centre (Amazon)",
+    "previousJobTitle": "Warehouse Logistics Coordinator",
+    "employmentEndDate": "2026-02-14",
+    "endReason": "Redundancy - site closure",
+    "yearsWorked": 6,
+    "annualIncome": 0,
+    "previousIncome": 26500
+  },
+  "financials": {
+    "currentAccount": {
+      "bank": "Barclays",
+      "sortCode": "20-00-00",
+      "accountNumber": "33445566",
+      "balance": 800
+    },
+    "monthlyRent": 875,
+    "councilTaxBand": "A",
+    "councilTaxAnnual": 1420
+  },
+  "benefits": {
+    "currentlyReceiving": [],
+    "previousClaims": [],
+    "potentiallyEligibleFor": [
+      "Universal Credit (unemployed, low savings)",
+      "Council Tax Reduction",
+      "Help with Housing Costs (private rental)"
+    ]
+  },
+  "healthInfo": {
+    "gpSurgery": "Broadmead Medical Centre",
+    "conditions": [
+      {
+        "name": "Mild anxiety",
+        "diagnosed": "2026-02-20",
+        "management": "Self-management, considering counselling",
+        "notes": "Onset linked to redundancy and financial stress"
+      }
+    ],
+    "medications": []
+  },
+  "family": {
+    "children": [],
+    "notes": "Single. Parents live in Cardiff. Younger sister in London.",
+    "supportNetwork": [
+      "Parents in Cardiff - weekly phone calls",
+      "Mate from warehouse also made redundant - share job leads",
+      "Ex-girlfriend still friendly - occasional advice"
+    ]
+  },
+  "housing": {
+    "type": "Private rental",
+    "landlord": "Bristol Property Management Ltd",
+    "leaseEnd": "2026-09-30",
+    "monthlyRent": 875,
+    "depositPaid": 875,
+    "housingBenefitEligible": true
+  },
+  "vehicles": [],
+  "communicationStyle": {
+    "tone": "Casual, slightly frustrated, straightforward",
+    "techSavvy": "Moderate - uses smartphone daily, can navigate apps but gets impatient with long forms",
+    "primaryConcerns": [
+      "Paying next month's rent",
+      "How long until he gets any money",
+      "Whether he'll have to do unpaid work placements",
+      "Not wanting to feel judged for being unemployed"
+    ],
+    "typicalPhrases": [
+      "Look, I just need to know when I'll get paid",
+      "I've never had to do this before",
+      "Can we skip the stuff that doesn't apply to me?",
+      "I worked for six years and now I can't even pay my rent",
+      "Just tell me what I need to do"
+    ]
+  }
+}

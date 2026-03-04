@@ -1,0 +1,105 @@
+{
+  "id": "priya-sharma",
+  "name": "Priya Sharma",
+  "personaName": "Priya Sharma",
+  "description": "Recently redundant software tester, applying for Universal Credit",
+  "date_of_birth": "1998-04-12",
+  "age": 28,
+  "national_insurance_number": "GH567890A",
+  "address": {
+    "line_1": "17 Ashton Lane",
+    "city": "Manchester",
+    "postcode": "M1 4BH"
+  },
+  "jurisdiction": "England",
+  "credentials": [
+    {
+      "type": "driving-licence",
+      "issuer": "DVLA",
+      "number": "SHARM980412PS7CD",
+      "issued": "2016-04-12",
+      "expires": "2026-04-12",
+      "status": "valid",
+      "claims": { "category": "provisional" }
+    },
+    {
+      "type": "national-insurance",
+      "issuer": "HMRC",
+      "number": "GH567890A",
+      "issued": "2016-04-12",
+      "status": "valid"
+    },
+    {
+      "type": "proof-of-address",
+      "issuer": "Royal Mail",
+      "number": "PAF-PS-M14BH",
+      "issued": "2025-08-01",
+      "expires": "2026-08-01",
+      "status": "valid"
+    }
+  ],
+  "employment_status": "unemployed",
+  "income": 0,
+  "savings": 2400,
+  "bank_account": true,
+  "primaryContact": {
+    "firstName": "Priya",
+    "middleName": "Anita",
+    "lastName": "Sharma",
+    "dateOfBirth": "1998-04-12",
+    "nationalInsuranceNumber": "GH567890A",
+    "email": "priya.sharma@email.com",
+    "phone": "07456789012"
+  },
+  "employment": {
+    "status": "Unemployed",
+    "previousEmployer": "TechCo Solutions Ltd",
+    "previousJobTitle": "Software Tester",
+    "employmentEndDate": "2026-01-31",
+    "endReason": "Redundancy",
+    "annualIncome": 0
+  },
+  "financials": {
+    "savingsAccount": {
+      "bank": "Monzo",
+      "sortCode": "04-00-04",
+      "accountNumber": "56781234",
+      "balance": 2400
+    },
+    "currentAccount": {
+      "bank": "Nationwide Building Society",
+      "sortCode": "07-01-16",
+      "accountNumber": "10203040",
+      "balance": 380
+    }
+  },
+  "benefits": {
+    "currentlyReceiving": [],
+    "previousClaims": [],
+    "potentiallyEligibleFor": [
+      "Universal Credit (recently redundant, no income)",
+      "Council Tax Reduction",
+      "Help with Housing Costs"
+    ]
+  },
+  "healthInfo": {
+    "gpSurgery": "Manchester Central Medical Centre",
+    "conditions": ["None"],
+    "medications": []
+  },
+  "communicationStyle": {
+    "tone": "Polite, organised, slightly anxious",
+    "techSavvy": "High - former software tester, comfortable with digital services",
+    "primaryConcerns": [
+      "Getting financial support while job hunting",
+      "Understanding what she needs to do and when",
+      "Making sure she provides everything correctly the first time"
+    ],
+    "typicalPhrases": [
+      "I was made redundant at the end of January, so I need to apply for UC",
+      "I've got all my documents ready, just tell me what you need",
+      "Sorry, can you explain what that means exactly?",
+      "Is there anything else I should know about?"
+    ]
+  }
+}

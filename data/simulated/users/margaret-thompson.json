@@ -1,7 +1,49 @@
 {
-  "personaId": "margaret",
+  "id": "margaret-thompson",
+  "name": "Margaret Thompson",
   "personaName": "Margaret Thompson",
   "description": "Cautious retiree, widowed, managing health conditions, limited tech experience",
+  "date_of_birth": "1951-06-18",
+  "age": 74,
+  "national_insurance_number": "MN567890P",
+  "address": {
+    "line_1": "Rose Cottage",
+    "line_2": "12 Meadow Lane",
+    "city": "Harrogate",
+    "postcode": "HG2 8DB"
+  },
+  "jurisdiction": "England",
+  "credentials": [
+    {
+      "type": "driving-licence",
+      "issuer": "DVLA",
+      "number": "THOMP510618MT2AB",
+      "issued": "2021-06-18",
+      "expires": "2024-06-18",
+      "status": "expired"
+    },
+    {
+      "type": "national-insurance",
+      "issuer": "HMRC",
+      "number": "MN567890P",
+      "issued": "1969-06-18",
+      "status": "valid"
+    },
+    {
+      "type": "proof-of-address",
+      "issuer": "Royal Mail",
+      "number": "PAF-MT-HG28DB",
+      "issued": "2025-06-01",
+      "expires": "2026-06-01",
+      "status": "valid"
+    }
+  ],
+  "employment_status": "retired",
+  "over_70": true,
+  "income": 18500,
+  "savings": 16050,
+  "bank_account": true,
+  "pension_qualifying_years": 38,
   "primaryContact": {
     "firstName": "Margaret",
     "middleName": "Rose",
@@ -21,15 +63,6 @@
       "dateOfDeath": "2019-11-15",
       "relationship": "Husband"
     }
-  },
-  "address": {
-    "line1": "Rose Cottage",
-    "line2": "12 Meadow Lane",
-    "city": "Harrogate",
-    "county": "North Yorkshire",
-    "postcode": "HG2 8DB",
-    "residingSince": "1985-07-01",
-    "housingStatus": "Owned outright (mortgage paid off 2008)"
   },
   "employment": {
     "status": "Retired",
@@ -134,41 +167,15 @@
       }
     ],
     "medications": [
-      {
-        "name": "Metformin",
-        "dosage": "500mg twice daily",
-        "purpose": "Type 2 Diabetes"
-      },
-      {
-        "name": "Amlodipine",
-        "dosage": "5mg once daily",
-        "purpose": "High Blood Pressure"
-      },
-      {
-        "name": "Paracetamol",
-        "dosage": "As needed",
-        "purpose": "Arthritis pain"
-      },
-      {
-        "name": "Ibuprofen gel",
-        "dosage": "Applied to joints as needed",
-        "purpose": "Arthritis pain"
-      }
+      { "name": "Metformin", "dosage": "500mg twice daily", "purpose": "Type 2 Diabetes" },
+      { "name": "Amlodipine", "dosage": "5mg once daily", "purpose": "High Blood Pressure" },
+      { "name": "Paracetamol", "dosage": "As needed", "purpose": "Arthritis pain" },
+      { "name": "Ibuprofen gel", "dosage": "Applied to joints as needed", "purpose": "Arthritis pain" }
     ],
-    "mobilityAids": [
-      "Walking stick (used occasionally for longer walks)"
-    ],
+    "mobilityAids": ["Walking stick (used occasionally for longer walks)"],
     "hospitalAppointments": [
-      {
-        "type": "Rheumatology review",
-        "frequency": "Annual",
-        "lastAppointment": "2025-11-20"
-      },
-      {
-        "type": "Diabetes clinic",
-        "frequency": "6-monthly",
-        "lastAppointment": "2025-12-08"
-      }
+      { "type": "Rheumatology review", "frequency": "Annual", "lastAppointment": "2025-11-20" },
+      { "type": "Diabetes clinic", "frequency": "6-monthly", "lastAppointment": "2025-12-08" }
     ]
   },
   "family": {

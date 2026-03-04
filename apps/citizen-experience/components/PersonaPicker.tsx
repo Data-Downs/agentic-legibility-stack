@@ -4,10 +4,12 @@ import { useAppStore } from "@/lib/store";
 import { PERSONA_NAMES, PERSONA_COLORS } from "@/lib/types";
 
 const personas = [
-  { id: "emma-liam", initials: "E&L", desc: "Young couple expecting their first baby" },
-  { id: "rajesh", initials: "R", desc: "Self-employed IT consultant, two children" },
-  { id: "margaret", initials: "M", desc: "Retired, managing health conditions" },
-  { id: "priya", initials: "P", desc: "Recently redundant, applying for Universal Credit" },
+  { id: "emma-parker", initials: "EP", desc: "Young couple expecting their first baby" },
+  { id: "rajesh-patel", initials: "RP", desc: "Self-employed IT consultant, two children" },
+  { id: "margaret-thompson", initials: "MT", desc: "Retired, managing health conditions" },
+  { id: "david-evans", initials: "DE", desc: "Recently redundant, looking for work" },
+  { id: "priya-sharma", initials: "PS", desc: "Recently redundant, applying for Universal Credit" },
+  { id: "mary-summers", initials: "MS", desc: "Affluent couple, retirement planning & power of attorney" },
 ];
 
 export function PersonaPicker() {

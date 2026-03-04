@@ -1,7 +1,48 @@
 {
-  "personaId": "rajesh",
+  "id": "rajesh-patel",
+  "name": "Rajesh Patel",
   "personaName": "Rajesh Patel",
   "description": "Self-employed IT consultant, tech-savvy professional with complex finances",
+  "date_of_birth": "1982-11-04",
+  "age": 43,
+  "national_insurance_number": "FG345678H",
+  "address": {
+    "line_1": "The Old Rectory",
+    "line_2": "15 Church Lane",
+    "city": "Cambridge",
+    "postcode": "CB4 9LZ"
+  },
+  "jurisdiction": "England",
+  "credentials": [
+    {
+      "type": "driving-licence",
+      "issuer": "DVLA",
+      "number": "PATEL821104RK9AB",
+      "issued": "2015-02-14",
+      "expires": "2025-02-14",
+      "status": "expired"
+    },
+    {
+      "type": "national-insurance",
+      "issuer": "HMRC",
+      "number": "FG345678H",
+      "issued": "2000-11-04",
+      "status": "valid"
+    },
+    {
+      "type": "proof-of-address",
+      "issuer": "Royal Mail",
+      "number": "PAF-RP-CB49LZ",
+      "issued": "2025-01-15",
+      "expires": "2026-01-15",
+      "status": "valid"
+    }
+  ],
+  "employment_status": "self-employed",
+  "self_employed": true,
+  "income": 85000,
+  "savings": 78000,
+  "bank_account": true,
   "primaryContact": {
     "firstName": "Rajesh",
     "middleName": "Kumar",
@@ -34,14 +75,6 @@
       "childBenefitNumber": "CHB7654321B"
     }
   ],
-  "address": {
-    "line1": "The Old Rectory",
-    "line2": "15 Church Lane",
-    "city": "Cambridge",
-    "postcode": "CB4 9LZ",
-    "residingSince": "2018-03-15",
-    "housingStatus": "Owned outright (paid off mortgage 2024)"
-  },
   "employment": {
     "status": "Self-employed",
     "businessName": "RKP Consulting Ltd",

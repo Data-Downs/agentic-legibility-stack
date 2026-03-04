@@ -1,7 +1,48 @@
 {
-  "personaId": "emma-liam",
+  "id": "emma-parker",
+  "name": "Emma Parker",
   "personaName": "Emma & Liam Parker",
   "description": "Young expecting couple, first baby on the way",
+  "date_of_birth": "1997-03-15",
+  "age": 29,
+  "national_insurance_number": "AB123456C",
+  "address": {
+    "line_1": "Flat 3B, Riverside Apartments",
+    "line_2": "42 Thames View",
+    "city": "London",
+    "postcode": "SE1 7PQ"
+  },
+  "jurisdiction": "England",
+  "credentials": [
+    {
+      "type": "driving-licence",
+      "issuer": "DVLA",
+      "number": "PARKE970315EC9IJ",
+      "issued": "2019-06-01",
+      "expires": "2029-06-01",
+      "status": "valid"
+    },
+    {
+      "type": "national-insurance",
+      "issuer": "HMRC",
+      "number": "AB123456C",
+      "issued": "2015-03-15",
+      "status": "valid"
+    },
+    {
+      "type": "proof-of-address",
+      "issuer": "Royal Mail",
+      "number": "PAF-EP-SE17PQ",
+      "issued": "2024-11-01",
+      "expires": "2025-11-01",
+      "status": "valid"
+    }
+  ],
+  "employment_status": "employed",
+  "employer": "NHS Guy's and St Thomas' Hospital Trust",
+  "income": 32500,
+  "savings": 8500,
+  "bank_account": true,
   "primaryContact": {
     "firstName": "Emma",
     "middleName": "Charlotte",
@@ -19,14 +60,6 @@
     "nationalInsuranceNumber": "CD789012E",
     "email": "liam.parker@email.com",
     "phone": "07798765432"
-  },
-  "address": {
-    "line1": "Flat 3B, Riverside Apartments",
-    "line2": "42 Thames View",
-    "city": "London",
-    "postcode": "SE1 7PQ",
-    "residingSince": "2022-09-01",
-    "housingStatus": "Mortgaged"
   },
   "employment": {
     "emma": {

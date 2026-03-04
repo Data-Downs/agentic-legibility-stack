@@ -17,9 +17,15 @@ async function init(): Promise<void> {
   if (initPromise) { await initPromise; return; }
 
   initPromise = (async () => {
-    const filePath = path.join(process.cwd(), "..", "..", "data", "simulated", "test-users.json");
-    const raw = await fs.readFile(filePath, "utf-8");
-    testUsers = JSON.parse(raw) as TestUser[];
+    const usersDir = path.join(process.cwd(), "..", "..", "data", "simulated", "users");
+    const files = await fs.readdir(usersDir);
+    const jsonFiles = files.filter((f) => f.endsWith(".json"));
+    const loaded: TestUser[] = [];
+    for (const file of jsonFiles) {
+      const raw = await fs.readFile(path.join(usersDir, file), "utf-8");
+      loaded.push(JSON.parse(raw) as TestUser);
+    }
+    testUsers = loaded;
 
     oneLogin = new OneLoginSimulator();
     oneLogin.loadTestUsers(testUsers);

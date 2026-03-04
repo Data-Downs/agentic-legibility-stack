@@ -31,15 +31,14 @@ import robotPolicy from "../../../data/services/become-a-robot/policy.json";
 import robotStateModel from "../../../data/services/become-a-robot/state-model.json";
 import robotConsent from "../../../data/services/become-a-robot/consent.json";
 
-// ── Persona data ──
+// ── Unified user data ──
 
-import emmaLiam from "../data/emma-liam.json";
-import margaret from "../data/margaret.json";
-import priya from "../data/priya.json";
-import rajesh from "../data/rajesh.json";
-
-// ── Test users (the primary persona source) ──
-import testUsers from "../../../data/simulated/test-users.json";
+import emmaParker from "../../../data/simulated/users/emma-parker.json";
+import rajeshPatel from "../../../data/simulated/users/rajesh-patel.json";
+import margaretThompson from "../../../data/simulated/users/margaret-thompson.json";
+import priyaSharma from "../../../data/simulated/users/priya-sharma.json";
+import davidEvans from "../../../data/simulated/users/david-evans.json";
+import marySummers from "../../../data/simulated/users/mary-summers.json";
 
 // ── Prompt files (bundled as string constants for Cloudflare) ──
 
@@ -114,7 +113,7 @@ When a state model journey is active, you MUST follow it step by step:
 YOUR ROLE:
 Be the user's powerful advocate. Cut through bureaucracy, auto-fill everything possible, move efficiently through each step, and get them the support they deserve with minimal effort on their part.`,
 
-  "data/prompts/persona-emma-liam.txt": `PERSONA COMMUNICATION STYLE - Emma & Liam Parker
+  "data/prompts/persona-emma-parker.txt": `PERSONA COMMUNICATION STYLE - Emma & Liam Parker
 
 You are communicating with Emma and/or Liam, a young couple expecting their first baby.
 
@@ -153,7 +152,7 @@ HOW TO COMMUNICATE WITH THEM:
 - Break complex processes into simple steps
 - Celebrate small wins ("Great, you've got everything you need!")`,
 
-  "data/prompts/persona-margaret.txt": `PERSONA COMMUNICATION STYLE - Margaret Thompson
+  "data/prompts/persona-margaret-thompson.txt": `PERSONA COMMUNICATION STYLE - Margaret Thompson
 
 You are communicating with Margaret, a 74-year-old retiree living alone in Yorkshire.
 
@@ -199,7 +198,7 @@ HOW TO COMMUNICATE WITH HER:
 - Offer options and let her feel in control
 - Celebrate her progress ("You're doing really well, Margaret")`,
 
-  "data/prompts/persona-priya.txt": `PERSONA COMMUNICATION STYLE - Priya Sharma
+  "data/prompts/persona-priya-sharma.txt": `PERSONA COMMUNICATION STYLE - Priya Sharma
 
 You are communicating with Priya Sharma, a 28-year-old woman who was recently made redundant.
 
@@ -236,7 +235,7 @@ HOW TO COMMUNICATE WITH HER:
 - She responds well to structured, step-by-step guidance
 - She will provide information promptly when asked`,
 
-  "data/prompts/persona-rajesh.txt": `PERSONA COMMUNICATION STYLE - Rajesh Patel
+  "data/prompts/persona-rajesh-patel.txt": `PERSONA COMMUNICATION STYLE - Rajesh Patel
 
 You are communicating with Rajesh, a self-employed IT consultant and tech professional.
 
@@ -276,6 +275,89 @@ HOW TO COMMUNICATE WITH HIM:
 - Move fast - he values speed
 - When you do need info, explain WHY you can't just pull it from records
 - Match his professional, efficient communication style`,
+
+  "data/prompts/persona-david-evans.txt": `PERSONA COMMUNICATION STYLE - David Evans
+
+You are communicating with David, a 34-year-old man who was recently made redundant from a warehouse job.
+
+BACKGROUND:
+- David is 34, single, living alone in a rented flat in Bristol
+- He worked as a Warehouse Logistics Coordinator at an Amazon distribution centre for 6 years
+- Made redundant in February 2026 when the site closed
+- Has only \u00a3800 in savings and is worried about paying rent (\u00a3875/month)
+- Has never claimed benefits before
+- Mild anxiety recently diagnosed, linked to financial stress
+
+COMMUNICATION CHARACTERISTICS:
+- Tone: Casual, slightly frustrated, straightforward \u2014 doesn't do formal
+- Tech ability: Moderate - uses his phone all day but gets impatient with long forms or complicated processes
+- Emotional state: Stressed about money, slightly embarrassed about needing help, can be defensive
+- Trust level: Skeptical but practical \u2014 will engage if he sees it's going somewhere
+
+PRIMARY CONCERNS:
+- When will he actually get paid? Rent is due
+- Whether he'll be forced into unpaid work placements
+- Not wanting to feel judged or talked down to
+- How long this whole process takes
+
+TYPICAL USER MESSAGES (style to expect):
+- "Look, I just need to know when I'll get paid"
+- "I've never had to do this before, I worked for six years"
+- "Can we skip the stuff that doesn't apply to me?"
+- "I worked for six years and now I can't even pay my rent"
+- "Just tell me what I need to do"
+
+HOW TO COMMUNICATE WITH HIM:
+- Be direct and practical \u2014 no waffle, no corporate speak
+- Don't be overly sympathetic (he'll find it patronizing) but acknowledge his situation briefly
+- Get to the point quickly \u2014 what does he need to do, and when will he get money
+- Be honest about timelines even if the news isn't great
+- Respect that this is new and uncomfortable for him
+- Use plain, everyday language
+- Show him progress \u2014 "Right, that bit's done. Next thing..."`,
+
+  "data/prompts/persona-mary-summers.txt": `PERSONA COMMUNICATION STYLE - Hugo & Mary Summers
+
+You are communicating with Mary Summers, a 64-year-old recently retired professional managing a complex household.
+
+BACKGROUND:
+- Mary is 64, retired Head of Strategic Planning at Islington Council (34 years)
+- Her husband Hugo is 65, still working as Senior Investment Director at Barclays (retiring June 2026)
+- They live in an affluent Islington townhouse with Mary's mother Margaret (88, moderate dementia)
+- Three adult children: Sophie (31, solicitor), Charlotte (28, marketing manager, pregnant), Thomas (26, developer)
+- First grandchild expected July 2026
+- Combined net worth ~\u00a32.8M including two properties, investments, and pensions
+- Mary holds Power of Attorney for her mother (both Health & Welfare and Property & Financial Affairs)
+- Mary receives State Pension; Hugo's State Pension starts November 2026
+
+COMMUNICATION CHARACTERISTICS:
+- Tone: Professional, articulate, methodical \u2014 Mary runs the household administration like she ran council strategy
+- Tech ability: Moderate \u2014 comfortable with email and online banking, uses Excel for financial tracking, but finds government portals frustrating
+- Emotional state: Quietly anxious about doing everything correctly, especially around inheritance tax and her mother's care
+- Trust level: Expects competence and thoroughness \u2014 will ask follow-up questions to verify details
+
+PRIMARY CONCERNS:
+- Minimizing inheritance tax burden on their children
+- Ensuring her mother is properly cared for and her estate protected
+- Understanding capital gains implications of property decisions
+- Making sure all power of attorney matters are handled correctly
+- Getting Hugo's retirement timing and finances right
+- Preparing for first grandchild while managing complex family finances
+
+TYPICAL USER MESSAGES (style to expect):
+- "We want to make sure we're doing right by the children and not leaving them with an enormous tax bill"
+- "I keep detailed records of everything, but I'm worried we're missing something important"
+- "My mother's care is our priority, but we also need to protect her assets"
+- "Hugo's retiring in June and we need to understand the tax implications"
+- "Could you explain that again? I want to make sure I've got all the details right"
+
+HOW TO COMMUNICATE WITH HER:
+- Be thorough and precise \u2014 she appreciates detail and will notice gaps
+- Treat her as an intelligent professional, not someone who needs hand-holding
+- Acknowledge the complexity of her situation (multiple properties, LPAs, retirement planning)
+- Be clear about what you can and cannot help with \u2014 she respects honesty
+- When discussing her mother, be sensitive \u2014 this is emotionally charged even though she's practical about it
+- She values having things in writing and properly documented`,
 
   "data/prompts/scenario-benefits.txt": `SCENARIO CONTEXT - Personal Independence Payment (PIP) Application
 
@@ -534,19 +616,18 @@ const SERVICE_DATA: Record<string, ServiceArtefacts> = {
   },
 };
 
-const PERSONA_DATA: Record<string, Record<string, unknown>> = {
-  "emma-liam": emmaLiam as unknown as Record<string, unknown>,
-  margaret: margaret as unknown as Record<string, unknown>,
-  priya: priya as unknown as Record<string, unknown>,
-  rajesh: rajesh as unknown as Record<string, unknown>,
-};
+const ALL_USERS: Record<string, unknown>[] = [
+  emmaParker as unknown as Record<string, unknown>,
+  rajeshPatel as unknown as Record<string, unknown>,
+  margaretThompson as unknown as Record<string, unknown>,
+  priyaSharma as unknown as Record<string, unknown>,
+  davidEvans as unknown as Record<string, unknown>,
+  marySummers as unknown as Record<string, unknown>,
+];
 
-// Index test users by ID so getPersonaData("sarah-chen") works
-for (const user of testUsers as unknown as Array<Record<string, unknown>>) {
-  const id = user.id as string;
-  if (id && !PERSONA_DATA[id]) {
-    PERSONA_DATA[id] = user;
-  }
+const PERSONA_DATA: Record<string, Record<string, unknown>> = {};
+for (const user of ALL_USERS) {
+  PERSONA_DATA[user.id as string] = user;
 }
 
 /** Extract the directory slug from a serviceId (e.g. "dvla.renew-driving-licence" → "renew-driving-licence") */
@@ -589,10 +670,9 @@ export function getPersonaData(personaId: string): Record<string, unknown> | nul
   return PERSONA_DATA[personaId] ?? null;
 }
 
-/** Resolve a test user ID to its persona_mapping (for prompt file lookup) */
-export function getPersonaMapping(personaId: string): string {
-  const data = PERSONA_DATA[personaId];
-  return (data?.persona_mapping as string) || personaId;
+/** Get all unified user records */
+export function getAllUsers(): Record<string, unknown>[] {
+  return ALL_USERS;
 }
 
 /** Get a bundled prompt file by its relative path (e.g. "data/prompts/dot-system.txt") */

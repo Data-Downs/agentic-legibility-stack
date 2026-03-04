@@ -207,39 +207,30 @@ export interface ActivePlan {
 }
 
 export const PERSONA_NAMES: Record<string, string> = {
-  "sarah-chen": "Sarah Chen",
-  "mohammed-al-rashid": "Mohammed Al-Rashid",
+  "emma-parker": "Emma & Liam Parker",
+  "rajesh-patel": "Rajesh Patel",
   "margaret-thompson": "Margaret Thompson",
   "david-evans": "David Evans",
   "priya-sharma": "Priya Sharma",
-  "emma-liam": "Emma & Liam",
-  rajesh: "Rajesh Patel",
-  margaret: "Margaret Thompson",
-  priya: "Priya Sharma",
+  "mary-summers": "Hugo & Mary Summers",
 };
 
 export const PERSONA_COLORS: Record<string, string> = {
-  "sarah-chen": "#1d70b8",
-  "mohammed-al-rashid": "#00703c",
+  "emma-parker": "#1d70b8",
+  "rajesh-patel": "#00703c",
   "margaret-thompson": "#912b88",
   "david-evans": "#d4351c",
   "priya-sharma": "#f47738",
-  "emma-liam": "#1d70b8",
-  rajesh: "#00703c",
-  margaret: "#912b88",
-  priya: "#d4351c",
+  "mary-summers": "#4c6272",
 };
 
 export const PERSONA_INITIALS: Record<string, string> = {
-  "sarah-chen": "SC",
-  "mohammed-al-rashid": "MA",
+  "emma-parker": "EP",
+  "rajesh-patel": "RP",
   "margaret-thompson": "MT",
   "david-evans": "DE",
   "priya-sharma": "PS",
-  "emma-liam": "E",
-  rajesh: "R",
-  margaret: "M",
-  priya: "P",
+  "mary-summers": "MS",
 };
 
 export interface PlanGroup {

@@ -1,0 +1,392 @@
+{
+  "id": "mary-summers",
+  "name": "Mary Summers",
+  "personaName": "Hugo & Mary Summers",
+  "description": "Affluent couple approaching retirement with complex financial estate and power of attorney responsibilities",
+  "date_of_birth": "1961-06-15",
+  "age": 64,
+  "national_insurance_number": "NE456789B",
+  "address": {
+    "line_1": "12 Barnsbury Square",
+    "city": "London",
+    "county": "Islington",
+    "postcode": "N1 1JL",
+    "country": "England"
+  },
+  "jurisdiction": "England",
+  "credentials": [
+    {
+      "type": "driving-licence",
+      "issuer": "DVLA",
+      "number": "SUMME606158MJ9KL",
+      "issued": "2021-07-10",
+      "expires": "2031-07-10",
+      "status": "valid"
+    },
+    {
+      "type": "passport",
+      "issuer": "HM Passport Office",
+      "number": "528736491",
+      "issued": "2022-03-15",
+      "expires": "2032-03-15",
+      "status": "valid"
+    },
+    {
+      "type": "national-insurance",
+      "issuer": "HMRC",
+      "number": "NE456789B",
+      "issued": "1977-06-15",
+      "status": "valid"
+    }
+  ],
+  "employment_status": "retired",
+  "income": 0,
+  "savings": 250000,
+  "bank_account": true,
+  "primaryContact": {
+    "firstName": "Mary",
+    "middleName": "Elizabeth",
+    "lastName": "Summers",
+    "dateOfBirth": "1961-06-15",
+    "nationalInsuranceNumber": "NE456789B",
+    "email": "mary.summers@btinternet.com",
+    "phone": "07712456789"
+  },
+  "partner": {
+    "firstName": "Hugo",
+    "middleName": "Charles",
+    "lastName": "Summers",
+    "dateOfBirth": "1959-11-03",
+    "nationalInsuranceNumber": "NE234567A",
+    "email": "hugo.summers@btinternet.com",
+    "phone": "07798234567"
+  },
+  "employment": {
+    "mary": {
+      "status": "Retired",
+      "previousEmployer": "Islington Council",
+      "previousJobTitle": "Head of Strategic Planning",
+      "retirementDate": "2023-08-31",
+      "yearsWorked": 34,
+      "finalSalary": 68500,
+      "pension": {
+        "provider": "Local Government Pension Scheme",
+        "monthlyAmount": 3200,
+        "annualAmount": 38400,
+        "potValue": 580000
+      }
+    },
+    "hugo": {
+      "status": "Employed",
+      "employer": "Barclays Investment Bank",
+      "jobTitle": "Senior Investment Director",
+      "annualIncome": 145000,
+      "retirementDate": "2026-06-30",
+      "pension": {
+        "provider": "Barclays Pension Fund",
+        "potValue": 725000,
+        "projectedAnnualIncome": 48000
+      }
+    }
+  },
+  "financials": {
+    "combinedAnnualIncome": 183400,
+    "postRetirementIncome": 86400,
+    "monthlyMortgage": 0,
+    "councilTaxBand": "H",
+    "councilTaxAnnual": 3850,
+    "currentAccount": {
+      "bank": "Coutts",
+      "sortCode": "18-00-02",
+      "accountNumber": "12345678",
+      "balance": 45000
+    },
+    "savingsAccount": {
+      "bank": "Coutts",
+      "sortCode": "18-00-02",
+      "accountNumber": "87654321",
+      "balance": 205000
+    },
+    "investments": {
+      "provider": "Hargreaves Lansdown",
+      "type": "Stocks & Shares ISA, Investment Portfolio",
+      "value": 385000
+    },
+    "properties": [
+      {
+        "address": "12 Barnsbury Square, Islington, London N1 1JL",
+        "type": "Primary residence",
+        "ownership": "Joint",
+        "purchaseDate": "1998-04-15",
+        "purchasePrice": 385000,
+        "currentValue": 1450000,
+        "mortgage": false
+      },
+      {
+        "address": "Pen-y-Bryn, Upper Chapel Road, Brecon, Powys LD3 9DA",
+        "type": "Second home",
+        "ownership": "Joint",
+        "purchaseDate": "2012-09-20",
+        "purchasePrice": 295000,
+        "currentValue": 425000,
+        "mortgage": false,
+        "councilTaxBand": "F",
+        "councilTaxAnnual": 2680
+      }
+    ],
+    "totalNetWorth": 2785000,
+    "inheritanceTaxLiability": "Potentially over £650k above nil-rate band",
+    "estatePlanning": "In process - considering trusts and gifting strategies"
+  },
+  "benefits": {
+    "currentlyReceiving": [
+      {
+        "type": "State Pension (Mary)",
+        "amount": 203.85,
+        "frequency": "weekly",
+        "startDate": "2025-06-15",
+        "annualAmount": 10600
+      }
+    ],
+    "previousClaims": [],
+    "potentiallyEligibleFor": [
+      "State Pension (Hugo from November 2026)",
+      "Attendance Allowance (for Mary's mother)"
+    ]
+  },
+  "pension_qualifying_years": 43,
+  "healthInfo": {
+    "mary": {
+      "gpSurgery": "The Barnsbury Medical Centre",
+      "nhsNumber": "456 789 1234",
+      "conditions": [
+        {
+          "name": "Controlled hypertension",
+          "diagnosed": "2019-05-12",
+          "severity": "Mild",
+          "management": "Daily medication, regular monitoring"
+        }
+      ],
+      "medications": [
+        {
+          "name": "Amlodipine",
+          "dosage": "5mg daily",
+          "purpose": "Blood pressure control"
+        }
+      ],
+      "hospitalAppointments": [
+        {
+          "type": "Annual health check",
+          "frequency": "Yearly",
+          "lastAppointment": "2025-11-20"
+        }
+      ]
+    },
+    "hugo": {
+      "gpSurgery": "The Barnsbury Medical Centre",
+      "nhsNumber": "234 567 8901",
+      "conditions": [
+        {
+          "name": "High cholesterol",
+          "diagnosed": "2021-03-08",
+          "severity": "Moderate",
+          "management": "Statin medication, diet control"
+        }
+      ],
+      "medications": [
+        {
+          "name": "Atorvastatin",
+          "dosage": "20mg daily",
+          "purpose": "Cholesterol management"
+        }
+      ],
+      "hospitalAppointments": [
+        {
+          "type": "Annual cardiovascular check",
+          "frequency": "Yearly",
+          "lastAppointment": "2025-10-15"
+        }
+      ]
+    }
+  },
+  "family": {
+    "children": [
+      {
+        "firstName": "Sophie",
+        "middleName": "Grace",
+        "lastName": "Summers",
+        "dateOfBirth": "1995-03-14",
+        "age": 31,
+        "occupation": "Solicitor",
+        "location": "Cambridge"
+      },
+      {
+        "firstName": "Charlotte",
+        "middleName": "Rose",
+        "lastName": "Summers",
+        "dateOfBirth": "1997-08-22",
+        "age": 28,
+        "occupation": "Marketing Manager",
+        "location": "Brighton",
+        "pregnant": true,
+        "dueDate": "2026-07-15"
+      },
+      {
+        "firstName": "Thomas",
+        "middleName": "James",
+        "lastName": "Summers",
+        "dateOfBirth": "1999-11-30",
+        "age": 26,
+        "occupation": "Software Developer",
+        "location": "London"
+      }
+    ],
+    "dependents": [
+      {
+        "firstName": "Margaret",
+        "middleName": "Anne",
+        "lastName": "Evans",
+        "dateOfBirth": "1938-02-12",
+        "age": 88,
+        "relationship": "Mary's mother",
+        "livingSituation": "Lives with Hugo and Mary",
+        "healthStatus": "Declining - moderate dementia, mobility issues",
+        "careNeeds": "Daily assistance with personal care, medication management"
+      }
+    ],
+    "notes": "All three children financially independent. First grandchild expected July 2026 (Charlotte's baby). Mary's mother moved in with them in 2023 after health decline.",
+    "supportNetwork": [
+      "Three adult children nearby",
+      "Private carer visits 3x weekly for Mary's mother",
+      "Close friends in Islington community",
+      "Family in Brecon area (Hugo's side)"
+    ]
+  },
+  "powerOfAttorney": {
+    "asAttorney": [
+      {
+        "donor": "Margaret Anne Evans",
+        "donorDateOfBirth": "1938-02-12",
+        "relationship": "Mother (Mary)",
+        "lpaType": "Health and Welfare",
+        "registrationNumber": "M-0123-4567-8901",
+        "registeredDate": "2022-11-15",
+        "attorneys": [
+          "Mary Elizabeth Summers",
+          "Hugo Charles Summers"
+        ],
+        "status": "Active"
+      },
+      {
+        "donor": "Margaret Anne Evans",
+        "donorDateOfBirth": "1938-02-12",
+        "relationship": "Mother (Mary)",
+        "lpaType": "Property and Financial Affairs",
+        "registrationNumber": "M-0123-4567-8902",
+        "registeredDate": "2022-11-15",
+        "attorneys": [
+          "Mary Elizabeth Summers",
+          "Hugo Charles Summers"
+        ],
+        "status": "Active"
+      }
+    ],
+    "ownLPAs": [
+      {
+        "type": "Property and Financial Affairs",
+        "registrationNumber": "M-0234-5678-9012",
+        "registeredDate": "2024-01-20",
+        "attorneys": [
+          "Hugo Charles Summers (primary)",
+          "Sophie Grace Summers (replacement)"
+        ],
+        "status": "Registered"
+      },
+      {
+        "type": "Health and Welfare",
+        "registrationNumber": "M-0234-5678-9013",
+        "registeredDate": "2024-01-20",
+        "attorneys": [
+          "Hugo Charles Summers (primary)",
+          "Sophie Grace Summers (replacement)"
+        ],
+        "status": "Registered"
+      }
+    ],
+    "margaretProperty": {
+      "address": "22 Highbury Terrace, London N5 1UP",
+      "type": "Residential property",
+      "ownership": "Margaret Anne Evans",
+      "currentValue": 875000,
+      "tenanted": false,
+      "notes": "Property currently empty, managed by Mary and Hugo under LPA"
+    }
+  },
+  "housing": {
+    "type": "Owner occupier",
+    "primaryResidence": "12 Barnsbury Square, Islington",
+    "secondHome": "Pen-y-Bryn, Brecon, Wales",
+    "margaretCare": "Mary's mother lives with them full-time"
+  },
+  "vehicles": [
+    {
+      "make": "BMW",
+      "model": "5 Series Touring",
+      "year": 2023,
+      "color": "Black",
+      "registrationNumber": "BN23 XYZ",
+      "owner": "Hugo Summers",
+      "motExpiry": "2026-09-15",
+      "taxExpiry": "2026-09-01",
+      "insuranceExpiry": "2026-06-20",
+      "annualMileage": 8500,
+      "notes": "Primary family car, used for trips to Wales"
+    },
+    {
+      "make": "Audi",
+      "model": "Q5",
+      "year": 2022,
+      "color": "Silver",
+      "registrationNumber": "BV22 ABC",
+      "owner": "Mary Summers",
+      "motExpiry": "2026-07-22",
+      "taxExpiry": "2026-07-01",
+      "insuranceExpiry": "2026-06-20",
+      "annualMileage": 6200,
+      "notes": "Mary's daily car, easier for Margaret's mobility needs"
+    },
+    {
+      "make": "Jaguar",
+      "model": "E-Type Series 1",
+      "year": 1965,
+      "color": "British Racing Green",
+      "registrationNumber": "ABC 123D",
+      "owner": "Hugo Summers",
+      "motExpiry": "2026-05-10",
+      "taxExpiry": "2026-05-01",
+      "insuranceExpiry": "2026-04-30",
+      "annualMileage": 800,
+      "notes": "Classic car, kept at Brecon property, part of estate planning considerations. Valued at £85,000"
+    }
+  ],
+  "communicationStyle": {
+    "tone": "Professional, articulate, methodical. Mary takes charge of household administration and is detail-oriented. Quietly anxious about doing everything correctly for inheritance planning.",
+    "techSavvy": "Moderate - comfortable with email and online banking, prefer phone calls for complex matters. Mary uses Excel spreadsheets for financial tracking but finds online government portals frustrating.",
+    "primaryConcerns": [
+      "Minimizing inheritance tax burden on their children",
+      "Ensuring Mary's mother is properly cared for and her estate protected",
+      "Understanding capital gains implications of selling properties",
+      "Making sure all power of attorney matters are handled correctly",
+      "Getting retirement timing and finances right",
+      "Preparing for grandchild's arrival while managing complex family finances"
+    ],
+    "typicalPhrases": [
+      "We want to make sure we're doing right by the children and not leaving them with an enormous tax bill",
+      "I keep detailed records of everything, but I'm worried we're missing something important",
+      "My mother's care is our priority, but we also need to protect her assets",
+      "Hugo's retiring in June and we need to understand the tax implications",
+      "Could you explain that again? I want to make sure I've got all the details right",
+      "We've worked hard all our lives and just want to make sure everything is in order"
+    ]
+  }
+}

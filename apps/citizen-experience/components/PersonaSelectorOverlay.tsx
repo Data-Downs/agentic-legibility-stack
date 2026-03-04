@@ -37,10 +37,10 @@ export function PersonaSelectorOverlay() {
         desc: `${u.employment_status}, age ${u.age}, ${u.address.city}`,
       }))
     : [
-        { id: "sarah-chen", name: "Sarah Chen", desc: "Employed, age 36, Cambridge" },
-        { id: "mohammed-al-rashid", name: "Mohammed Al-Rashid", desc: "Self-employed, age 50, Birmingham" },
-        { id: "margaret-thompson", name: "Margaret Thompson", desc: "Retired, age 71, York" },
-        { id: "david-evans", name: "David Evans", desc: "Unemployed, age 34, Cardiff" },
+        { id: "emma-parker", name: "Emma Parker", desc: "Employed, age 29, London" },
+        { id: "rajesh-patel", name: "Rajesh Patel", desc: "Self-employed, age 43, Cambridge" },
+        { id: "margaret-thompson", name: "Margaret Thompson", desc: "Retired, age 74, Harrogate" },
+        { id: "david-evans", name: "David Evans", desc: "Unemployed, age 34, Bristol" },
         { id: "priya-sharma", name: "Priya Sharma", desc: "Unemployed, age 28, Manchester" },
       ];
 

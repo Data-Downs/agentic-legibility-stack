@@ -16,7 +16,7 @@ import type { InvocationContext, PolicyRuleset, StateModelDefinition, StateInstr
 import { resolveCardsWithOverrides, inferInteractionType, INSTRUCTION_TEMPLATE_REGISTRY, resolveTemplateInstructions, templateToStateModel } from "@als/schemas";
 import type { StateCardMapping } from "@als/schemas";
 import { getTraceEmitter, getReceiptGenerator } from "@/lib/evidence";
-import { getServiceArtefact, getPersonaData, getPersonaMapping, getPromptFile, getAnyManifest, getGraphNode, getCardDefinitions } from "@/lib/service-data";
+import { getServiceArtefact, getPersonaData, getPromptFile, getAnyManifest, getGraphNode, getCardDefinitions } from "@/lib/service-data";
 import { getInferredStore, getServiceAccessStore, getSubmittedStore } from "@/lib/personal-data-store";
 
 // ── AnthropicAdapter — the ONLY Anthropic SDK usage ──
@@ -502,10 +502,9 @@ async function chatHandler(input: unknown): Promise<ChatOutput> {
   const personaData = await loadPersonaData(persona);
   const agentPrompt = await loadFile(`data/prompts/${agent}-system.txt`);
 
-  const personaPromptId = getPersonaMapping(persona);
   let personaPrompt: string;
   try {
-    personaPrompt = await loadFile(`data/prompts/persona-${personaPromptId}.txt`);
+    personaPrompt = await loadFile(`data/prompts/persona-${persona}.txt`);
   } catch {
     const personaData2 = getPersonaData(persona);
     const name = (personaData2?.name as string) || persona;

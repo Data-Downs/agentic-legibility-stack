@@ -4,19 +4,6 @@ import { getPersonaData } from "@/lib/service-data";
 import { WalletSimulator, type WalletCredential } from "@als/identity";
 import { VerifiedStore } from "@als/personal-data";
 
-// Wallet/verified store for Tier 1
-async function loadTestUsers(): Promise<Array<Record<string, unknown>> | null> {
-  try {
-    const fs = await import("fs/promises");
-    const path = await import("path");
-    const base = path.join(process.cwd(), "..", "..", "data", "simulated");
-    const usersRaw = await fs.readFile(path.join(base, "test-users.json"), "utf-8");
-    return JSON.parse(usersRaw);
-  } catch {
-    return null;
-  }
-}
-
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ personaId: string }> }
@@ -30,28 +17,24 @@ export async function GET(
       getServiceAccessStore(),
     ]);
 
-    // Seed Tier 2 from persona data on first access
+    // Unified user data — contains both persona fields and credentials
     const personaData = getPersonaData(personaId);
+
+    // Seed Tier 2 from persona data on first access
     if (personaData) {
       await submittedStore.seedFromPersona(personaId, personaData);
     }
 
-    // Load Tier 1 verified data from test-user credentials
+    // Load Tier 1 verified data from user credentials
     let tier1 = null;
-    const testUsers = await loadTestUsers();
-    if (testUsers) {
-      const testUser = testUsers.find(
-        (u) => u.id === personaId || u.persona_mapping === personaId
-      );
-      if (testUser) {
-        const wallet = new WalletSimulator();
-        const creds = testUser.credentials as WalletCredential[] | undefined;
-        if (creds && creds.length > 0) {
-          wallet.loadCredentials(testUser.id as string, creds);
-        }
-        const verifiedStore = new VerifiedStore(wallet);
-        tier1 = verifiedStore.getVerifiedData(testUser.id as string, testUser as never);
+    if (personaData) {
+      const wallet = new WalletSimulator();
+      const creds = personaData.credentials as WalletCredential[] | undefined;
+      if (creds && creds.length > 0) {
+        wallet.loadCredentials(personaId, creds);
       }
+      const verifiedStore = new VerifiedStore(wallet);
+      tier1 = verifiedStore.getVerifiedData(personaId, personaData as never);
     }
 
     // Load all three tiers
