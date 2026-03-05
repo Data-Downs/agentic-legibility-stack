@@ -123,6 +123,10 @@ interface AppStore {
   markServiceInProgress: (serviceId: string, conversationId: string) => void;
   markServiceCompleted: (serviceId: string) => void;
   markServiceSkipped: (serviceId: string) => void;
+  completeServiceWithUpload: (
+    serviceId: string,
+    fields: Record<string, string | number | boolean>
+  ) => Promise<void>;
 }
 
 // localStorage-backed conversation store
@@ -827,5 +831,32 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     saveActivePlan(state.persona, updated);
     set({ activePlan: updated });
+  },
+
+  completeServiceWithUpload: async (
+    serviceId: string,
+    fields: Record<string, string | number | boolean>
+  ) => {
+    const state = get();
+    if (!state.persona || !state.activePlan) return;
+
+    // Submit card data to the personal-data API
+    try {
+      await fetch(`/api/personal-data/${state.persona}/card-submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cardType: "document-upload",
+          serviceId,
+          stateId: `${serviceId}-upload`,
+          fields,
+        }),
+      });
+    } catch (err) {
+      console.error("[Store] completeServiceWithUpload submit error:", err);
+    }
+
+    // Mark the service as completed (unlocks downstream)
+    get().markServiceCompleted(serviceId);
   },
 }));

@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import type { ServicePlanStatus, ServiceType } from "@/lib/types";
+import { computeServiceHints } from "@/lib/plan-hints";
+import { DocumentUploadCard } from "@/components/cards/DocumentUploadCard";
+import type { CardDefinition } from "@als/schemas";
 
 const STATUS_CONFIG: Record<
   ServicePlanStatus,
@@ -99,12 +102,15 @@ function StatusIcon({ status }: { status: ServicePlanStatus }) {
 
 export function PlanView() {
   const activePlan = useAppStore((s) => s.activePlan);
+  const personaData = useAppStore((s) => s.personaData);
   const navigateTo = useAppStore((s) => s.navigateTo);
   const loadConversation = useAppStore((s) => s.loadConversation);
   const startServiceFromPlan = useAppStore((s) => s.startServiceFromPlan);
   const markServiceSkipped = useAppStore((s) => s.markServiceSkipped);
+  const completeServiceWithUpload = useAppStore((s) => s.completeServiceWithUpload);
 
   const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
+  const [uploadingServiceId, setUploadingServiceId] = useState<string | null>(null);
 
   if (!activePlan) {
     return (
@@ -122,6 +128,11 @@ export function PlanView() {
 
   const { plan, services, serviceProgress } = activePlan;
   const svcLookup = new Map(services.map((s) => [s.id, s]));
+
+  const serviceHints = useMemo(
+    () => computeServiceHints(services, personaData),
+    [services, personaData]
+  );
 
   // Compute progress
   const total = services.length;
@@ -261,61 +272,118 @@ export function PlanView() {
                     </button>
 
                     {/* Inline service brief */}
-                    {isExpanded && status === "available" && (
+                    {isExpanded && status === "available" && (() => {
+                      const hint = serviceHints[svcId];
+                      return (
                       <div className="shadow-sm rounded-b-card bg-green-50/50 p-4 space-y-3">
-                        <p className="text-sm text-govuk-black leading-relaxed">
-                          {svc.desc}
-                        </p>
+                        {hint ? (
+                          <>
+                            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d70b8" strokeWidth="2" className="shrink-0 mt-0.5">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4M12 8h.01" />
+                              </svg>
+                              <span className="text-sm text-blue-800 leading-relaxed">{hint.message}</span>
+                            </div>
 
-                        {svc.eligibility_summary && (
-                          <div className="bg-white rounded-lg p-3 border border-green-200">
-                            <p className="text-xs font-bold text-govuk-dark-grey uppercase tracking-wide mb-1">
-                              Eligibility
+                            {uploadingServiceId === svcId ? (
+                              <DocumentUploadCard
+                                definition={{
+                                  cardType: "document-upload",
+                                  title: hint.uploadLabel,
+                                  description: `Upload your document for ${svc.name}`,
+                                  fields: [],
+                                  dataCategory: "documents",
+                                }}
+                                serviceId={svcId}
+                                stateId={`${svcId}-upload`}
+                                onSubmit={(fields) => {
+                                  setUploadingServiceId(null);
+                                  setExpandedServiceId(null);
+                                  completeServiceWithUpload(svcId, fields);
+                                }}
+                              />
+                            ) : (
+                              <div className="flex flex-col gap-2 pt-1">
+                                <button
+                                  onClick={() => setUploadingServiceId(svcId)}
+                                  className="w-full py-2.5 rounded-full bg-govuk-green text-white text-sm font-bold hover:bg-govuk-green/90 transition-colors touch-feedback"
+                                >
+                                  {hint.uploadLabel}
+                                </button>
+                                <button
+                                  onClick={() => handleStartService(svcId)}
+                                  className="w-full py-2.5 rounded-full bg-white border border-gray-300 text-govuk-black text-sm font-bold hover:bg-gray-50 transition-colors touch-feedback"
+                                >
+                                  {hint.chatLabel}
+                                </button>
+                                <button
+                                  onClick={() => handleSkipService(svcId)}
+                                  className="text-sm text-govuk-dark-grey underline hover:text-govuk-black transition-colors mt-1"
+                                >
+                                  Skip
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm text-govuk-black leading-relaxed">
+                              {svc.desc}
                             </p>
-                            <p className="text-sm text-govuk-black">
-                              {svc.eligibility_summary}
-                            </p>
-                          </div>
+
+                            {svc.eligibility_summary && (
+                              <div className="bg-white rounded-lg p-3 border border-green-200">
+                                <p className="text-xs font-bold text-govuk-dark-grey uppercase tracking-wide mb-1">
+                                  Eligibility
+                                </p>
+                                <p className="text-sm text-govuk-black">
+                                  {svc.eligibility_summary}
+                                </p>
+                              </div>
+                            )}
+
+                            <div className="flex items-center gap-2 text-xs text-govuk-dark-grey">
+                              <span className="font-medium">{svc.dept}</span>
+                              <span>&middot;</span>
+                              <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">
+                                {svc.serviceType}
+                              </span>
+                            </div>
+
+                            {svc.govuk_url && (
+                              <a
+                                href={svc.govuk_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-sm text-govuk-blue underline hover:text-govuk-blue/80"
+                              >
+                                View on GOV.UK
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                                </svg>
+                              </a>
+                            )}
+
+                            <div className="flex items-center gap-3 pt-1">
+                              <button
+                                onClick={() => handleStartService(svcId)}
+                                className="flex-1 py-2.5 rounded-full bg-govuk-green text-white text-sm font-bold hover:bg-govuk-green/90 transition-colors touch-feedback"
+                              >
+                                Start this service
+                              </button>
+                              <button
+                                onClick={() => handleSkipService(svcId)}
+                                className="text-sm text-govuk-dark-grey underline hover:text-govuk-black transition-colors"
+                              >
+                                Skip
+                              </button>
+                            </div>
+                          </>
                         )}
-
-                        <div className="flex items-center gap-2 text-xs text-govuk-dark-grey">
-                          <span className="font-medium">{svc.dept}</span>
-                          <span>&middot;</span>
-                          <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">
-                            {svc.serviceType}
-                          </span>
-                        </div>
-
-                        {svc.govuk_url && (
-                          <a
-                            href={svc.govuk_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm text-govuk-blue underline hover:text-govuk-blue/80"
-                          >
-                            View on GOV.UK
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
-                            </svg>
-                          </a>
-                        )}
-
-                        <div className="flex items-center gap-3 pt-1">
-                          <button
-                            onClick={() => handleStartService(svcId)}
-                            className="flex-1 py-2.5 rounded-full bg-govuk-green text-white text-sm font-bold hover:bg-govuk-green/90 transition-colors touch-feedback"
-                          >
-                            Start this service
-                          </button>
-                          <button
-                            onClick={() => handleSkipService(svcId)}
-                            className="text-sm text-govuk-dark-grey underline hover:text-govuk-black transition-colors"
-                          >
-                            Skip
-                          </button>
-                        </div>
                       </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 );
               })}

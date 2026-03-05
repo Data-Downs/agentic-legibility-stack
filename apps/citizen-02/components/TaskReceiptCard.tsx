@@ -21,11 +21,8 @@ export function TaskReceiptCard({ content, timestamp }: TaskReceiptCardProps) {
   const addr = personaData?.address;
 
   return (
-    <div
-      className="my-3 rounded-2xl bg-white shadow-sm"
-      style={{ borderLeft: "4px solid #00703c" }}
-    >
-      <div className="px-5 py-4">
+    <div className="my-3 relative" style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.10)) drop-shadow(0 1px 2px rgba(0,0,0,0.06))" }}>
+      <div className="bg-white px-5 py-4">
         {/* Header */}
         <div className="flex items-center gap-2.5 mb-2">
           <span className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
@@ -91,6 +88,10 @@ export function TaskReceiptCard({ content, timestamp }: TaskReceiptCardProps) {
           </div>
         )}
       </div>
+      {/* Zig-zag tear-off bottom edge */}
+      <svg className="block w-full" height="8" preserveAspectRatio="none" viewBox="0 0 240 8" fill="white">
+        <polygon points="0,0 5,8 10,0 15,8 20,0 25,8 30,0 35,8 40,0 45,8 50,0 55,8 60,0 65,8 70,0 75,8 80,0 85,8 90,0 95,8 100,0 105,8 110,0 115,8 120,0 125,8 130,0 135,8 140,0 145,8 150,0 155,8 160,0 165,8 170,0 175,8 180,0 185,8 190,0 195,8 200,0 205,8 210,0 215,8 220,0 225,8 230,0 235,8 240,0" />
+      </svg>
     </div>
   );
 }
