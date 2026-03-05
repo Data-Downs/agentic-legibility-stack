@@ -632,7 +632,8 @@
       structured cards, enforcing policy rules, tracking consent, and producing an auditable trace of every action.
     </p>
     <div class="hero-actions">
-      <a href="https://als-studio.chris-8ab.workers.dev" class="btn btn-primary" target="_blank" rel="noopener">Try the Live Demo</a>
+      <a href="https://als-citizen-02.chris-8ab.workers.dev" class="btn btn-primary" target="_blank" rel="noopener">Try the Citizen App</a>
+      <a href="https://als-studio.chris-8ab.workers.dev" class="btn btn-primary" style="background: #00703c;" target="_blank" rel="noopener">Open Legibility Studio</a>
       <a href="https://github.com/datadowns/agentic-legibility-stack" class="btn btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
     </div>
     <div class="tech-badges">
@@ -759,9 +760,9 @@
 <!-- ── Citizen Experience UX ── -->
 <section class="section" id="citizen-ux">
   <div class="container">
-    <h2>Citizen Experience</h2>
+    <h2>Citizen App</h2>
     <p class="section-intro">
-      The citizen app (<code>citizen-02</code>) runs the full Orchestrator stack &mdash; AnthropicAdapter, CapabilityInvoker,
+      The citizen app runs the full Orchestrator stack &mdash; AnthropicAdapter, CapabilityInvoker,
       evidence plane, personal data, and both MCP connections &mdash; with bundled service data as a fallback.
       It uses Zustand for state management and renders structured UI elements &mdash; data-collection cards,
       consent terms, progress tracking, document uploads, payments &mdash; so citizens always know what's happening.
@@ -1358,14 +1359,9 @@
       </thead>
       <tbody>
         <tr>
-          <td><code>citizen-02</code></td>
+          <td><code>citizen-app</code></td>
           <td><code>:3102</code></td>
-          <td>Full-stack citizen app: Orchestrator, evidence plane, personal data, MCP (GOV.UK + local), Studio API, 7 personas, eligibility filtering, document upload, payments, plan view. Bundles service data for offline fallback</td>
-        </tr>
-        <tr>
-          <td><code>citizen-experience</code></td>
-          <td><code>:3100</code></td>
-          <td>Citizen-facing chat with triage, structured cards, consent, personal data dashboard, evidence API. Deployed on Cloudflare Workers</td>
+          <td>Full-stack citizen app: Orchestrator, evidence plane, personal data, MCP (GOV.UK + local), Studio API, 7 personas, eligibility filtering, document upload, payments, plan view. Deployed on Cloudflare Workers</td>
         </tr>
         <tr>
           <td><code>legibility-studio</code></td>
@@ -1390,7 +1386,7 @@
       <div class="card card-accent card-green">
         <div class="card-tag">E2E Tests</div>
         <h3>Playwright</h3>
-        <p>Smoke tests for citizen-02 running against the dev server on port 3102.
+        <p>Smoke tests for the Citizen App running against the dev server on port 3102.
           Configured via <code>playwright.config.ts</code>.</p>
       </div>
       <div class="card card-accent card-orange">
@@ -1408,42 +1404,13 @@
   <div class="container">
     <h2>Deployment</h2>
     <p class="section-intro">
-      Two Cloudflare Workers with 3 D1 databases, plus a standalone Next.js app.
+      Two Cloudflare Workers with 3 D1 databases.
       The same codebase runs locally with SQLite via a <code>DatabaseAdapter</code> abstraction.
     </p>
 
     <div class="two-col-split" style="margin-bottom: 2rem;">
       <div class="worker-box">
-        <h3>Citizen Experience <span class="wb-tag">Worker</span></h3>
-        <ul>
-          <li>Chat UI with persona picker and triage</li>
-          <li>Structured card data collection</li>
-          <li>Personal data dashboard (3-tier)</li>
-          <li>Evidence API (<code>/api/traces</code>)</li>
-          <li>LLM calls via AnthropicAdapter</li>
-        </ul>
-        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
-          <strong>D1 Bindings:</strong> DB (traces), PERSONAL_DATA_DB
-        </div>
-      </div>
-      <div class="worker-box">
-        <h3>Legibility Studio <span class="wb-tag">Worker</span></h3>
-        <ul>
-          <li>Service catalog &amp; gap analysis</li>
-          <li>Artefact generation from GOV.UK</li>
-          <li>Trace explorer &amp; pipeline legibility</li>
-          <li>Remote MCP server (<code>/mcp</code>)</li>
-          <li>V1 REST API (<code>/api/v1/*</code>)</li>
-        </ul>
-        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
-          <strong>D1 Binding:</strong> SERVICE_STORE_DB
-        </div>
-      </div>
-    </div>
-
-    <div style="text-align: center; margin-bottom: 2rem;">
-      <div class="worker-box" style="display: inline-block; max-width: 500px;">
-        <h3>Citizen-02 <span class="wb-tag" style="background: #1d70b8;">Full Stack</span></h3>
+        <h3>Citizen App <span class="wb-tag">Worker</span></h3>
         <ul>
           <li>Full Orchestrator + CapabilityInvoker + AnthropicAdapter</li>
           <li>Evidence plane (TraceStore, CaseStore, ReceiptGenerator)</li>
@@ -1455,13 +1422,29 @@
           <li>JSON and MCP service modes (selectable per session)</li>
         </ul>
         <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
-          <strong>Port:</strong> 3102 &bull; Bundles service data for offline/Workers compatibility
+          <strong>D1 Bindings:</strong> DB (traces), PERSONAL_DATA_DB
         </div>
+        <a href="https://als-citizen-02.chris-8ab.workers.dev" class="btn btn-primary" style="margin-top: 1rem; font-size: 0.85rem; padding: 0.5rem 1rem;" target="_blank" rel="noopener">Try it now &rarr;</a>
+      </div>
+      <div class="worker-box">
+        <h3>Legibility Studio <span class="wb-tag">Worker</span></h3>
+        <ul>
+          <li>Service catalog &amp; gap analysis</li>
+          <li>Artefact generation from GOV.UK</li>
+          <li>Trace explorer &amp; pipeline legibility</li>
+          <li>Remote MCP server (<code>/mcp</code>)</li>
+          <li>V1 REST API (<code>/api/v1/*</code>)</li>
+          <li>Persona management &amp; case ledger</li>
+        </ul>
+        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
+          <strong>D1 Binding:</strong> SERVICE_STORE_DB
+        </div>
+        <a href="https://als-studio.chris-8ab.workers.dev" class="btn btn-primary" style="margin-top: 1rem; font-size: 0.85rem; padding: 0.5rem 1rem; background: #00703c;" target="_blank" rel="noopener">Try it now &rarr;</a>
       </div>
     </div>
 
     <div class="worker-binding">
-      <span>citizen-experience</span>
+      <span>citizen-app</span>
       <span class="binding-arrow">&larr; <span class="binding-label">STUDIO_API_URL</span> &rarr;</span>
       <span>legibility-studio</span>
     </div>
@@ -1504,7 +1487,7 @@
       </thead>
       <tbody>
         <tr><td>Services</td><td>4 hand-authored</td><td><strong>108 graph + 4 hand-crafted</strong></td></tr>
-        <tr><td>Apps</td><td>2</td><td><strong>3</strong> (citizen-02, citizen-experience, legibility-studio)</td></tr>
+        <tr><td>Apps</td><td>2</td><td><strong>2</strong> (citizen-app, legibility-studio)</td></tr>
         <tr><td>Packages</td><td>7</td><td><strong>10</strong> (+ service-graph, service-store)</td></tr>
         <tr><td>Personas</td><td>None</td><td><strong>7</strong> fully-specified simulated citizens</td></tr>
         <tr><td>Card Types</td><td>Basic chat</td><td><strong>15</strong> structured card definitions with 15+ field types</td></tr>
@@ -1538,7 +1521,8 @@
           The platform is deployed on Cloudflare Workers. No setup required.
         </p>
         <div class="hero-actions" style="margin-bottom: 1.5rem;">
-          <a href="https://als-studio.chris-8ab.workers.dev" class="btn btn-primary" target="_blank" rel="noopener">Open Legibility Studio</a>
+          <a href="https://als-citizen-02.chris-8ab.workers.dev" class="btn btn-primary" target="_blank" rel="noopener">Try the Citizen App</a>
+          <a href="https://als-studio.chris-8ab.workers.dev" class="btn btn-primary" style="background: #00703c;" target="_blank" rel="noopener">Open Legibility Studio</a>
         </div>
         <h3 style="margin-bottom: 0.75rem; font-size: 1rem;">Connect via MCP</h3>
         <p style="color: #505a5f; margin-bottom: 0.75rem; font-size: 0.9rem;">
@@ -1574,8 +1558,7 @@
             <code>npm run dev</code>
           </li>
           <li>Open the apps<br>
-            <a href="http://localhost:3102">localhost:3102</a> (Citizen-02) &bull;
-            <a href="http://localhost:3100">localhost:3100</a> (Citizen Experience) &bull;
+            <a href="http://localhost:3102">localhost:3102</a> (Citizen App) &bull;
             <a href="http://localhost:3101">localhost:3101</a> (Studio)
           </li>
         </ol>
