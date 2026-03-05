@@ -761,7 +761,8 @@
   <div class="container">
     <h2>Citizen Experience</h2>
     <p class="section-intro">
-      The citizen app (<code>citizen-02</code>) is a standalone Next.js application with bundled service data.
+      The citizen app (<code>citizen-02</code>) runs the full Orchestrator stack &mdash; AnthropicAdapter, CapabilityInvoker,
+      evidence plane, personal data, and both MCP connections &mdash; with bundled service data as a fallback.
       It uses Zustand for state management and renders structured UI elements &mdash; data-collection cards,
       consent terms, progress tracking, document uploads, payments &mdash; so citizens always know what's happening.
     </p>
@@ -1359,7 +1360,7 @@
         <tr>
           <td><code>citizen-02</code></td>
           <td><code>:3102</code></td>
-          <td>Standalone citizen app with bundled data, Zustand state, persona picker, structured cards, document upload, payments, eligibility filtering, plan view</td>
+          <td>Full-stack citizen app: Orchestrator, evidence plane, personal data, MCP (GOV.UK + local), Studio API, 7 personas, eligibility filtering, document upload, payments, plan view. Bundles service data for offline fallback</td>
         </tr>
         <tr>
           <td><code>citizen-experience</code></td>
@@ -1441,17 +1442,20 @@
     </div>
 
     <div style="text-align: center; margin-bottom: 2rem;">
-      <div class="worker-box" style="display: inline-block; max-width: 400px;">
-        <h3>Citizen-02 <span class="wb-tag" style="background: #1d70b8;">Standalone</span></h3>
+      <div class="worker-box" style="display: inline-block; max-width: 500px;">
+        <h3>Citizen-02 <span class="wb-tag" style="background: #1d70b8;">Full Stack</span></h3>
         <ul>
-          <li>Bundled service data (no external DB)</li>
+          <li>Full Orchestrator + CapabilityInvoker + AnthropicAdapter</li>
+          <li>Evidence plane (TraceStore, CaseStore, ReceiptGenerator)</li>
+          <li>Personal data (3-tier: Verified, Submitted, Inferred)</li>
+          <li>GOV.UK MCP (live data) + Local MCP (service tools)</li>
+          <li>Studio API with bundled data fallback</li>
           <li>7 personas with eligibility filtering</li>
           <li>Document upload &amp; payment cards</li>
-          <li>Zustand state management</li>
-          <li>Plan view with service hints</li>
+          <li>JSON and MCP service modes (selectable per session)</li>
         </ul>
         <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
-          <strong>Port:</strong> 3102 &bull; Standard Next.js deployment
+          <strong>Port:</strong> 3102 &bull; Bundles service data for offline/Workers compatibility
         </div>
       </div>
     </div>
