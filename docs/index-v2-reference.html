@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agentic Legibility Stack &mdash; V3 Platform</title>
-  <meta name="description" content="108 government services with full artefact sets, 16 life events, 7 citizen personas, 3 Next.js apps and 10 shared packages. A platform reference architecture for accountable AI agents in UK government.">
+  <title>Agentic Legibility Stack &mdash; V2 Platform</title>
+  <meta name="description" content="108 government services with full artefact sets, 16 life events, deployed on Cloudflare Workers. A platform reference architecture for accountable AI agents in UK government.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -322,7 +322,7 @@
     /* ── Stats Banner ── */
     .stat-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 2rem;
       text-align: center;
       padding: 1rem 0;
@@ -550,32 +550,6 @@
       background: #b1b4b6;
     }
 
-    /* ── Persona Grid ── */
-    .persona-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1rem;
-    }
-    .persona-card {
-      background: #fff;
-      border: 1px solid #b1b4b6;
-      border-radius: 2px;
-      padding: 1rem;
-      text-align: center;
-      transition: border-color 0.15s;
-    }
-    .persona-card:hover { border-color: #1d70b8; }
-    .persona-card .persona-name {
-      font-weight: 600;
-      font-size: 0.9rem;
-      margin-bottom: 0.25rem;
-    }
-    .persona-card .persona-desc {
-      font-size: 0.75rem;
-      color: #505a5f;
-      line-height: 1.4;
-    }
-
     /* ── Footer ── */
     .footer {
       background: #0b0c0c;
@@ -605,7 +579,6 @@
     <ul class="nav-links">
       <li><a href="#how-it-works">How It Works</a></li>
       <li><a href="#citizen-ux">Citizen UX</a></li>
-      <li><a href="#personas">Personas</a></li>
       <li><a href="#graph">Graph</a></li>
       <li><a href="#architecture">Architecture</a></li>
       <li><a href="#data-planes">Data Planes</a></li>
@@ -622,12 +595,11 @@
     <span class="hero-label">Platform Reference Architecture</span>
     <h1>Agentic Legibility Stack</h1>
     <p class="hero-subtitle">
-      108 government services &mdash; each with full machine-readable artefacts &mdash; across 16 life events,
-      with 7 citizen personas for simulation.
+      108 government services &mdash; each with full machine-readable artefacts &mdash; across 16 life events.
       A reference architecture for accountable AI agents in UK government.
     </p>
     <p class="hero-desc">
-      A Turborepo monorepo with 3 Next.js apps and 10 shared packages. Citizens describe a life situation,
+      A Turborepo monorepo with 2 Next.js apps and 10 shared packages. Citizens describe a life situation,
       the AI agent triages them to the right service, then guides them through it &mdash; collecting data via
       structured cards, enforcing policy rules, tracking consent, and producing an auditable trace of every action.
     </p>
@@ -645,9 +617,6 @@
       <span class="badge">MCP</span>
       <span class="badge">GOV.UK APIs</span>
       <span class="badge">React 19</span>
-      <span class="badge">Zustand</span>
-      <span class="badge">Vitest</span>
-      <span class="badge">Playwright</span>
     </div>
   </div>
 </section>
@@ -665,16 +634,12 @@
         <div class="stat-label">Life Events</div>
       </div>
       <div>
-        <div class="stat-number">7</div>
-        <div class="stat-label">Citizen Personas</div>
+        <div class="stat-number">8</div>
+        <div class="stat-label">Interaction Types</div>
       </div>
       <div>
-        <div class="stat-number">15</div>
-        <div class="stat-label">Card Definitions</div>
-      </div>
-      <div>
-        <div class="stat-number">30</div>
-        <div class="stat-label">Test Files</div>
+        <div class="stat-number">3</div>
+        <div class="stat-label">D1 Databases</div>
       </div>
     </div>
   </div>
@@ -703,7 +668,7 @@
       <div class="orch-connector"></div>
       <div class="orch-step" style="border-left-color: #00703c;">
         <span class="step-num" style="background: #00703c;">3</span>
-        <div><strong>Eligibility &amp; state evaluation</strong><br><span>Eligibility filter checks persona data; StateMachine returns allowed transitions</span></div>
+        <div><strong>Policy &amp; state evaluation</strong><br><span>PolicyEvaluator checks eligibility rules; StateMachine returns allowed transitions</span></div>
       </div>
       <div class="orch-connector"></div>
       <div class="orch-step" style="border-left-color: #1d70b8;">
@@ -713,7 +678,7 @@
       <div class="orch-connector"></div>
       <div class="orch-step" style="border-left-color: #00703c;">
         <span class="step-num" style="background: #00703c;">5</span>
-        <div><strong>Orchestrator validates the response</strong><br><span>Validates proposed state transition, extracts structured fields, resolves cards for new state</span></div>
+        <div><strong>Orchestrator validates the response</strong><br><span>Validates proposed state transition, extracts facts, resolves cards for new state</span></div>
       </div>
       <div class="orch-connector"></div>
       <div class="orch-step" style="border-left-color: #f47738;">
@@ -761,18 +726,18 @@
   <div class="container">
     <h2>Citizen Experience</h2>
     <p class="section-intro">
-      The citizen app (<code>citizen-02</code>) is a standalone Next.js application with bundled service data.
-      It uses Zustand for state management and renders structured UI elements &mdash; data-collection cards,
-      consent terms, progress tracking, document uploads, payments &mdash; so citizens always know what's happening.
+      The chat interface does more than render text. Each conversation state triggers
+      structured UI elements &mdash; data-collection cards, consent terms, progress tracking,
+      quick-reply buttons &mdash; so citizens always know what's happening and what's needed next.
     </p>
 
     <div class="grid-3" style="margin-bottom: 2rem;">
       <div class="card card-accent card-blue">
         <div class="card-tag">Discovery</div>
-        <h3>Triage &amp; Browse Topics</h3>
-        <p>No service pre-selected. Citizens can describe their situation for AI triage
-          or browse 11 GOV.UK service categories. Life events and the service graph power the discovery.
-          Persona-aware eligibility filtering narrows results.</p>
+        <h3>Triage Mode</h3>
+        <p>No service pre-selected. The citizen describes their life situation
+          and the agent identifies the right service(s) through conversation.
+          Life events and the service graph power the discovery.</p>
       </div>
       <div class="card card-accent card-purple">
         <div class="card-tag">Interaction</div>
@@ -783,30 +748,31 @@
       </div>
       <div class="card card-accent card-green">
         <div class="card-tag">Data Collection</div>
-        <h3>15 Structured Card Types</h3>
+        <h3>Structured Cards</h3>
         <p>Each service state can trigger a card with typed input fields (text, date, currency,
-          address, sort-code, file upload, etc.). Fields are pre-filled from the citizen's personal data profile.
+          address, etc.). Fields are pre-filled from the citizen's personal data profile.
           Submitted data goes to the Tier 2 store.</p>
       </div>
     </div>
 
     <div class="grid-3" style="margin-bottom: 2rem;">
       <div class="card card-accent card-orange">
-        <div class="card-tag">Documents</div>
-        <h3>Document Upload</h3>
-        <p>Citizens can upload documents (P45, photo ID, utility bills) with key detail extraction
-          and user confirmation flow. Plan hints compute upload availability based on persona data
-          (e.g., P45 hints for unemployed personas).</p>
+        <div class="card-tag">Consent</div>
+        <h3>Consent Cards</h3>
+        <p>Before any data is shared with a service, the citizen sees exactly what will be
+          shared, from which tier, with whom, and why. They grant or deny each item individually.
+          Consent decisions are recorded in the Evidence Plane.</p>
       </div>
       <div class="card card-accent card-teal">
-        <div class="card-tag">Payments</div>
-        <h3>Payment Cards</h3>
-        <p>Payment method selection and processing UI for services that require fees or payments.
-          Integrates with the card system for consistent rendering and state tracking.</p>
+        <div class="card-tag">Progress</div>
+        <h3>State Progress Tracker</h3>
+        <p>A visual progress bar driven by the service's state model. For hand-crafted services,
+          custom milestones are shown. For graph services, milestones are auto-generated from
+          state instruction templates (8 interaction types).</p>
       </div>
       <div class="card card-accent card-blue">
         <div class="card-tag">Completion</div>
-        <h3>Task Receipts &amp; Related Services</h3>
+        <h3>Terminal States &amp; Related Services</h3>
         <p>When a journey reaches a terminal state (completed, registered, issued, rejected, etc.),
           a receipt card appears with a reference number. For successful completions,
           related services from the graph are suggested.</p>
@@ -858,79 +824,12 @@
       <strong>Persistent state:</strong> Conversation history, state machine progress, task completions,
       and submitted data all survive conversation switching. A citizen can start Universal Credit,
       switch to check their driving licence, and return to find their UC application exactly where they left it.
-      State is managed via Zustand with view history and navigation.
-    </div>
-  </div>
-</section>
-
-<!-- ── Personas ── -->
-<section class="section section-alt" id="personas">
-  <div class="container">
-    <h2>7 Citizen Personas</h2>
-    <p class="section-intro">
-      Each persona is a fully-specified simulated citizen with personal details, credentials,
-      employment, housing, and financial data. The eligibility filter uses persona data to
-      narrow service recommendations &mdash; checking age, income, savings, housing status, and more.
-    </p>
-
-    <div class="persona-grid" style="margin-bottom: 2rem;">
-      <div class="persona-card">
-        <div class="persona-name">Emma Parker</div>
-        <div class="persona-desc">Young expecting couple, first baby</div>
-      </div>
-      <div class="persona-card">
-        <div class="persona-name">Rajesh Patel</div>
-        <div class="persona-desc">Settled status, professional</div>
-      </div>
-      <div class="persona-card">
-        <div class="persona-name">Margaret Thompson</div>
-        <div class="persona-desc">Retired, pension age</div>
-      </div>
-      <div class="persona-card">
-        <div class="persona-name">Priya Sharma</div>
-        <div class="persona-desc">Young professional</div>
-      </div>
-      <div class="persona-card">
-        <div class="persona-name">David Evans</div>
-        <div class="persona-desc">Mid-career worker</div>
-      </div>
-      <div class="persona-card">
-        <div class="persona-name">Mary Summers</div>
-        <div class="persona-desc">Elderly, health needs</div>
-      </div>
-      <div class="persona-card">
-        <div class="persona-name">Rebecca Shortland</div>
-        <div class="persona-desc">Single parent</div>
-      </div>
-    </div>
-
-    <div class="grid-2">
-      <div class="card card-accent card-blue">
-        <div class="card-tag">Intelligence</div>
-        <h3>Eligibility Filtering</h3>
-        <p>Conservative approach: only excludes services when there is a clear mismatch.
-          Checks universal service flags, age-based eligibility, income/savings thresholds,
-          housing status, and property ownership. Calculates persona age from date of birth.</p>
-      </div>
-      <div class="card card-accent card-green">
-        <div class="card-tag">Context</div>
-        <h3>Plan Hints</h3>
-        <p>Computes service hints based on persona data. For example, unemployed personas
-          receive P45 document upload hints. Upload availability and labels are determined
-          per-service based on the persona's circumstances.</p>
-      </div>
-    </div>
-
-    <div class="callout">
-      <strong>Persona data model:</strong> Each persona JSON includes name, date of birth, NI number,
-      full address, credentials (driving licence, NI card), employment status, housing details,
-      and financial information. This data pre-fills structured cards and drives eligibility checks.
     </div>
   </div>
 </section>
 
 <!-- ── The Service Graph ── -->
-<section class="section" id="graph">
+<section class="section section-alt" id="graph">
   <div class="container">
     <h2>The Service Graph</h2>
     <p class="section-intro">
@@ -1053,7 +952,7 @@
 </section>
 
 <!-- ── Architecture ── -->
-<section class="section section-alt" id="architecture">
+<section class="section" id="architecture">
   <div class="container">
     <h2>Architecture</h2>
     <p class="section-intro">
@@ -1078,7 +977,7 @@
       <div class="diagram-row">
         <div class="diagram-box" style="border-left-color: #1d70b8; min-width: 280px;">
           <strong>Chat API + Orchestrator</strong>
-          <span>State machine &bull; Eligibility filter &bull; Card resolver &bull; Field collector</span>
+          <span>State machine &bull; Policy eval &bull; Card resolver &bull; Field collector</span>
         </div>
       </div>
       <div class="diagram-arrow"></div>
@@ -1097,7 +996,7 @@
       <!-- Services -->
       <div class="diagram-row">
         <div class="diagram-box" style="border-left-color: #00703c; min-width: 280px;">
-          <strong>108 Graph + 4 Hand-Crafted Services</strong>
+          <strong>108 Government Services</strong>
           <span>Each with manifest &bull; policy &bull; state-model &bull; consent &bull; cards</span>
         </div>
       </div>
@@ -1141,7 +1040,7 @@
 </section>
 
 <!-- ── Three Data Planes ── -->
-<section class="section" id="data-planes">
+<section class="section section-alt" id="data-planes">
   <div class="container">
     <h2>Three Data Planes</h2>
     <p class="section-intro">
@@ -1204,8 +1103,8 @@
   </div>
 </section>
 
-<!-- ── The 5-Artefact Contract ── -->
-<section class="section section-alt" id="artefacts">
+<!-- ── The 4-Artefact Contract ── -->
+<section class="section" id="artefacts">
   <div class="container">
     <h2>The 5-Artefact Contract</h2>
     <p class="section-intro">
@@ -1240,7 +1139,7 @@
       <div class="card card-accent card-teal">
         <div class="card-tag">Data Collection</div>
         <h3>card-definitions &mdash; COLLECT</h3>
-        <p>Typed field definitions per state (text, date, currency, address, file, sort-code, etc.) with pre-fill sources, validation rules, and conditional visibility. Drives the structured card UI.</p>
+        <p>Typed field definitions per state (text, date, currency, address, etc.) with pre-fill sources, validation rules, and conditional visibility. Drives the structured card UI.</p>
       </div>
     </div>
 
@@ -1254,7 +1153,7 @@
 </section>
 
 <!-- ── Remote MCP Server ── -->
-<section class="section" id="mcp">
+<section class="section section-alt" id="mcp">
   <div class="container">
     <h2>MCP Integration</h2>
     <p class="section-intro">
@@ -1323,12 +1222,12 @@
   </div>
 </section>
 
-<!-- ── Packages ── -->
-<section class="section section-alt" id="packages">
+<!-- ── 10 Packages ── -->
+<section class="section" id="packages">
   <div class="container">
     <h2>10 Packages</h2>
     <p class="section-intro">
-      The monorepo is organized as 3 Next.js applications and 10 shared packages.
+      The monorepo is organized as 2 Next.js applications and 10 shared packages.
       Each package has a single responsibility.
     </p>
 
@@ -1337,7 +1236,7 @@
         <tr><th>Package</th><th>Responsibility</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>@als/schemas</code></td><td>Shared TypeScript types, 15 card definitions in card registry, state instruction templates, terminal state config</td></tr>
+        <tr><td><code>@als/schemas</code></td><td>Shared TypeScript types, card registry, state instruction templates, terminal state config</td></tr>
         <tr><td><code>@als/runtime</code></td><td>Orchestrator (deterministic controller), CapabilityInvoker, JsonServiceStrategy, McpServiceStrategy</td></tr>
         <tr><td><code>@als/evidence</code></td><td>TraceStore, CaseStore, ReceiptGenerator, ReplayEngine &mdash; the Evidence Plane</td></tr>
         <tr><td><code>@als/legibility</code></td><td>StateMachine, PolicyEvaluator, ConsentManager, FieldCollector &mdash; artefact interpretation</td></tr>
@@ -1353,61 +1252,32 @@
     <h3 style="margin-bottom: 0.75rem;">Applications</h3>
     <table class="data-table">
       <thead>
-        <tr><th>App</th><th>Local</th><th>Purpose</th></tr>
+        <tr><th>App</th><th>Local</th><th>Deployed</th><th>Purpose</th></tr>
       </thead>
       <tbody>
         <tr>
-          <td><code>citizen-02</code></td>
-          <td><code>:3102</code></td>
-          <td>Standalone citizen app with bundled data, Zustand state, persona picker, structured cards, document upload, payments, eligibility filtering, plan view</td>
-        </tr>
-        <tr>
           <td><code>citizen-experience</code></td>
           <td><code>:3100</code></td>
-          <td>Citizen-facing chat with triage, structured cards, consent, personal data dashboard, evidence API. Deployed on Cloudflare Workers</td>
+          <td><a href="https://als-citizen.chris-8ab.workers.dev" target="_blank" rel="noopener">als-citizen.&hellip;</a></td>
+          <td>Citizen-facing chat with triage, structured cards, consent, personal data dashboard, evidence API</td>
         </tr>
         <tr>
           <td><code>legibility-studio</code></td>
           <td><code>:3101</code></td>
-          <td>Service catalog, artefact generation, trace explorer, pipeline legibility, case ledger, gap analysis, MCP server. Deployed on Cloudflare Workers</td>
+          <td><a href="https://als-studio.chris-8ab.workers.dev" target="_blank" rel="noopener">als-studio.&hellip;</a></td>
+          <td>Service catalog, artefact generation, trace explorer, case ledger, gap analysis, MCP server</td>
         </tr>
       </tbody>
     </table>
-
-    <h3 style="margin-top: 2rem; margin-bottom: 0.75rem;">Testing</h3>
-    <p style="color: #505a5f; margin-bottom: 1rem; font-size: 0.95rem;">
-      30 test files across all packages and apps. Vitest with workspace configuration, plus Playwright E2E smoke tests.
-    </p>
-    <div class="grid-3">
-      <div class="card card-accent card-blue">
-        <div class="card-tag">Unit &amp; API Tests</div>
-        <h3>Vitest</h3>
-        <p>Each package has its own <code>vitest.config.ts</code>. Component tests use
-          <code>@testing-library/react</code>. API route tests use Node environment override.
-          Zustand store mocked in component tests.</p>
-      </div>
-      <div class="card card-accent card-green">
-        <div class="card-tag">E2E Tests</div>
-        <h3>Playwright</h3>
-        <p>Smoke tests for citizen-02 running against the dev server on port 3102.
-          Configured via <code>playwright.config.ts</code>.</p>
-      </div>
-      <div class="card card-accent card-orange">
-        <div class="card-tag">Safety</div>
-        <h3>No Real API Calls</h3>
-        <p>All external dependencies are mocked: Anthropic SDK, databases, MCP server.
-          Evidence tests use in-memory <code>DatabaseAdapter</code>.</p>
-      </div>
-    </div>
   </div>
 </section>
 
 <!-- ── Deployment Architecture ── -->
-<section class="section" id="deployment">
+<section class="section section-alt" id="deployment">
   <div class="container">
     <h2>Deployment</h2>
     <p class="section-intro">
-      Two Cloudflare Workers with 3 D1 databases, plus a standalone Next.js app.
+      Two Cloudflare Workers with 3 D1 databases.
       The same codebase runs locally with SQLite via a <code>DatabaseAdapter</code> abstraction.
     </p>
 
@@ -1430,28 +1300,12 @@
         <ul>
           <li>Service catalog &amp; gap analysis</li>
           <li>Artefact generation from GOV.UK</li>
-          <li>Trace explorer &amp; pipeline legibility</li>
+          <li>Trace explorer &amp; case ledger</li>
           <li>Remote MCP server (<code>/mcp</code>)</li>
           <li>V1 REST API (<code>/api/v1/*</code>)</li>
         </ul>
         <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
           <strong>D1 Binding:</strong> SERVICE_STORE_DB
-        </div>
-      </div>
-    </div>
-
-    <div style="text-align: center; margin-bottom: 2rem;">
-      <div class="worker-box" style="display: inline-block; max-width: 400px;">
-        <h3>Citizen-02 <span class="wb-tag" style="background: #1d70b8;">Standalone</span></h3>
-        <ul>
-          <li>Bundled service data (no external DB)</li>
-          <li>7 personas with eligibility filtering</li>
-          <li>Document upload &amp; payment cards</li>
-          <li>Zustand state management</li>
-          <li>Plan view with service hints</li>
-        </ul>
-        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #505a5f;">
-          <strong>Port:</strong> 3102 &bull; Standard Next.js deployment
         </div>
       </div>
     </div>
@@ -1471,7 +1325,7 @@
       </div>
       <div class="card card-accent card-green">
         <h3>OpenNext on Workers</h3>
-        <p>Both deployed apps use <code>@opennextjs/cloudflare</code> to compile Next.js 15 for the Workers runtime.
+        <p>Both apps use <code>@opennextjs/cloudflare</code> to compile Next.js 15 for the Workers runtime.
           Static assets are served from Workers KV, server routes run on the edge.
           <code>better-sqlite3</code> is in <code>optionalDependencies</code> and excluded via <code>serverExternalPackages</code>.</p>
       </div>
@@ -1479,15 +1333,13 @@
   </div>
 </section>
 
-<!-- ── From V1 to V3 ── -->
-<section class="section section-alt" id="evolution">
+<!-- ── From V1 to V2 ── -->
+<section class="section" id="evolution">
   <div class="container">
     <h2>From Prototype to Platform</h2>
     <p class="section-intro">
       The V1 prototype proved the architecture with 4 hand-authored services running locally.
-      V2 scaled to 108 services with Cloudflare deployment.
-      The current state adds a standalone citizen app, 7 personas, eligibility filtering,
-      document upload, payments, and comprehensive testing.
+      V2 scales it to 108 services across 15 departments with a full citizen experience.
     </p>
 
     <table class="data-table" style="margin-bottom: 1.5rem;">
@@ -1495,21 +1347,19 @@
         <tr>
           <th>Dimension</th>
           <th>V1 Prototype</th>
-          <th>Current</th>
+          <th>V2 Platform</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td>Services</td><td>4 hand-authored</td><td><strong>108 graph + 4 hand-crafted</strong></td></tr>
-        <tr><td>Apps</td><td>2</td><td><strong>3</strong> (citizen-02, citizen-experience, legibility-studio)</td></tr>
-        <tr><td>Packages</td><td>7</td><td><strong>10</strong> (+ service-graph, service-store)</td></tr>
-        <tr><td>Personas</td><td>None</td><td><strong>7</strong> fully-specified simulated citizens</td></tr>
-        <tr><td>Card Types</td><td>Basic chat</td><td><strong>15</strong> structured card definitions with 15+ field types</td></tr>
-        <tr><td>Databases</td><td>1 local SQLite</td><td><strong>3 D1 databases</strong> + local SQLite</td></tr>
-        <tr><td>Deployment</td><td>Local only</td><td><strong>Cloudflare Workers</strong> + standalone Next.js</td></tr>
-        <tr><td>Data Collection</td><td>Chat only</td><td><strong>Structured cards</strong> + document upload + payments</td></tr>
-        <tr><td>Eligibility</td><td>Manual</td><td><strong>Persona-aware filtering</strong> (age, income, housing)</td></tr>
+        <tr><td>Services</td><td>4 hand-authored</td><td><strong>108</strong> (graph + hand-crafted)</td></tr>
+        <tr><td>Packages</td><td>7</td><td><strong>10</strong></td></tr>
+        <tr><td>Databases</td><td>1 local SQLite</td><td><strong>3 D1 databases</strong></td></tr>
+        <tr><td>Deployment</td><td>Local only</td><td><strong>Cloudflare Workers</strong></td></tr>
+        <tr><td>Service Discovery</td><td>Manual selection</td><td><strong>Triage via conversation</strong> + life event graph</td></tr>
+        <tr><td>Data Collection</td><td>Chat only</td><td><strong>Structured cards</strong> with typed fields + pre-fill</td></tr>
         <tr><td>Personal Data</td><td>None</td><td><strong>3-tier model</strong> (verified/submitted/inferred)</td></tr>
-        <tr><td>Tests</td><td>Few</td><td><strong>30 test files</strong> (Vitest + Playwright E2E)</td></tr>
+        <tr><td>State Model</td><td>3 hardcoded services</td><td><strong>8 interaction type templates</strong> + per-service overrides</td></tr>
+        <tr><td>Progress</td><td>Ephemeral</td><td><strong>Persistent</strong> across conversation switches</td></tr>
         <tr><td>MCP</td><td>stdio, 8 tools</td><td><strong>Public MCP server</strong> (220 tools) + GOV.UK MCP (33 live APIs)</td></tr>
       </tbody>
     </table>
@@ -1517,13 +1367,12 @@
     <div class="callout">
       The original V1 documentation is preserved at <a href="v1/">docs/v1/</a> &mdash; it covers the foundational
       architecture, the 4-artefact pattern, the Evidence Plane, and the two agent personalities (DOT &amp; MAX).
-      The previous V2 documentation is preserved at <a href="index-v2-reference.html">index-v2-reference.html</a>.
     </div>
   </div>
 </section>
 
 <!-- ── Try It Yourself ── -->
-<section class="section" id="try-it">
+<section class="section section-alt" id="try-it">
   <div class="container">
     <h2>Try It Yourself</h2>
 
@@ -1564,14 +1413,16 @@
             <code>npm install</code>
           </li>
           <li>Set your API key<br>
-            <code>echo "ANTHROPIC_API_KEY=sk-ant-..." > apps/citizen-02/.env.local</code>
+            <code>echo "ANTHROPIC_API_KEY=sk-ant-..." > apps/citizen-experience/.env.local</code>
           </li>
-          <li>Start all apps<br>
-            <code>npm run dev</code>
+          <li>Seed the databases<br>
+            <code>npm run seed</code>
+          </li>
+          <li>Start both apps<br>
+            <code>npx turbo dev</code>
           </li>
           <li>Open the apps<br>
-            <a href="http://localhost:3102">localhost:3102</a> (Citizen-02) &bull;
-            <a href="http://localhost:3100">localhost:3100</a> (Citizen Experience) &bull;
+            <a href="http://localhost:3100">localhost:3100</a> (Citizen) &bull;
             <a href="http://localhost:3101">localhost:3101</a> (Studio)
           </li>
         </ol>
@@ -1593,7 +1444,6 @@
         <a href="https://github.com/datadowns/agentic-legibility-stack" target="_blank" rel="noopener">GitHub Repository</a>
         <p><a href="https://als-studio.chris-8ab.workers.dev" target="_blank" rel="noopener">Live Demo</a></p>
         <p><a href="v1/">V1 Documentation</a></p>
-        <p><a href="index-v2-reference.html">V2 Documentation</a></p>
         <p style="margin-top: 0.5rem; font-size: 0.8rem;">Branch: <code style="color: #b1b4b6;">main</code></p>
       </div>
     </div>
