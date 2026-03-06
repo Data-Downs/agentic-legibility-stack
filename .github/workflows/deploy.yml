@@ -32,6 +32,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run build
       - run: npm run build:cf
         working-directory: apps/legibility-studio
       - uses: cloudflare/wrangler-action@v3
@@ -52,6 +53,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run build
       - run: npm run build:cf
         working-directory: apps/citizen-experience
       - uses: cloudflare/wrangler-action@v3
@@ -72,6 +74,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run build
       - run: npm run build:cf
         working-directory: apps/citizen-02
       - uses: cloudflare/wrangler-action@v3
