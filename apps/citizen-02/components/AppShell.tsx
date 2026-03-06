@@ -19,6 +19,7 @@ import { AgentSelectionSheet } from "./sheets/AgentSelectionSheet";
 import { TaskDetailSheet } from "./sheets/TaskDetailSheet";
 import { TopicQuestionsSheet } from "./sheets/TopicQuestionsSheet";
 import { FilingPromptSheet } from "./sheets/FilingPromptSheet";
+import { PaymentSheet } from "./sheets/PaymentSheet";
 import { getAllTerminalStateIds } from "@als/schemas";
 
 const TERMINAL_STATES = getAllTerminalStateIds();
@@ -127,6 +128,8 @@ function BottomSheetLayer() {
         return <TopicQuestionsSheet data={bottomSheet.data} />;
       case "filing-prompt":
         return <FilingPromptSheet />;
+      case "payment":
+        return <PaymentSheet />;
       default:
         return null;
     }
@@ -142,6 +145,8 @@ function BottomSheetLayer() {
         return (bottomSheet.data as { topic?: string })?.topic || "Questions";
       case "filing-prompt":
         return "Save conversation";
+      case "payment":
+        return "Apple Pay";
       default:
         return undefined;
     }
@@ -201,7 +206,7 @@ export function AppShell() {
     !journeyComplete;
 
   return (
-    <div className="min-h-screen flex flex-col bg-govuk-page-bg">
+    <div className="h-screen flex flex-col bg-govuk-page-bg overflow-hidden">
       {/* Skip link */}
       <a
         href="#main-content"
@@ -212,14 +217,14 @@ export function AppShell() {
 
       <AppHeader />
 
-      {/* Main content */}
+      {/* Main content — the only scrollable area */}
       <main
         id="main-content"
         role="main"
-        className={`flex-1 ${currentView === "chat" ? "flex flex-col" : ""}`}
+        className="flex-1 overflow-y-auto flex flex-col min-h-0 pb-14"
       >
         <div
-          className={`${currentView === "chat" ? "flex-1 flex flex-col" : "max-w-[960px] mx-auto w-full px-4 py-6 pb-24"}`}
+          className={`grow shrink-0 ${currentView === "chat" ? "flex flex-col min-h-0" : "max-w-[960px] mx-auto w-full px-4 py-6 pb-4"}`}
         >
           {currentView === "persona-picker" && <PersonaPicker />}
           {currentView === "dashboard" && <Dashboard />}
@@ -228,10 +233,10 @@ export function AppShell() {
           {currentView === "plan" && <PlanView />}
           {currentView === "tasks" && <TasksView />}
         </div>
-      </main>
 
-      {/* Input bar */}
-      {showInput && <MessageInput />}
+        {/* Chat input — in document flow, pushed to bottom on short pages */}
+        {showInput && <MessageInput />}
+      </main>
 
       {/* Bottom tab navigation */}
       {currentView !== "persona-picker" && <BottomTabBar />}

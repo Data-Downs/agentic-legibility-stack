@@ -40,6 +40,16 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* On desktop, body bg is handled by the phone frame wrapper */
+@media (min-width: 768px) {
+  body {
+    background-color: #1a1a2e;
+    overflow: hidden;
+  }
 }
 
 /* GOV.UK-style link styling */
@@ -114,4 +124,147 @@ input,
 textarea,
 select {
   font-size: 16px;
+}
+
+/* ── Phone Frame (desktop only) ── */
+
+.phone-frame-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  padding: 2rem;
+}
+
+.phone-frame-device {
+  position: relative;
+  width: 393px;
+  height: 852px;
+  background: #000;
+  border-radius: 55px;
+  padding: 12px;
+  box-shadow:
+    0 0 0 2px #1a1a1a,
+    0 0 0 4px #333,
+    0 0 0 5px #1a1a1a,
+    0 30px 80px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Power button (right side) */
+.phone-frame-device::before {
+  content: "";
+  position: absolute;
+  right: -4px;
+  top: 180px;
+  width: 4px;
+  height: 80px;
+  background: linear-gradient(to bottom, #2a2a2a, #3a3a3a, #2a2a2a);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Volume buttons (left side) */
+.phone-frame-device::after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 160px;
+  width: 4px;
+  height: 40px;
+  background: linear-gradient(to bottom, #2a2a2a, #3a3a3a, #2a2a2a);
+  border-radius: 2px 0 0 2px;
+  box-shadow: 0 56px 0 0 #2a2a2a;
+}
+
+/* The phone screen — acts as the app's viewport.
+   Uses a flex layout so the tab bar is structurally pinned at the bottom,
+   with only the main content area scrolling. */
+.phone-frame-screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 44px;
+  overflow: hidden;
+  background-color: var(--app-bg);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The AppShell's root div — fill the screen, flex column, no scroll */
+.phone-frame-screen > div {
+  height: 100%;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* Main content — the ONLY scrollable area */
+.phone-frame-screen main {
+  flex: 1 1 0% !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Tab bar: convert from fixed to static flex child inside the phone frame */
+.phone-frame-screen nav.fixed {
+  position: static !important;
+  flex-shrink: 0;
+}
+
+/* Contain ALL other fixed-position elements within the phone frame */
+.phone-frame-screen .fixed {
+  position: absolute !important;
+}
+
+/* Dynamic Island */
+.phone-frame-island {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 126px;
+  height: 37px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 9999;
+}
+
+/* Home indicator bar */
+.phone-frame-home-indicator {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.phone-frame-home-bar {
+  width: 134px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+/* Scale down on smaller desktops */
+@media (min-width: 768px) and (max-height: 920px) {
+  .phone-frame-wrapper {
+    padding: 1rem;
+  }
+
+  .phone-frame-device {
+    transform: scale(0.85);
+    transform-origin: center;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 780px) {
+  .phone-frame-device {
+    transform: scale(0.72);
+  }
 }

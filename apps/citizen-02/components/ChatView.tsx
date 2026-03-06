@@ -138,7 +138,7 @@ export function ChatView() {
       )}
 
       <div
-        className="flex-1 overflow-y-auto px-4 py-4 pb-20 space-y-3"
+        className="flex-1 overflow-y-auto px-4 py-4 pb-4 space-y-3"
         role="log"
         aria-live="polite"
       >

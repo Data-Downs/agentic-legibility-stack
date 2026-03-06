@@ -55,8 +55,7 @@ export function MessageInput() {
 
   return (
     <div
-      className="border-t border-gray-200 bg-white px-4 py-3 z-20"
-      style={{ marginBottom: "calc(60px + var(--safe-area-bottom, 0px))" }}
+      className="border-t border-gray-200 bg-white px-4 py-3 w-full"
     >
       <form
         onSubmit={(e) => {
