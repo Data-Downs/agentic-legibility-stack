@@ -25,6 +25,9 @@ jobs:
     name: Deploy Legibility Studio
     needs: test
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,17 +39,16 @@ jobs:
         run: npx turbo run build --filter='./packages/*' -- --noCheck
       - run: npm run build:cf
         working-directory: apps/legibility-studio
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: apps/legibility-studio
-          command: deploy
+      - run: npx wrangler deploy
+        working-directory: apps/legibility-studio
 
   deploy-citizen-experience:
     name: Deploy Citizen Experience
     needs: [test, deploy-studio]
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -58,17 +60,16 @@ jobs:
         run: npx turbo run build --filter='./packages/*' -- --noCheck
       - run: npm run build:cf
         working-directory: apps/citizen-experience
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: apps/citizen-experience
-          command: deploy
+      - run: npx wrangler deploy
+        working-directory: apps/citizen-experience
 
   deploy-citizen-02:
     name: Deploy Citizen App
     needs: [test, deploy-studio]
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -80,9 +81,5 @@ jobs:
         run: npx turbo run build --filter='./packages/*' -- --noCheck
       - run: npm run build:cf
         working-directory: apps/citizen-02
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: apps/citizen-02
-          command: deploy
+      - run: npx wrangler deploy
+        working-directory: apps/citizen-02
