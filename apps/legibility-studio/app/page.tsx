@@ -37,10 +37,14 @@ const STATUS_STYLES: Record<string, string> = {
   abandoned: "bg-gray-100 text-gray-500",
 };
 
+const PAGE_SIZE = 8;
+const MAX_CASES = 80;
+
 export default function StudioHomePage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [recentCases, setRecentCases] = useState<RecentCase[]>([]);
   const [serviceMap, setServiceMap] = useState<Record<string, ServiceInfo>>({});
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -61,7 +65,7 @@ export default function StudioHomePage() {
         completionRate: dashboardData?.completionRate || 0,
       });
 
-      setRecentCases(dashboardData?.recentCases || []);
+      setRecentCases((dashboardData?.recentCases || []).slice(0, MAX_CASES));
     }).catch(() => {
       setSummary({ serviceCount: 0, totalCases: 0, activeCases: 0, completionRate: 0 });
     });
@@ -75,106 +79,129 @@ export default function StudioHomePage() {
       />
 
       {/* KPI row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
-        <KPICard label="Services" value={summary?.serviceCount ?? "..."} sparkSeed="services" />
-        <KPICard label="Total Cases" value={summary ? summary.totalCases.toLocaleString() : "..."} sparkSeed="total-cases" />
-        <KPICard label="Active Cases" value={summary ? summary.activeCases.toLocaleString() : "..."} sparkSeed="active-cases" />
-        <KPICard
-          label="Completion Rate"
-          value={summary ? `${summary.completionRate}%` : "..."}
-          sparkSeed="completion-rate"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+        <KPICard label="Services" value={summary?.serviceCount ?? "..."} />
+        <KPICard label="Total Cases" value={summary ? summary.totalCases.toLocaleString() : "..."} />
+        <KPICard label="Active Cases" value={summary ? summary.activeCases.toLocaleString() : "..."} />
+        <KPICard label="Completion Rate" value={summary ? `${summary.completionRate}%` : "..."} />
       </div>
 
       {/* Recent Cases */}
-      {recentCases.length > 0 && (
-        <div className="mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Clock size={16} className="text-gray-400" />
-              <h2 className="font-bold text-sm text-gray-500 uppercase tracking-wide">
-                Recent Cases
-              </h2>
+      {recentCases.length > 0 && (() => {
+        const totalPages = Math.ceil(recentCases.length / PAGE_SIZE);
+        const pageCases = recentCases.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+        return (
+          <div className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Clock size={16} className="text-gray-400" />
+                <h2 className="font-bold text-sm text-gray-500 uppercase tracking-wide">
+                  Recent Cases
+                </h2>
+              </div>
+              <a
+                href="/evidence"
+                className="text-xs text-studio-accent hover:underline flex items-center gap-1"
+              >
+                View all evidence <ExternalLink size={10} />
+              </a>
             </div>
-            <a
-              href="/evidence"
-              className="text-xs text-studio-accent hover:underline flex items-center gap-1"
-            >
-              View all evidence <ExternalLink size={10} />
-            </a>
-          </div>
-          <div className="border border-studio-border rounded-xl bg-white overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-studio-border bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wide">
-                  <th className="py-2.5 px-4">Service</th>
-                  <th className="py-2.5 px-4">User</th>
-                  <th className="py-2.5 px-4">State</th>
-                  <th className="py-2.5 px-4">Status</th>
-                  <th className="py-2.5 px-4">Progress</th>
-                  <th className="py-2.5 px-4">Last Activity</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentCases.map((c) => {
-                  const service = serviceMap[c.serviceId];
-                  const caseUrl = `/services/${encodeURIComponent(c.serviceId)}/ledger/cases/${encodeURIComponent(c.userId)}`;
-                  return (
-                    <tr
-                      key={c.caseId}
-                      onClick={() => window.location.href = caseUrl}
-                      className="border-b border-studio-border last:border-0 hover:bg-blue-50 transition-colors cursor-pointer"
-                    >
-                      <td className="py-3 px-4">
-                        <span className="text-studio-accent font-medium">
-                          {service ? service.name : c.serviceId}
-                        </span>
-                        {service && (
-                          <div className="text-xs text-gray-400">{service.department}</div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-xs">{c.userId}</td>
-                      <td className="py-3 px-4">
-                        <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">
-                          {c.currentState}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`text-xs font-semibold px-2 py-0.5 rounded ${
-                            STATUS_STYLES[c.status] || "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          {c.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-studio-accent rounded-full"
-                              style={{ width: `${c.progressPercent}%` }}
-                            />
+            <div className="border border-studio-border rounded-xl bg-white overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-studio-border bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wide">
+                    <th className="py-2.5 px-4">Service</th>
+                    <th className="py-2.5 px-4">User</th>
+                    <th className="py-2.5 px-4">State</th>
+                    <th className="py-2.5 px-4">Status</th>
+                    <th className="py-2.5 px-4">Progress</th>
+                    <th className="py-2.5 px-4">Last Activity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageCases.map((c) => {
+                    const service = serviceMap[c.serviceId];
+                    const caseUrl = `/services/${encodeURIComponent(c.serviceId)}/ledger/cases/${encodeURIComponent(c.userId)}`;
+                    return (
+                      <tr
+                        key={c.caseId}
+                        onClick={() => window.location.href = caseUrl}
+                        className="border-b border-studio-border last:border-0 hover:bg-blue-50 transition-colors cursor-pointer"
+                      >
+                        <td className="py-3 px-4">
+                          <span className="text-studio-accent font-medium">
+                            {service ? service.name : c.serviceId}
+                          </span>
+                          {service && (
+                            <div className="text-xs text-gray-400">{service.department}</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 font-mono text-xs">{c.userId}</td>
+                        <td className="py-3 px-4">
+                          <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">
+                            {c.currentState}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                              STATUS_STYLES[c.status] || "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {c.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-studio-accent rounded-full"
+                                style={{ width: `${c.progressPercent}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-500">{c.progressPercent}%</span>
                           </div>
-                          <span className="text-xs text-gray-500">{c.progressPercent}%</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-xs text-gray-500">
-                        {new Date(c.lastActivityAt).toLocaleString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="py-3 px-4 text-xs text-gray-500">
+                          {new Date(c.lastActivityAt).toLocaleString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-3">
+                <span className="text-xs text-gray-500">
+                  Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, recentCases.length)} of {recentCases.length}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    className="px-3 py-1.5 text-xs font-medium border border-studio-border rounded-lg bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={page >= totalPages - 1}
+                    className="px-3 py-1.5 text-xs font-medium border border-studio-border rounded-lg bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Quick nav cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
