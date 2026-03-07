@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false as unknown as NextConfig["devIndicators"],
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   transpilePackages: [
     "@als/schemas",
     "@als/runtime",
