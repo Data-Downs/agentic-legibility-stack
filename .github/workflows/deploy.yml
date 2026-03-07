@@ -39,6 +39,24 @@ jobs:
         run: npx turbo run build --filter='./packages/*' -- --noCheck
       - run: npx @opennextjs/cloudflare build && npx wrangler deploy
         working-directory: apps/legibility-studio
+      - name: Seed personas into D1
+        run: |
+          STUDIO_URL=$(npx wrangler deployments list --name als-studio --json 2>/dev/null | node -e "
+            const d = JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
+            // Fallback to known URL
+            console.log('https://als-studio.chris-8ab.workers.dev');
+          ")
+          PERSONAS='{"personas":['
+          FIRST=true
+          for f in data/simulated/users/*.json; do
+            if [ "$FIRST" = true ]; then FIRST=false; else PERSONAS="$PERSONAS,"; fi
+            PERSONAS="$PERSONAS$(cat "$f")"
+          done
+          PERSONAS="$PERSONAS]}"
+          echo "Seeding $(echo "$PERSONAS" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); console.log(d.personas.length)") personas..."
+          curl -sf -X POST "$STUDIO_URL/api/v1/seed-personas" \
+            -H "Content-Type: application/json" \
+            -d "$PERSONAS"
 
   deploy-citizen-experience:
     name: Deploy Citizen Experience
