@@ -39,7 +39,7 @@ jobs:
         run: npx turbo run build --filter='./packages/*' -- --noCheck
       - run: npm run build:cf
         working-directory: apps/legibility-studio
-      - run: npx wrangler deploy
+      - run: npx wrangler deploy --no-bundle
         working-directory: apps/legibility-studio
 
   deploy-citizen-experience:
@@ -60,7 +60,7 @@ jobs:
         run: npx turbo run build --filter='./packages/*' -- --noCheck
       - run: npm run build:cf
         working-directory: apps/citizen-experience
-      - run: npx wrangler deploy
+      - run: npx wrangler deploy --no-bundle
         working-directory: apps/citizen-experience
 
   deploy-citizen-02:
@@ -81,5 +81,5 @@ jobs:
         run: npx turbo run build --filter='./packages/*' -- --noCheck
       - run: npm run build:cf
         working-directory: apps/citizen-02
-      - run: npx wrangler deploy
+      - run: npx wrangler deploy --no-bundle
         working-directory: apps/citizen-02
