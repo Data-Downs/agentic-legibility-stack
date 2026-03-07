@@ -8,6 +8,9 @@ import {
   BarChart3,
   Users,
   Settings,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Mail,
 } from "lucide-react";
 
 interface NavItem {
@@ -66,12 +69,15 @@ function isActive(pathname: string, item: NavItem): boolean {
   return pathname === item.href;
 }
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({ item, active, collapsed }: { item: NavItem; active: boolean; collapsed: boolean }) {
   if (item.disabled) {
     return (
-      <span className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-400 cursor-not-allowed select-none">
+      <span
+        className={`flex items-center gap-3 py-2.5 text-sm text-gray-400 cursor-not-allowed select-none ${collapsed ? "justify-center px-0" : "px-4"}`}
+        title={collapsed ? item.label : undefined}
+      >
         {item.icon}
-        {item.label}
+        {!collapsed && item.label}
       </span>
     );
   }
@@ -79,62 +85,106 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <a
       href={item.href}
-      className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+      title={collapsed ? item.label : undefined}
+      className={`flex items-center gap-3 py-2.5 text-sm transition-colors ${collapsed ? "justify-center px-0" : "px-4"} ${
         active
           ? "text-gray-900 font-semibold"
           : "text-gray-500 hover:text-gray-900"
       }`}
     >
       {item.icon}
-      {item.label}
+      {!collapsed && item.label}
     </a>
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed top-0 left-0 bottom-0 w-[var(--sidebar-width)] bg-studio-body border-r border-studio-border flex flex-col z-30">
+    <aside
+      className="fixed top-0 left-0 bottom-0 bg-studio-body border-r border-studio-border flex flex-col z-30 transition-[width] duration-200"
+      style={{ width: collapsed ? "56px" : "var(--sidebar-width)" }}
+    >
       {/* Brand */}
-      <div className="h-14 flex items-center px-5">
-        <a href="/" className="text-gray-900 font-bold text-base tracking-tight">
-          Legibility Studio
-        </a>
+      <div className={`h-14 flex items-center ${collapsed ? "justify-center" : "px-5 justify-between"}`}>
+        {!collapsed && (
+          <a href="/" className="text-gray-900 font-bold text-base tracking-tight">
+            Legibility Studio
+          </a>
+        )}
+        <button
+          onClick={onToggle}
+          className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        </button>
       </div>
 
       {/* Main nav */}
       <nav className="flex-1 pt-4">
-        <p className="px-4 mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-          Main
-        </p>
+        {!collapsed && (
+          <p className="px-4 mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            Main
+          </p>
+        )}
         <div className="space-y-0.5">
           {mainNav.map((item) => (
             <NavLink
               key={item.label}
               item={item}
               active={isActive(pathname, item)}
+              collapsed={collapsed}
             />
           ))}
         </div>
 
-        <p className="px-4 mt-8 mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-          System
-        </p>
+        {!collapsed && (
+          <p className="px-4 mt-8 mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            System
+          </p>
+        )}
+        {collapsed && <div className="mt-8" />}
         <div className="space-y-0.5">
           {systemNav.map((item) => (
             <NavLink
               key={item.label}
               item={item}
               active={isActive(pathname, item)}
+              collapsed={collapsed}
             />
           ))}
         </div>
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-studio-border">
-        <p className="text-[11px] text-gray-400">Agentic Legibility Stack</p>
+      <div className={`border-t border-studio-border ${collapsed ? "py-3 px-2" : "px-4 py-4"}`}>
+        {collapsed ? (
+          <a
+            href="mailto:chris@datadowns.com"
+            title="chris@datadowns.com"
+            className="flex justify-center text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <Mail size={16} />
+          </a>
+        ) : (
+          <>
+            <p className="text-[11px] text-gray-400">Agentic Legibility Stack</p>
+            <p className="text-[11px] text-gray-400 mt-1">
+              A project by Chris Downs
+            </p>
+            <a
+              href="mailto:chris@datadowns.com"
+              className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 mt-0.5"
+            >
+              <Mail size={10} />
+              chris@datadowns.com
+            </a>
+            <p className="text-[10px] text-gray-300 mt-2">&copy; {new Date().getFullYear()} Chris Downs</p>
+          </>
+        )}
       </div>
     </aside>
   );
