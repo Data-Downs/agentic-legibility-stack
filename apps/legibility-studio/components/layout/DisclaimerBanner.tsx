@@ -1,10 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
+const STORAGE_KEY = "als_disclaimer_dismissed";
+
 export function DisclaimerBanner() {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      setVisible(true);
+    }
+  }, []);
+
+  function dismiss() {
+    localStorage.setItem(STORAGE_KEY, "1");
+    setVisible(false);
+  }
 
   if (!visible) return null;
 
@@ -26,7 +39,7 @@ export function DisclaimerBanner() {
         </p>
       </div>
       <button
-        onClick={() => setVisible(false)}
+        onClick={dismiss}
         className="absolute top-3 right-3 p-1 text-govuk-black hover:opacity-70 transition-opacity"
         aria-label="Dismiss disclaimer"
       >
