@@ -37,9 +37,7 @@ jobs:
       - run: npm ci
       - name: Build workspace packages (emit JS, skip type-check)
         run: npx turbo run build --filter='./packages/*' -- --noCheck
-      - run: npm run build:cf
-        working-directory: apps/legibility-studio
-      - run: npx wrangler deploy --no-bundle
+      - run: npm run deploy
         working-directory: apps/legibility-studio
 
   deploy-citizen-experience:
@@ -58,9 +56,7 @@ jobs:
       - run: npm ci
       - name: Build workspace packages (emit JS, skip type-check)
         run: npx turbo run build --filter='./packages/*' -- --noCheck
-      - run: npm run build:cf
-        working-directory: apps/citizen-experience
-      - run: npx wrangler deploy --no-bundle
+      - run: npm run deploy
         working-directory: apps/citizen-experience
 
   deploy-citizen-02:
@@ -79,7 +75,5 @@ jobs:
       - run: npm ci
       - name: Build workspace packages (emit JS, skip type-check)
         run: npx turbo run build --filter='./packages/*' -- --noCheck
-      - run: npm run build:cf
-        working-directory: apps/citizen-02
-      - run: npx wrangler deploy --no-bundle
+      - run: npm run deploy
         working-directory: apps/citizen-02
