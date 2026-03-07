@@ -91,6 +91,7 @@ function inferCategory(cardType: string, fieldKey: string): string {
     "slot-picker": "appointment",
     "checklist-progress": "task_list",
     "decision-helper": "informational",
+    "document-upload": "documents",
   };
 
   const FIELD_CATEGORIES: Record<string, string> = {
@@ -102,6 +103,16 @@ function inferCategory(cardType: string, fieldKey: string): string {
     bank_name: "financial",
     sort_code: "financial",
     account_number: "financial",
+    employer_name: "employment",
+    leaving_date: "employment",
+    tax_code: "financial",
+    total_pay: "financial",
+    total_tax: "financial",
+    document_filename: "documents",
+    payment_method: "payment",
+    amount_paid: "payment",
+    payment_reference: "payment",
+    payment_timestamp: "payment",
   };
 
   return FIELD_CATEGORIES[fieldKey] || CARD_CATEGORIES[cardType] || "other";
